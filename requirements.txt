@@ -1,0 +1,13 @@
+fastapi==0.116.1
+uvicorn[standard]==0.35.0
+upnpclient==2.0.3
+
+# Desktop window (no browser tab needed) -- see desktop.py.
+# pywebview needs a Qt or GTK backend to actually render web content.
+# We pull in PyQt5 here since it installs via pip alone on most systems
+# (no extra apt packages needed, unlike the GTK/WebKit route). If PyQt5
+# fails to install on your system, see README.md for the GTK alternative.
+pywebview>=5.0
+PyQt5>=5.15
+PyQtWebEngine>=5.15
+qtpy>=2.4

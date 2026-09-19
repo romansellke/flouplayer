@@ -1,0 +1,144 @@
+:root{
+  --accent:#2f6cb5; --accent-dark:#245a99; --accent-light:#eaf2fb;
+  --grey-100:#fafafa; --grey-200:#eee; --grey-300:#ddd; --grey-400:#bbb; --grey-600:#777; --grey-800:#444;
+  --radius:7px;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font:12px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#222;background:#fff}
+
+.app{display:flex;flex-direction:column;height:100vh;background:#fff}
+
+/* ---------- Header ---------- */
+header{display:flex;flex-wrap:wrap;gap:13px;align-items:center;padding:9px 12px;background:linear-gradient(#fafafa,#c9c9c9);border-bottom:1px solid #888}
+
+.transport{display:flex;gap:6px;align-items:center;flex:0 0 auto}
+.transport button{width:32px;height:32px;border-radius:50%;border:1px solid #8a8a8a;background:linear-gradient(#fff,#ccc);box-shadow:0 1px 2px rgba(0,0,0,.15);cursor:pointer;transition:transform .1s ease,background .15s ease}
+.transport button:hover{background:linear-gradient(#fff,#bcd6f2)}
+.transport button:active{transform:scale(.92)}
+.transport input[type=range]{width:130px}
+.transport button.disabled,.transport input.disabled{opacity:.35;pointer-events:none}
+
+.lcd{flex:1 1 220px;min-width:180px;text-align:center;padding:6px;border:1px solid #98a285;border-radius:5px;background:linear-gradient(#f4f8e7,#dce5c7);box-shadow:inset 0 1px 4px #adb69d}
+.lcd b,.lcd span{display:block}
+#volumeLabel{font-size:10px;color:#555;min-width:54px;display:inline-block}
+#elapsed{font-size:10px;color:#567;margin-top:2px;font-variant-numeric:tabular-nums}
+
+/* Buttons: clearly recognisable as clickable actions -- filled, white text */
+.toolbar{display:flex;flex-wrap:wrap;gap:6px;padding:8px 12px;background:#eef1f4;border-bottom:1px solid #ccc}
+.toolbar button,
+button.btn{
+  flex:1 1 130px;min-width:100px;border:1px solid var(--accent-dark);border-radius:var(--radius);
+  padding:7px 12px;background:linear-gradient(var(--accent),var(--accent-dark));color:#fff;font-weight:600;
+  cursor:pointer;transition:filter .15s ease,transform .05s ease;
+}
+.toolbar button:hover,button.btn:hover{filter:brightness(1.08)}
+.toolbar button:active,button.btn:active{transform:translateY(1px)}
+.toolbar button:disabled{opacity:.6;cursor:default;filter:none}
+
+/* Dropdowns: white, with a visible arrow -- clearly different from buttons */
+.toolbar select{
+  flex:1 1 200px;min-width:140px;border:1px solid #999;border-radius:var(--radius);
+  padding:7px 26px 7px 10px;background:#fff url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="10" height="6"><path d="M0 0l5 6 5-6z" fill="%23555"/></svg>') no-repeat right 10px center;
+  -webkit-appearance:none;appearance:none;cursor:pointer;transition:border-color .15s ease;
+}
+.toolbar select:hover{border-color:var(--accent)}
+
+/* Text fields: clearly recognisable as input -- magnifier icon, soft pill shape */
+.toolbar input[type=text],#search{
+  flex:1 1 220px;border-radius:16px;border:1px solid #999;padding:8px 12px 8px 30px;
+  background:#fff url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12"><circle cx="5" cy="5" r="4" fill="none" stroke="%23888" stroke-width="1.5"/><line x1="8.2" y1="8.2" x2="11.5" y2="11.5" stroke="%23888" stroke-width="1.5"/></svg>') no-repeat 10px center;
+  transition:border-color .15s ease,box-shadow .15s ease;
+}
+.toolbar input[type=text]:focus,#search:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-light)}
+.toolbar-status{margin-left:auto;align-self:center;color:#555;font-size:11px;white-space:nowrap;padding-left:6px}
+
+/* ---------- Workspace ---------- */
+/* Height chain for ONE scrollable area (#content): every level needs
+   flex:1 + min-height:0, otherwise flex children grow beyond their
+   space instead of scrolling. Header, sidebars and the column browser
+   stay visibly fixed this way, only the track list scrolls -- like the
+   iTunes original. */
+.workspace{display:flex;flex-wrap:wrap;flex:1 1 auto;min-height:0}
+.active{background:var(--accent) !important;color:#fff}
+
+main{flex:1 1 600px;min-width:320px;min-height:0;display:flex;flex-direction:column}
+.facets{display:flex;flex-wrap:wrap;flex:0 0 auto;border-bottom:1px solid #888}
+.facets>div{flex:1 1 200px;min-width:150px;max-height:240px;overflow:auto;border-right:1px solid #aaa}
+.facets b{display:block;text-align:center;padding:6px;background:linear-gradient(#fff,#d6d6d6);position:sticky;top:0;font-size:11px;letter-spacing:.03em;text-transform:uppercase;color:#555}
+.facets ul{list-style:none;padding:3px 0;margin:0}
+.facets li{padding:3px 8px;cursor:pointer;transition:background .1s ease;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.facets li:hover{background:var(--accent-light)}
+
+.albums{flex:1 1 auto;min-height:0;display:flex;flex-direction:column}
+.sectionhead{flex:0 0 auto;display:flex;justify-content:space-between;align-items:center;padding:7px 9px;background:linear-gradient(#fafafa,#d8d8d8);border-bottom:1px solid #999;font-weight:600}
+.sectionhead-right{display:flex;align-items:center;gap:10px;font-weight:400}
+#content{flex:1 1 auto;min-height:0;overflow-y:auto}
+
+/* Column picker: a small non-toolbar-style button with a dropdown checklist */
+.colpicker{position:relative}
+.btn-link{background:#fff;border:1px solid #999;border-radius:5px;padding:3px 9px;font-size:11px;cursor:pointer;color:#333;transition:border-color .15s ease}
+.btn-link:hover{border-color:var(--accent)}
+.colmenu{position:absolute;right:0;top:calc(100% + 4px);background:#fff;border:1px solid #999;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.18);padding:6px 10px;z-index:5;white-space:nowrap;font-weight:400;text-align:left}
+.colmenu.hidden{display:none}
+.colmenu label{display:block;padding:3px 2px;cursor:pointer;font-size:12px}
+.colmenu input{margin-right:6px}
+
+.album{display:flex;flex-wrap:wrap;border-bottom:1px solid #b8b8b8}
+.albuminfo{flex:0 0 210px;width:210px;display:flex;gap:9px;padding:9px;background:#fafafa;border-right:1px solid #ddd}
+.cover,.bigcover{background:#d5d0be center/cover no-repeat;border:1px solid #777;border-radius:3px}
+.cover{flex:0 0 88px;width:88px;height:88px}
+.albumtitle{font-weight:bold;font-size:13px}
+.meta{color:var(--grey-600);margin-top:7px;line-height:1.5}
+
+.tracks{flex:1 1 400px;min-width:260px;border-collapse:collapse;width:100%}
+.tracks td{padding:5px 7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-right:1px solid #e8e8e8}
+.tracks tr{transition:background .1s ease}
+.tracks tr:nth-child(even){background:#edf3fa}
+.tracks tr:hover{background:#d7e9fc}
+.tracks .n{width:34px;text-align:right;color:var(--grey-600)}
+.tracks .quality{width:80px;color:var(--grey-600);font-size:10.5px}
+.tracks .bitrate{width:70px;text-align:right;color:var(--grey-600);font-size:10.5px}
+.tracks .time{width:60px;text-align:right;color:var(--grey-600)}
+.tracks .artist,.tracks .albumartist{width:150px}
+.tracks .genre{width:90px;color:var(--grey-600)}
+.tracks .year{width:50px;text-align:right;color:var(--grey-600)}
+/* the currently playing track: clearly highlighted with a play icon instead of the track number */
+.tracks tr.playing{background:var(--accent-light);font-weight:700;color:var(--accent-dark)}
+.tracks tr.playing .n{color:var(--accent)}
+
+.now{flex:0 0 230px;width:230px;background:linear-gradient(90deg,#f1f3f5,#e6eaee);border-left:1px solid #9aa1a8;padding:7px 0;overflow-y:auto;text-align:center}
+.now h3{text-align:left;font-size:12px;margin:0 0 10px;padding:7px 9px;background:linear-gradient(#fff,#d5d5d5);border-bottom:1px solid #aaa}
+.bigcover{width:145px;height:145px;margin:10px auto}
+.now span{display:block;color:#666;margin:4px}
+.now>div{padding:4px 9px;color:#444;font-size:11px}
+.now details{text-align:left;margin-top:6px}
+.now summary{cursor:pointer;font-size:12px;padding:7px 9px;background:linear-gradient(#fff,#d5d5d5);border-top:1px solid #aaa;border-bottom:1px solid #aaa;list-style:none}
+.now summary::-webkit-details-marker{display:none}
+.now summary::before{content:'▸ ';display:inline-block;transition:transform .1s ease}
+.now details[open] summary::before{transform:rotate(90deg)}
+.now pre{text-align:left;white-space:pre-wrap;font:10px ui-monospace,monospace;padding:7px;max-height:170px;overflow:auto;margin:0}
+
+.empty{padding:25px;color:var(--grey-600)}
+.clickable{cursor:pointer}
+
+/* ---------- Responsive: narrower windows give the main area priority ---------- */
+@media (max-width:1000px){
+  .now{display:none}
+}
+@media (max-width:640px){
+  .facets{flex-direction:column}
+  .facets>div{max-height:140px}
+  .albuminfo{flex-basis:100%;width:100%}
+}
+
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#2b2b2b;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;box-shadow:0 4px 14px rgba(0,0,0,.3);z-index:50;transition:opacity .2s ease;max-width:80vw;text-align:center}
+.toast.hidden{opacity:0;pointer-events:none}
+
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:100}
+.modal.hidden{display:none}
+.modal-content{background:#fff;border-radius:8px;max-width:78vw;max-height:78vh;overflow:auto;padding:22px;position:relative;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+.modal-close{position:absolute;top:8px;right:10px;background:none;border:none;font-size:22px;line-height:1;cursor:pointer;color:#777;padding:4px 8px}
+.modal-close:hover{color:#000}
+#metaTitle{margin:0 0 12px;font-size:14px;padding-right:24px}
+#metaBody{font:11px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;white-space:pre-wrap;word-break:break-word;margin:0;color:#222}
