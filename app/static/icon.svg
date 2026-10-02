@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4a88d0"/>
+      <stop offset="1" stop-color="#245a99"/>
+    </linearGradient>
+    <linearGradient id="disc" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#dfe9f5"/>
+    </linearGradient>
+  </defs>
+  <rect x="8" y="8" width="240" height="240" rx="52" fill="url(#bg)"/>
+  <circle cx="128" cy="128" r="84" fill="url(#disc)"/>
+  <circle cx="128" cy="128" r="84" fill="none" stroke="#245a99" stroke-opacity=".18" stroke-width="2"/>
+  <circle cx="128" cy="128" r="62" fill="none" stroke="#245a99" stroke-opacity=".08" stroke-width="10"/>
+  <!-- eighth notes -->
+  <path d="M112 84 L162 72 V150" fill="none" stroke="#245a99" stroke-width="10" stroke-linejoin="round"/>
+  <path d="M112 84 V162" fill="none" stroke="#245a99" stroke-width="10"/>
+  <path d="M112 84 L162 72 V90 L112 102 Z" fill="#245a99"/>
+  <ellipse cx="98" cy="164" rx="18" ry="14" transform="rotate(-20 98 164)" fill="#245a99"/>
+  <ellipse cx="148" cy="152" rx="18" ry="14" transform="rotate(-20 148 152)" fill="#245a99"/>
+</svg>

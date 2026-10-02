@@ -7,9 +7,11 @@ a native application window (via pywebview) pointed at the local server.
 From the user's perspective this is a normal desktop app with its own
 window and no visible browser chrome -- nothing else about the app changes.
 
-Why pywebview: it's a thin wrapper around the operating system's own web
-rendering engine (WebKitGTK on Linux, WebView2 on Windows, WKWebView on
-macOS), so it reuses 100% of the existing HTML/CSS/JS frontend unchanged.
+Why pywebview: it's a thin wrapper around a web rendering engine (Qt
+WebEngine here), so it reuses 100% of the existing HTML/CSS/JS frontend
+unchanged. Flou Player targets Linux only.
+
+Also the entry point of the packaged app (see packaging/build.sh).
 """
 import faulthandler
 import os
@@ -46,7 +48,7 @@ _crash_log_file = enable_crash_log()
 # segfault. This UI gains nothing from GPU acceleration, so render in
 # software by default. Must be set before Qt WebEngine is loaded.
 # Set FLOU_GPU=1 to keep GPU acceleration on.
-if sys.platform.startswith("linux") and os.environ.get("FLOU_GPU") != "1":
+if os.environ.get("FLOU_GPU") != "1":
     _flags = os.environ.get("QTWEBENGINE_CHROMIUM_FLAGS", "")
     if "--disable-gpu" not in _flags.split():
         os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = (_flags + " --disable-gpu").strip()
@@ -54,19 +56,22 @@ if sys.platform.startswith("linux") and os.environ.get("FLOU_GPU") != "1":
 import uvicorn  # noqa: E402
 import webview  # noqa: E402
 
-from app.main import app  # noqa: E402
+from app.main import STATIC_DIR, app  # noqa: E402
 
 HOST = "127.0.0.1"
 PORT = 8765
 
-# On Linux, pywebview tries GTK first and only falls back to Qt if GTK's
-# Python bindings ('gi') aren't installed -- which prints a harmless but
+# pywebview tries GTK first and only falls back to Qt if GTK's Python
+# bindings ('gi') aren't installed -- which prints a harmless but
 # alarming-looking traceback along the way. We install the Qt backend
-# (PyQt5/PyQtWebEngine) specifically, so just tell it to use Qt directly
-# and skip the GTK probe entirely. On macOS/Windows, leave it on auto
-# (None) so it uses the natural native backend (Cocoa/EdgeChromium)
-# instead of requiring Qt there too.
-GUI_BACKEND = "qt" if sys.platform.startswith("linux") else None
+# (PyQt5/PyQtWebEngine) specifically, so use Qt directly.
+GUI_BACKEND = os.environ.get("PYWEBVIEW_GUI") or "qt"
+
+APP_ICON = STATIC_DIR / "icon.svg"
+# pywebview defaults to a private (incognito) web profile, which throws
+# away localStorage -- e.g. the chosen track-list columns -- on every
+# restart. Keep a persistent profile instead.
+WEBVIEW_STORAGE = Path.home() / ".local" / "share" / "flou-player" / "webview"
 
 
 def run_server():
@@ -102,7 +107,8 @@ def main() -> None:
 
     try:
         webview.create_window("Flou Player", url, width=1280, height=820, min_size=(900, 600))
-        webview.start(gui=GUI_BACKEND)
+        WEBVIEW_STORAGE.mkdir(parents=True, exist_ok=True)
+        webview.start(gui=GUI_BACKEND, icon=str(APP_ICON), private_mode=False, storage_path=str(WEBVIEW_STORAGE))
     except Exception as exc:
         # If the native window can't come up for some reason (missing system
         # libraries, no display backend available, etc.), don't leave the

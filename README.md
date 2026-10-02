@@ -4,17 +4,40 @@ A local, standalone, iTunes-style desktop app for browsing and playing music
 from MinimServer through a Linn/OpenHome output device (e.g. a Majik DSM4).
 Runs as its own application window -- no browser tab needed.
 
-## Setup (macOS and Linux, incl. Linux Mint)
+Flou Player runs on Linux (tested target: Linux Mint).
 
-1. Unzip the archive.
-2. Open a terminal in the folder.
-3. One-time only: `chmod +x run.command`
-4. `./run.command`
+## Install as an app (recommended)
+
+1. Open a terminal in the project folder.
+2. `./packaging/install.sh`
+
+This builds Flou Player once into a self-contained app (Python, Qt and all
+dependencies bundled -- needs internet access for the build, takes a few
+minutes and about 400 MB of disk space) and adds **Flou Player** to your
+application menu with its icon. From then on, start it from the menu like
+any other app: no terminal, no Python setup.
+
+- **After updating the code** (e.g. `git pull`): `./packaging/install.sh --rebuild`
+- **Remove it again:** `./packaging/install.sh --uninstall`
+  (keeps your library cache and settings)
+- Build only, without installing: `./packaging/build.sh`
+  (result in `build/dist/flou-player/`)
+
+The app is installed for your user only, under `~/.local/share/flou-player`;
+no `sudo` needed. Build it on the machine you run it on.
+
+## Run from source (for development)
+
+1. Open a terminal in the project folder.
+2. One-time only: `chmod +x run.command`
+3. `./run.command`
 
 The first run creates a virtual environment and installs dependencies (needs
 internet access briefly), then opens the app in its own window. Later runs
 skip the install step and start straight away (it only runs again when
 `requirements.txt` changes).
+
+## Network
 
 Your computer and the MinimServer/Linn device must be on the same local
 network (SSDP/UPnP discovery does not cross subnets/VLANs). It doesn't
@@ -22,7 +45,9 @@ matter whether MinimServer, the output device and Flou Player are three
 separate machines -- everything is found and controlled purely over the
 network.
 
-### If `run.command` fails on `venv`
+## Troubleshooting
+
+### If `run.command` or the build fails on `venv`
 
 On Ubuntu/Linux Mint this usually means the `python3-venv` package isn't
 installed. Check your Python version with `python3 --version`, then run
@@ -42,18 +67,19 @@ sudo apt install python3-gi gir1.2-gtk-3.0 gir1.2-webkit2-4.1
 ```
 
 (package name may be `gir1.2-webkit2-4.0` on older distributions), then
-remove the PyQt5/PyQtWebEngine lines from `requirements.txt` and run
-`./run.command` again -- pywebview will fall back to GTK automatically.
+remove the PyQt5/PyQtWebEngine lines from `requirements.txt` and start
+it with `PYWEBVIEW_GUI=gtk ./run.command`.
 
-If the window opens but stays blank or renders oddly, you can force a
-specific backend: `PYWEBVIEW_GUI=qt ./run.command` (or `gtk`).
+If the window opens but stays blank or renders oddly, you can try the
+other backend the same way: `PYWEBVIEW_GUI=gtk ./run.command` (default: `qt`).
 
 ### If the app crashes ("Segmentation fault")
 
 On Linux the window's web engine (Qt WebEngine) runs its GPU code inside
 the app process, so a graphics driver problem can take the whole app down.
-Flou Player therefore renders in software by default on Linux; if you
-want GPU acceleration back, start it with `FLOU_GPU=1 ./run.command`.
+Flou Player therefore renders in software by default; if you want GPU
+acceleration back, start it with `FLOU_GPU=1 ./run.command` (or
+`FLOU_GPU=1 flou-player` for the installed app).
 
 If it still crashes, the details (which part of the app was running at
 that moment) are written to `~/.cache/flou_player/crash.log` -- please
@@ -78,7 +104,7 @@ include that file when reporting the problem.
 - **Persistent library cache**: the scanned library is saved to disk (`~/.cache/flou_player/library.json`) and reloaded automatically on startup -- no need to rescan every time you open the app. Click "Load library" whenever you want to refresh it (e.g. after adding new music).
 - Clearly distinguishable controls: filled blue buttons, white dropdowns with an arrow, text fields with a search icon
 - **Local playback**: the output device dropdown always includes "This computer (local speakers)" -- picking it plays audio directly through the laptop's own sound output (via the app window's built-in HTML5 audio, no UPnP renderer needed). Useful for testing or listening without the Majik DSM4. Note: codec support depends on the underlying web engine (Qt WebEngine on Linux) -- common formats (MP3/AAC/WAV) work reliably; FLAC support can vary by system.
-- **Selectable track-list columns**: a "Columns" button above the track list lets you toggle Quality/Time/Artist/Album Artist/Genre/Year on or off; the choice is remembered between launches (stored in the app's local browser storage).
+- **Selectable track-list columns**: a "Columns" button above the track list lets you toggle Quality/Time/Artist/Album Artist/Genre/Year on or off; the choice is remembered between launches (stored in the app window's web profile under `~/.local/share/flou-player/webview`).
 - **Scrollable track list**: the header, toolbar, column browser and sidebars stay fixed, only the album/track list scrolls (like the iTunes original)
 - Responsive layout: sidebars hide on narrow windows, columns stack on very narrow windows
 - iTunes-style album-centric view with cover art and a track table
