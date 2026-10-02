@@ -53,6 +53,7 @@ specific backend: `PYWEBVIEW_GUI=qt ./run.command` (or `gtk`).
 - SSDP discovery of UPnP devices
 - Standalone desktop window (via `pywebview`) instead of a browser tab
 - Selection of media server and output device, in a toolbar below the main header
+- **Device icons**: the media server and output device dropdowns show each device's own icon, taken from its UPnP device description (as the Linn app does); devices without one get a generic symbol
 - **Fast, parallel library scan**: prefers a plain by-folder view (if the server offers one) instead of all the artist/album/genre views at once, and runs the network requests across several threads in parallel instead of one after another
 - **Album Artist → Artist → Album → Year** columns with a correct match count (album count for Album Artist/Artist/Year, track count for Album). Album Artist shows the tag exactly as delivered by the server -- tracks without an album-artist tag don't appear under any Album Artist entry.
 - **Deduplication** by the actual playback URL (in case server-side duplicates remain despite the by-folder view)

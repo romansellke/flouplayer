@@ -46,6 +46,37 @@ button.btn{
 }
 .toolbar select:hover{border-color:var(--accent)}
 
+/* Device pickers (custom dropdowns with device icons, see app.js).
+   The real <select> stays in the DOM as the value holder, hidden. */
+.picker-source{display:none}
+.picker{position:relative;flex:1 1 200px;min-width:140px;display:flex}
+/* .toolbar prefix: must beat the blue ".toolbar button" action style --
+   pickers keep the white select look so they read as choices, not actions */
+.toolbar .picker-btn{
+  flex:1;display:flex;align-items:center;gap:8px;min-width:0;text-align:left;font:inherit;font-weight:400;color:#222;
+  border:1px solid #999;border-radius:var(--radius);padding:4px 26px 4px 8px;cursor:pointer;
+  background:#fff url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="10" height="6"><path d="M0 0l5 6 5-6z" fill="%23555"/></svg>') no-repeat right 10px center;
+  transition:border-color .15s ease;
+}
+.toolbar .picker-btn:hover,.toolbar .picker-btn:focus{border-color:var(--accent);outline:none;filter:none}
+.toolbar .picker-btn:active{transform:none}
+.picker-btn:focus-visible{box-shadow:0 0 0 3px var(--accent-light)}
+.picker-btn.placeholder{padding-top:7px;padding-bottom:7px}
+.picker-btn.placeholder .picker-icon{display:none}
+.picker-icon{flex:0 0 22px;width:22px;height:22px;object-fit:contain;border-radius:4px}
+.picker-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.picker-menu{
+  position:absolute;left:0;right:0;top:calc(100% + 3px);z-index:20;margin:0;padding:4px 0;list-style:none;
+  background:#fff;border:1px solid #999;border-radius:var(--radius);box-shadow:0 6px 16px rgba(0,0,0,.18);
+  max-height:320px;overflow-y:auto;
+}
+.picker-menu.hidden{display:none}
+.picker-menu li{display:flex;align-items:center;gap:9px;padding:6px 10px;cursor:pointer}
+.picker-menu li .picker-icon{flex-basis:28px;width:28px;height:28px}
+.picker-menu li.active-item{background:var(--accent-light)}
+.picker-menu li[aria-selected="true"]{font-weight:600}
+.picker-menu li.picker-placeholder{color:var(--grey-600)}
+
 /* Text fields: clearly recognisable as input -- magnifier icon, soft pill shape */
 .toolbar input[type=text],#search{
   flex:1 1 220px;border-radius:16px;border:1px solid #999;padding:8px 12px 8px 30px;
