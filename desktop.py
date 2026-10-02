@@ -11,14 +11,50 @@ Why pywebview: it's a thin wrapper around the operating system's own web
 rendering engine (WebKitGTK on Linux, WebView2 on Windows, WKWebView on
 macOS), so it reuses 100% of the existing HTML/CSS/JS frontend unchanged.
 """
+import faulthandler
+import os
 import sys
 import threading
 import time
+from pathlib import Path
 
-import uvicorn
-import webview
+# Crash log: a segfault inside Qt/Chromium kills the process without any
+# Python traceback. faulthandler writes the Python stack of every thread
+# to this file when that happens, so a crash can actually be diagnosed.
+CRASH_LOG = Path.home() / ".cache" / "flou_player" / "crash.log"
+CRASH_LOG_MAX_BYTES = 256 * 1024
 
-from app.main import app
+
+def enable_crash_log():
+    try:
+        CRASH_LOG.parent.mkdir(parents=True, exist_ok=True)
+        if CRASH_LOG.exists() and CRASH_LOG.stat().st_size > CRASH_LOG_MAX_BYTES:
+            CRASH_LOG.unlink()
+        f = open(CRASH_LOG, "a", buffering=1, encoding="utf-8")
+        f.write(f"\n=== Flou Player started {time.strftime('%Y-%m-%d %H:%M:%S')} (pid {os.getpid()}) ===\n")
+        faulthandler.enable(file=f, all_threads=True)
+        return f  # keep the file object alive for the whole process lifetime
+    except OSError:
+        faulthandler.enable()
+        return None
+
+
+_crash_log_file = enable_crash_log()
+
+# Qt WebEngine runs Chromium's GPU code as a thread *inside* this Python
+# process on Linux, so a GPU driver problem crashes the whole app with a
+# segfault. This UI gains nothing from GPU acceleration, so render in
+# software by default. Must be set before Qt WebEngine is loaded.
+# Set FLOU_GPU=1 to keep GPU acceleration on.
+if sys.platform.startswith("linux") and os.environ.get("FLOU_GPU") != "1":
+    _flags = os.environ.get("QTWEBENGINE_CHROMIUM_FLAGS", "")
+    if "--disable-gpu" not in _flags.split():
+        os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = (_flags + " --disable-gpu").strip()
+
+import uvicorn  # noqa: E402
+import webview  # noqa: E402
+
+from app.main import app  # noqa: E402
 
 HOST = "127.0.0.1"
 PORT = 8765

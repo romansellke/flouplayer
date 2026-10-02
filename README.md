@@ -48,6 +48,17 @@ remove the PyQt5/PyQtWebEngine lines from `requirements.txt` and run
 If the window opens but stays blank or renders oddly, you can force a
 specific backend: `PYWEBVIEW_GUI=qt ./run.command` (or `gtk`).
 
+### If the app crashes ("Segmentation fault")
+
+On Linux the window's web engine (Qt WebEngine) runs its GPU code inside
+the app process, so a graphics driver problem can take the whole app down.
+Flou Player therefore renders in software by default on Linux; if you
+want GPU acceleration back, start it with `FLOU_GPU=1 ./run.command`.
+
+If it still crashes, the details (which part of the app was running at
+that moment) are written to `~/.cache/flou_player/crash.log` -- please
+include that file when reporting the problem.
+
 ## Features
 
 - SSDP discovery of UPnP devices

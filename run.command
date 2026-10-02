@@ -28,4 +28,12 @@ fi
 
 # Standalone desktop window -- no browser tab. See README.md if PyQt5 fails
 # to install on your system.
-python3 desktop.py
+status=0
+python3 desktop.py || status=$?
+if [ "$status" -ge 128 ]; then
+  echo
+  echo "Flou Player crashed (signal $((status - 128)))."
+  echo "Details were written to: ~/.cache/flou_player/crash.log"
+  echo "Please include that file when reporting the crash."
+fi
+exit "$status"
