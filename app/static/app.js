@@ -9,15 +9,92 @@ const log=x=>{$('#log').textContent=typeof x==='string'?x:JSON.stringify(x,null,
 async function api(url,opt){const r=await fetch(url,opt);const j=await r.json();if(!r.ok)throw Error(j.detail||r.statusText);return j}
 function isLocal(){return $('#renderer').value===LOCAL_RENDERER_ID}
 
+function deviceOption(d){return `<option value="${esc(d.id)}" data-icon="${esc(d.icon||'')}">${esc(d.name)}${d.model?' · '+esc(d.model):''}</option>`}
 function populateRendererSelect(devs){
   $('#renderer').innerHTML='<option value="">Select output device</option>'
-    +`<option value="${LOCAL_RENDERER_ID}">This computer (local speakers)</option>`
-    +devs.map(d=>`<option value="${esc(d.id)}">${esc(d.name)}${d.model?' · '+esc(d.model):''}</option>`).join('');
+    +`<option value="${LOCAL_RENDERER_ID}" data-icon="${ICON_LOCAL}">This computer (local speakers)</option>`
+    +devs.map(deviceOption).join('');
+  rendererPicker.refresh();
 }
 function populateServerSelect(devs){
   $('#server').innerHTML='<option value="">Select media server</option>'
-    +devs.map(d=>`<option value="${esc(d.id)}">${esc(d.name)}${d.model?' · '+esc(d.model):''}</option>`).join('');
+    +devs.map(deviceOption).join('');
+  serverPicker.refresh();
 }
+
+// ---------- Device pickers with icons ----------
+// Native <select> options can't show images, so each device <select> gets
+// a custom dropdown on top that shows the device's own UPnP icon (from its
+// description's <iconList>, as the Linn app does). The hidden <select>
+// stays the source of truth: the picker only sets its value and fires
+// 'change', so everything reading $('#server')/$('#renderer') is unchanged.
+const svgIcon=body=>'data:image/svg+xml;utf8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#6b7480" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`);
+const ICON_SERVER=svgIcon('<rect x="4" y="3" width="16" height="7" rx="1.5"/><rect x="4" y="14" width="16" height="7" rx="1.5"/><circle cx="8" cy="6.5" r=".8" fill="#6b7480"/><circle cx="8" cy="17.5" r=".8" fill="#6b7480"/>');
+const ICON_RENDERER=svgIcon('<rect x="6" y="2" width="12" height="20" rx="2"/><circle cx="12" cy="14.5" r="3.5"/><circle cx="12" cy="6.5" r="1.3"/>');
+const ICON_LOCAL=svgIcon('<rect x="4" y="5" width="16" height="11" rx="1.5"/><path d="M2 19h20"/>');
+
+function createDevicePicker(select,fallbackIcon){
+  const root=document.createElement('div');
+  root.className='picker';
+  root.innerHTML='<button type="button" class="picker-btn" aria-haspopup="listbox" aria-expanded="false"></button><ul class="picker-menu hidden" role="listbox" tabindex="-1"></ul>';
+  select.after(root); select.classList.add('picker-source');
+  const btn=root.querySelector('.picker-btn'), menu=root.querySelector('.picker-menu');
+  let active=-1;
+
+  function itemHtml(opt){
+    const icon=opt.value?(opt.dataset.icon||fallbackIcon):'';
+    return (icon?`<img class="picker-icon" alt="" src="${esc(icon)}">`:'<span class="picker-icon"></span>')
+      +`<span class="picker-label">${esc(opt.textContent)}</span>`;
+  }
+  // Unreachable/broken device icons fall back to the generic symbol.
+  function guardIcons(el){el.querySelectorAll('img.picker-icon').forEach(img=>img.addEventListener('error',()=>{img.src=fallbackIcon},{once:true}))}
+  function refresh(){
+    const opt=select.options[select.selectedIndex];
+    btn.innerHTML=opt?itemHtml(opt):'';
+    btn.classList.toggle('placeholder',!select.value);
+    guardIcons(btn);
+  }
+  function setActive(i){
+    const items=menu.children; if(!items.length) return;
+    active=Math.max(0,Math.min(items.length-1,i));
+    [...items].forEach((li,j)=>li.classList.toggle('active-item',j===active));
+    items[active].scrollIntoView({block:'nearest'});
+  }
+  function open(){
+    menu.innerHTML=[...select.options].map((o,i)=>`<li role="option" data-i="${i}" class="${o.value?'':'picker-placeholder'}" aria-selected="${i===select.selectedIndex}">${itemHtml(o)}</li>`).join('');
+    guardIcons(menu);
+    menu.querySelectorAll('li').forEach(li=>{
+      li.onclick=e=>{e.stopPropagation();choose(+li.dataset.i)};
+      li.onmousemove=()=>setActive(+li.dataset.i);
+    });
+    document.querySelectorAll('.picker-menu').forEach(m=>{if(m!==menu)m.classList.add('hidden')});
+    menu.classList.remove('hidden'); btn.setAttribute('aria-expanded','true');
+    setActive(select.selectedIndex);
+  }
+  function close(){menu.classList.add('hidden');btn.setAttribute('aria-expanded','false')}
+  function choose(i){
+    close(); btn.focus();
+    if(i===select.selectedIndex) return;
+    select.selectedIndex=i; refresh();
+    select.dispatchEvent(new Event('change'));
+  }
+  btn.onclick=e=>{e.stopPropagation();menu.classList.contains('hidden')?open():close()};
+  btn.onkeydown=e=>{
+    const isOpen=!menu.classList.contains('hidden');
+    if(!isOpen&&['ArrowDown','ArrowUp','Enter',' '].includes(e.key)){e.preventDefault();open();return}
+    if(!isOpen) return;
+    if(e.key==='ArrowDown'){e.preventDefault();setActive(active+1)}
+    else if(e.key==='ArrowUp'){e.preventDefault();setActive(active-1)}
+    else if(e.key==='Enter'||e.key===' '){e.preventDefault();choose(active)}
+    else if(e.key==='Escape'||e.key==='Tab'){close()}
+  };
+  document.addEventListener('click',close);
+  refresh();
+  return {refresh};
+}
+$(`#renderer option[value="${LOCAL_RENDERER_ID}"]`).dataset.icon=ICON_LOCAL; // the initial HTML option
+const serverPicker=createDevicePicker($('#server'),ICON_SERVER);
+const rendererPicker=createDevicePicker($('#renderer'),ICON_RENDERER);
 
 // Fills in derived fields once per loaded track:
 // - year: plain YYYY pulled out of whatever date string the server sent.
@@ -350,6 +427,7 @@ async function playItem(t){
       await api('/api/control',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({device_id:$('#renderer').value,action:'set_uri',uri:t.resources[0].uri,metadata:t.metadata})});
     }
     state.nowPlayingId=t.id;
+    $('#jumpNowPlaying').disabled=false;
     $('#playing').textContent=t.title;
     $('#playingSub').textContent=`${t.artist} · ${t.album}`;
     $('#npTitle').textContent=t.title;
@@ -359,6 +437,27 @@ async function playItem(t){
     renderAlbums(); // update the play icon on the now-playing track
   }catch(e){log(e.message)}
 }
+
+// ---------- Jump to the now-playing track ----------
+// Scrolls the album list to the current track. If it's hidden by the
+// current filters/search (or the unfiltered-library brake), switch the
+// view to its album first -- like iTunes' "Go to Current Song".
+function jumpToNowPlaying(){
+  const t=state.tracks.find(x=>x.id===state.nowPlayingId);
+  if(!t) return notify('Nothing from the loaded library is playing right now.');
+  const rowSel=`#content [data-item="${CSS.escape(t.id)}"]`;
+  if(!document.querySelector(rowSel)){
+    $('#search').value='';
+    state.filters={album_artist:t.album_artist||'',artist:t.album?'':(t.artist||''),album:t.album||'',year:''};
+    render();
+    document.querySelectorAll('.facets li.active').forEach(li=>li.scrollIntoView({block:'nearest'}));
+  }
+  const row=document.querySelector(rowSel);
+  if(!row) return;
+  row.scrollIntoView({block:'center'});
+  row.classList.remove('flash'); void row.offsetWidth; row.classList.add('flash');
+}
+$('#jumpNowPlaying').onclick=jumpToNowPlaying;
 
 function playNextInPlaylist(){
   const idx=state.currentPlaylist.findIndex(t=>t.id===state.nowPlayingId);
@@ -470,6 +569,7 @@ setInterval(pollTransport,1500);
 
 $('#search').oninput=renderAlbums;
 document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key==='f'){e.preventDefault();$('#search').focus()}});
+document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key==='l'&&state.nowPlayingId){e.preventDefault();jumpToNowPlaying()}});
 
 // ---------- Restore the last scanned library from disk on startup ----------
 updateReadyState();

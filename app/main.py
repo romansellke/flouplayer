@@ -3,6 +3,7 @@ import copy, os, threading, json, time
 import concurrent.futures as cf
 from pathlib import Path
 from typing import Any, Optional
+from urllib.parse import urljoin, urlparse
 import xml.etree.ElementTree as ET
 import upnpclient
 from fastapi import FastAPI, HTTPException
@@ -51,11 +52,34 @@ def find_volume_service(d):
         if "renderingcontrol" in sid or "volume" in sid: return s,"renderingcontrol"
     return None,None
 
+def device_icon(d):
+    """Picks an icon URL from the device description's <iconList> (the
+    icons UPnP control points like the Linn app show for each device).
+    upnpclient already downloaded and kept that XML during discovery, so
+    no extra request is needed. Prefers PNG (often transparent) at a size
+    close to 64px; returns an absolute http(s) URL or None."""
+    root=getattr(d,"_root_xml",None)
+    if root is None: return None
+    dev=next((c for c in root if isinstance(c.tag,str) and local_name(c.tag)=="device"),None)
+    icon_list=next((c for c in (dev if dev is not None else []) if isinstance(c.tag,str) and local_name(c.tag)=="iconList"),None)
+    if icon_list is None: return None
+    best=None; best_score=None
+    for icon in icon_list:
+        f={local_name(c.tag):(c.text or "").strip() for c in icon if isinstance(c.tag,str)}
+        if not f.get("url"): continue
+        try: size=int(f.get("width") or 0)
+        except ValueError: size=0
+        score=(0 if "png" in f.get("mimetype","").lower() else 1, abs((size or 64)-64))
+        if best_score is None or score<best_score: best,best_score=f["url"],score
+    if not best: return None
+    url=urljoin(getattr(d,"_url_base","") or getattr(d,"location",""),best)
+    return url if urlparse(url).scheme in ("http","https") else None
+
 def device_json(key,d):
     sv=[getattr(s,"service_id","") for s in d.services]
     is_server=any("contentdirectory" in x.lower() for x in sv)
     is_renderer=any(x in " ".join(sv).lower() for x in ["avtransport","openhome","playlist"])
-    return {"id":key,"name":getattr(d,"friendly_name",key),"manufacturer":getattr(d,"manufacturer",None),"model":getattr(d,"model_name",None),"server":is_server,"renderer":is_renderer,"services":sv}
+    return {"id":key,"name":getattr(d,"friendly_name",key),"manufacturer":getattr(d,"manufacturer",None),"model":getattr(d,"model_name",None),"server":is_server,"renderer":is_renderer,"icon":device_icon(d),"services":sv}
 
 @app.get("/")
 def index(): return FileResponse(STATIC_DIR/"index.html")
