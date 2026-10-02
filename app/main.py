@@ -1,9 +1,8 @@
 from __future__ import annotations
-import html, socket, threading, json, time
+import copy, os, threading, json, time
 import concurrent.futures as cf
 from pathlib import Path
 from typing import Any, Optional
-from urllib.parse import urlparse
 import xml.etree.ElementTree as ET
 import upnpclient
 from fastapi import FastAPI, HTTPException
@@ -11,8 +10,11 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+# Resolve static files relative to this module, not the current working
+# directory, so the app also works when started from another folder.
+STATIC_DIR=Path(__file__).resolve().parent/"static"
 app=FastAPI(title="Flou Player", version="0.2.0")
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 lock=threading.Lock(); devices:dict[str,Any]={}
 scan_lock=threading.Lock(); scan_state:dict[str,Any]={"running":False,"count":0,"containers":0}
 SCAN_WORKERS=6
@@ -46,7 +48,7 @@ def find_volume_service(d):
         if "openhome" in sid and "volume" in sid: return s,"openhome"
     for s in d.services:
         sid=(getattr(s,"service_id","")+" "+getattr(s,"service_type","")).lower()
-        if "renderingcontrol" in sid or "volume" in sid: return s,"avtransport"
+        if "renderingcontrol" in sid or "volume" in sid: return s,"renderingcontrol"
     return None,None
 
 def device_json(key,d):
@@ -56,7 +58,7 @@ def device_json(key,d):
     return {"id":key,"name":getattr(d,"friendly_name",key),"manufacturer":getattr(d,"manufacturer",None),"model":getattr(d,"model_name",None),"server":is_server,"renderer":is_renderer,"services":sv}
 
 @app.get("/")
-def index(): return FileResponse("app/static/index.html")
+def index(): return FileResponse(STATIC_DIR/"index.html")
 
 @app.get("/api/discover")
 def discover(timeout:int=4):
@@ -79,7 +81,7 @@ def services(device_id:str):
 def get_volume(device_id:str):
     """Read current volume. For Linn/OpenHome devices (kind 'openhome')
     this returns a real dB reading via the Volume service, otherwise
-    (kind 'avtransport') only the standard UPnP 0-100 percentage.
+    (kind 'renderingcontrol') only the standard UPnP 0-100 percentage.
     NOTE: the exact scaling (VolumeMilliDbPerStep) has not been verified
     against real hardware -- if the dB values look obviously wrong,
     please report it."""
@@ -98,7 +100,7 @@ def get_volume(device_id:str):
             return {"kind":"openhome","raw":raw,"max":vmax,"db":round(db,1),"percent":round(100*raw/vmax)}
         v=vol.GetVolume(InstanceID=0,Channel="Master")
         raw=int(v.get("CurrentVolume",0))
-        return {"kind":"avtransport","raw":raw,"max":100,"db":None,"percent":raw}
+        return {"kind":"renderingcontrol","raw":raw,"max":100,"db":None,"percent":raw}
     except Exception as e:
         raise HTTPException(502,f"Could not read volume: {e}")
 
@@ -143,7 +145,23 @@ def list_sources(device_id:str):
             continue
     return {"sources":out}
 
+DIDL_NS="urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/"
+for _prefix,_uri in {"dc":"http://purl.org/dc/elements/1.1/","upnp":"urn:schemas-upnp-org:metadata-1-0/upnp/","dlna":"urn:schemas-dlna-org:metadata-1-0/"}.items():
+    ET.register_namespace(_prefix,_uri)
+
 def local_name(tag): return tag.split('}',1)[-1]
+
+def didl_document(node):
+    """Wraps a single parsed <item> back into a complete DIDL-Lite
+    document, as renderers expect for CurrentURIMetaData. Serialising
+    the bare element instead yields no <DIDL-Lite> root and
+    ElementTree's generic ns0:/ns2: prefixes, which many renderers
+    (Linn/OpenHome among them) don't accept."""
+    node=copy.deepcopy(node)
+    for el in node.iter():
+        if el.tag.startswith("{"+DIDL_NS+"}"): el.tag=local_name(el.tag)
+    root=ET.Element("DIDL-Lite",{"xmlns":DIDL_NS}); root.append(node)
+    return ET.tostring(root,encoding="unicode")
 def child_text(node,name):
     for c in node.iter():
         if local_name(c.tag)==name: return c.text or ""
@@ -179,7 +197,7 @@ def parse_didl(xml):
         for c in n:
             if local_name(c.tag)=="res": resources.append({"uri":c.text or "","protocol":c.attrib.get("protocolInfo",""),"duration":c.attrib.get("duration",""),"sample_rate":c.attrib.get("sampleFrequency",""),"bits_per_sample":c.attrib.get("bitsPerSample",""),"bitrate":c.attrib.get("bitrate","")})
         artist,album_artist=artist_fields(n)
-        out.append({"type":typ,"id":n.attrib.get("id",""),"parent_id":n.attrib.get("parentID",""),"title":child_text(n,"title"),"artist":artist,"album_artist":album_artist,"album":child_text(n,"album"),"genre":child_text(n,"genre"),"date":child_text(n,"date"),"track_number":child_text(n,"originalTrackNumber"),"album_art":child_text(n,"albumArtURI"),"class":child_text(n,"class"),"resources":resources,"metadata":ET.tostring(n,encoding="unicode")})
+        out.append({"type":typ,"id":n.attrib.get("id",""),"parent_id":n.attrib.get("parentID",""),"title":child_text(n,"title"),"artist":artist,"album_artist":album_artist,"album":child_text(n,"album"),"genre":child_text(n,"genre"),"date":child_text(n,"date"),"track_number":child_text(n,"originalTrackNumber"),"album_art":child_text(n,"albumArtURI"),"class":child_text(n,"class"),"resources":resources,"metadata":didl_document(n)})
     return out
 
 def browse_all(s, object_id):
@@ -195,7 +213,9 @@ def browse_all(s, object_id):
         number_returned=int(r.get("NumberReturned",0) or 0)
         total_matches=int(r.get("TotalMatches",0) or 0)
         start+=number_returned
-        if number_returned==0 or start>=total_matches: break
+        # TotalMatches may legitimately be 0 when the server can't compute
+        # it -- then keep paging until a page comes back empty.
+        if number_returned==0 or (total_matches>0 and start>=total_matches): break
     return items
 
 def pick_scan_root(s, root_object_id):
@@ -224,12 +244,17 @@ def load_cached_library():
 def save_cached_library(data):
     # Caching is a convenience, never a reason to fail the request that
     # produced the data -- swallow any disk error.
+    # Write to a temp file and swap it in, so a crash mid-write can't
+    # leave a truncated library.json behind.
+    tmp=CACHE_FILE.with_suffix(".json.tmp")
     try:
         CACHE_DIR.mkdir(parents=True,exist_ok=True)
-        with open(CACHE_FILE,"w",encoding="utf-8") as f:
+        with open(tmp,"w",encoding="utf-8") as f:
             json.dump(data,f)
+        os.replace(tmp,CACHE_FILE)
     except Exception:
-        pass
+        try: tmp.unlink(missing_ok=True)
+        except Exception: pass
 
 @app.get("/api/library/cached")
 def get_cached_library():
@@ -273,12 +298,14 @@ def scan(req: ScanReq):
     s=service(d,["ContentDirectory"])
     if not s: raise HTTPException(400,"No ContentDirectory service present")
 
-    scan_root,scan_root_name=pick_scan_root(s,req.object_id)
-
-    tracks=[]; visited={scan_root}; seen_uris=set()
-    with scan_lock: scan_state.update(running=True,count=0,containers=0)
+    # Only one scan at a time -- they'd share scan_state and the cache file.
+    with scan_lock:
+        if scan_state["running"]: raise HTTPException(409,"A library scan is already running")
+        scan_state.update(running=True,count=0,containers=0)
 
     try:
+        scan_root,scan_root_name=pick_scan_root(s,req.object_id)
+        tracks=[]; visited={scan_root}; seen_uris=set()
         with cf.ThreadPoolExecutor(max_workers=SCAN_WORKERS) as executor:
             pending={executor.submit(browse_all,s,scan_root)}
             while pending:
@@ -322,6 +349,8 @@ def control(req:Control):
     d=devices.get(req.device_id)
     if not d: raise HTTPException(404,"Output device not found")
     av=service(d,["AVTransport"])
+    if not av and req.action in ("play","pause","stop","next","previous","set_uri"):
+        raise HTTPException(400,"No AVTransport service on this device")
     try:
         if req.action=="play": av.Play(InstanceID=0,Speed="1")
         elif req.action=="pause": av.Pause(InstanceID=0)

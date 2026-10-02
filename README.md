@@ -13,7 +13,8 @@ Runs as its own application window -- no browser tab needed.
 
 The first run creates a virtual environment and installs dependencies (needs
 internet access briefly), then opens the app in its own window. Later runs
-skip the install step and start straight away.
+skip the install step and start straight away (it only runs again when
+`requirements.txt` changes).
 
 Your computer and the MinimServer/Linn device must be on the same local
 network (SSDP/UPnP discovery does not cross subnets/VLANs). It doesn't
@@ -53,7 +54,7 @@ specific backend: `PYWEBVIEW_GUI=qt ./run.command` (or `gtk`).
 - Standalone desktop window (via `pywebview`) instead of a browser tab
 - Selection of media server and output device, in a toolbar below the main header
 - **Fast, parallel library scan**: prefers a plain by-folder view (if the server offers one) instead of all the artist/album/genre views at once, and runs the network requests across several threads in parallel instead of one after another
-- **Album Artist → Artist → Album → Year** columns with a correct match count (album count for Album Artist/Artist/Year, track count for Album). Album Artist falls back to the track artist when the server didn't tag a separate album artist, so every album is browsable there, not just tagged compilations.
+- **Album Artist → Artist → Album → Year** columns with a correct match count (album count for Album Artist/Artist/Year, track count for Album). Album Artist shows the tag exactly as delivered by the server -- tracks without an album-artist tag don't appear under any Album Artist entry.
 - **Deduplication** by the actual playback URL (in case server-side duplicates remain despite the by-folder view)
 - Built-in brake: on very large, unfiltered result sets, the app asks you to narrow things down instead of rendering the entire library at once
 - **Now-playing indicator**: the currently playing track shows a ▶ icon instead of its track number and is highlighted
@@ -70,6 +71,7 @@ specific backend: `PYWEBVIEW_GUI=qt ./run.command` (or `gtk`).
 - iTunes-style album-centric view with cover art and a track table
 - Search within the loaded library
 - Play, pause, stop, next, previous and volume via standard UPnP services
+- Albums are grouped by album name **and** album artist, so same-named albums by different artists stay separate
 - Hand a track to the output device and play it
 - Diagnostics view of the services found on each device
 

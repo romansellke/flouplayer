@@ -16,8 +16,15 @@ if [ ! -f .venv/bin/activate ]; then
 fi
 
 source .venv/bin/activate
-python3 -m pip install --upgrade pip >/dev/null
-python3 -m pip install -r requirements.txt
+
+# Only (re)install when requirements.txt changed since the last successful
+# install, so later launches start straight away without network access.
+STAMP=.venv/.requirements-installed
+if ! cmp -s requirements.txt "$STAMP"; then
+  python3 -m pip install --upgrade pip >/dev/null
+  python3 -m pip install -r requirements.txt
+  cp requirements.txt "$STAMP"
+fi
 
 # Standalone desktop window -- no browser tab. See README.md if PyQt5 fails
 # to install on your system.

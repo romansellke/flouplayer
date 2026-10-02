@@ -12,11 +12,11 @@ function isLocal(){return $('#renderer').value===LOCAL_RENDERER_ID}
 function populateRendererSelect(devs){
   $('#renderer').innerHTML='<option value="">Select output device</option>'
     +`<option value="${LOCAL_RENDERER_ID}">This computer (local speakers)</option>`
-    +devs.map(d=>`<option value="${d.id}">${d.name}${d.model?' · '+d.model:''}</option>`).join('');
+    +devs.map(d=>`<option value="${esc(d.id)}">${esc(d.name)}${d.model?' · '+esc(d.model):''}</option>`).join('');
 }
 function populateServerSelect(devs){
   $('#server').innerHTML='<option value="">Select media server</option>'
-    +devs.map(d=>`<option value="${d.id}">${d.name}${d.model?' · '+d.model:''}</option>`).join('');
+    +devs.map(d=>`<option value="${esc(d.id)}">${esc(d.name)}${d.model?' · '+esc(d.model):''}</option>`).join('');
 }
 
 // Fills in derived fields once per loaded track:
@@ -101,12 +101,16 @@ $('#loadLibrary').onclick=async()=>{
     render();
   }catch(e){
     log(e.message);
-    $('#content').innerHTML=`<div class="empty">Failed to load: ${e.message}</div>`;
+    $('#content').innerHTML=`<div class="empty">Failed to load: ${esc(e.message)}</div>`;
   }finally{
     clearInterval(poll);
     btn.textContent=original; btn.disabled=false;
   }
 };
+
+// Albums are told apart by name AND album artist, so e.g. several
+// "Greatest Hits" by different artists don't merge into one.
+function albumKey(t){return (t.album||'Unknown Album')+'\u0001'+(t.album_artist||'')}
 
 function esc(v=''){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function cover(uri){return uri?`style="background-image:url('${esc(uri)}')"`:''}
@@ -158,7 +162,7 @@ function qualityLabel(res){
   if(!res) return '';
   const parts=[];
   if(res.sample_rate) parts.push(`${(parseInt(res.sample_rate)/1000).toFixed(1)}kHz`);
-  if(res.bits_per_sample) parts.push(`${res.bits_per_sample}bit`);
+  if(res.bits_per_sample) parts.push(`${esc(res.bits_per_sample)}bit`);
   if(!parts.length && res.bitrate) parts.push(`${Math.round(parseInt(res.bitrate)*8/1000)}kbps`);
   return parts.join('/');
 }
@@ -223,7 +227,7 @@ function facetColumn(containerId,key,label,countBy){
     const v=t[key];
     if(!v) continue;
     if(!perValue.has(v)) perValue.set(v, countBy==='albums' ? new Set() : 0);
-    if(countBy==='albums') perValue.get(v).add(t.album||'');
+    if(countBy==='albums') perValue.get(v).add(albumKey(t));
     else perValue.set(v, perValue.get(v)+1);
   }
   const countOf=v=>countBy==='albums' ? perValue.get(v).size : perValue.get(v);
@@ -255,16 +259,20 @@ function render(){
   renderAlbums();
 }
 
+// Search only the visible tag fields -- not the raw DIDL XML, URIs or
+// protocol info, which would make terms like "flac" or "http" match
+// every track (and serialising every track per keystroke is slow).
+const SEARCH_FIELDS=['title','artist','album_artist','album','genre','year'];
 function currentlyFiltered(){
-  const q=$('#search').value.toLowerCase();
+  const q=$('#search').value.trim().toLowerCase();
   return state.tracks.filter(t=>FACET_ORDER.every(k=>!state.filters[k]||(t[k]||'')===state.filters[k]))
-                      .filter(t=>!q||JSON.stringify(t).toLowerCase().includes(q));
+                      .filter(t=>!q||SEARCH_FIELDS.some(k=>(t[k]||'').toLowerCase().includes(q)));
 }
 
 function trackRowCells(t,i){
   const playing=t.id===state.nowPlayingId;
   const c=state.columns;
-  let cells=`<td class="n">${playing?'▶':(t.track_number||(i+1))}</td><td class="title">${esc(t.title)}</td>`;
+  let cells=`<td class="n">${playing?'▶':esc(t.track_number||(i+1))}</td><td class="title">${esc(t.title)}</td>`;
   if(c.quality) cells+=`<td class="quality">${qualityLabel(t.resources[0])}</td>`;
   if(c.bitrate) cells+=`<td class="bitrate">${bitrateLabel(t.resources[0])}</td>`;
   if(c.time) cells+=`<td class="time">${esc(t.resources[0]?.duration||'')}</td>`;
@@ -290,14 +298,14 @@ function renderAlbums(){
   }
 
   const groups={};
-  filtered.forEach(t=>{const key=t.album||'Unknown Album';(groups[key]??=[]).push(t)});
+  filtered.forEach(t=>(groups[albumKey(t)]??=[]).push(t));
   Object.values(groups).forEach(list=>list.sort((a,b)=>(parseInt(a.track_number)||0)-(parseInt(b.track_number)||0)||a.title.localeCompare(b.title)));
 
   const orderedEntries=Object.entries(groups).sort(([a],[b])=>a.localeCompare(b));
   state.currentPlaylist=orderedEntries.flatMap(([,ts])=>ts); // used for next/previous track
 
-  const html=orderedEntries.map(([album,ts])=>`
-    <div class="album" data-album="${esc(album)}">
+  const html=orderedEntries.map(([key,ts])=>{const album=ts[0].album||'Unknown Album';return `
+    <div class="album" data-album="${esc(key)}">
       <div class="albuminfo">
         <div class="cover" ${cover(ts[0].album_art)}></div>
         <div>
@@ -309,7 +317,7 @@ function renderAlbums(){
       <table class="tracks"><tbody>
         ${ts.map((t,i)=>trackRowCells(t,i)).join('')}
       </tbody></table>
-    </div>`).join('');
+    </div>`}).join('');
 
   $('#content').innerHTML=html||'<div class="empty">No entries. Did you load the library and check your filters?</div>';
   $('#count').textContent=`${Object.keys(groups).length} albums · ${filtered.length} tracks`;
@@ -325,7 +333,8 @@ function renderAlbums(){
     e.oncontextmenu=ev=>{
       ev.preventDefault();
       const ts=groups[e.dataset.album];
-      if(ts) showMetadata(`Album: ${e.dataset.album}`,formatAlbumMeta(e.dataset.album,ts));
+      const album=ts?.[0].album||'Unknown Album';
+      if(ts) showMetadata(`Album: ${album}`,formatAlbumMeta(album,ts));
     };
   });
 }
@@ -398,7 +407,7 @@ async function refreshVolume(){
   if(isLocal()){
     const audio=$('#localAudio');
     $('#volume').max=100;
-    $('#volume').value=Math.round((audio.volume||1)*100);
+    $('#volume').value=Math.round(audio.volume*100);
     $('#volumeLabel').textContent=`${$('#volume').value}%`;
     return;
   }
