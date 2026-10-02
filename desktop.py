@@ -57,7 +57,12 @@ def main() -> None:
     server_thread.start()
 
     url = f"http://{HOST}:{PORT}"
-    wait_for_server(url)
+    if not wait_for_server(url):
+        # Most likely the port is taken by another program, so the server
+        # thread couldn't bind -- don't open a window onto a blank page.
+        print(f"[Flou Player] The local server didn't start on {url}.")
+        print(f"[Flou Player] Is port {PORT} already in use by another program?")
+        sys.exit(1)
 
     try:
         webview.create_window("Flou Player", url, width=1280, height=820, min_size=(900, 600))

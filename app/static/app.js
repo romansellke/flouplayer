@@ -108,6 +108,10 @@ $('#loadLibrary').onclick=async()=>{
   }
 };
 
+// Albums are told apart by name AND album artist, so e.g. several
+// "Greatest Hits" by different artists don't merge into one.
+function albumKey(t){return (t.album||'Unknown Album')+'\u0001'+(t.album_artist||'')}
+
 function esc(v=''){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function cover(uri){return uri?`style="background-image:url('${esc(uri)}')"`:''}
 
@@ -223,7 +227,7 @@ function facetColumn(containerId,key,label,countBy){
     const v=t[key];
     if(!v) continue;
     if(!perValue.has(v)) perValue.set(v, countBy==='albums' ? new Set() : 0);
-    if(countBy==='albums') perValue.get(v).add(t.album||'');
+    if(countBy==='albums') perValue.get(v).add(albumKey(t));
     else perValue.set(v, perValue.get(v)+1);
   }
   const countOf=v=>countBy==='albums' ? perValue.get(v).size : perValue.get(v);
@@ -294,14 +298,14 @@ function renderAlbums(){
   }
 
   const groups={};
-  filtered.forEach(t=>{const key=t.album||'Unknown Album';(groups[key]??=[]).push(t)});
+  filtered.forEach(t=>(groups[albumKey(t)]??=[]).push(t));
   Object.values(groups).forEach(list=>list.sort((a,b)=>(parseInt(a.track_number)||0)-(parseInt(b.track_number)||0)||a.title.localeCompare(b.title)));
 
   const orderedEntries=Object.entries(groups).sort(([a],[b])=>a.localeCompare(b));
   state.currentPlaylist=orderedEntries.flatMap(([,ts])=>ts); // used for next/previous track
 
-  const html=orderedEntries.map(([album,ts])=>`
-    <div class="album" data-album="${esc(album)}">
+  const html=orderedEntries.map(([key,ts])=>{const album=ts[0].album||'Unknown Album';return `
+    <div class="album" data-album="${esc(key)}">
       <div class="albuminfo">
         <div class="cover" ${cover(ts[0].album_art)}></div>
         <div>
@@ -313,7 +317,7 @@ function renderAlbums(){
       <table class="tracks"><tbody>
         ${ts.map((t,i)=>trackRowCells(t,i)).join('')}
       </tbody></table>
-    </div>`).join('');
+    </div>`}).join('');
 
   $('#content').innerHTML=html||'<div class="empty">No entries. Did you load the library and check your filters?</div>';
   $('#count').textContent=`${Object.keys(groups).length} albums · ${filtered.length} tracks`;
@@ -329,7 +333,8 @@ function renderAlbums(){
     e.oncontextmenu=ev=>{
       ev.preventDefault();
       const ts=groups[e.dataset.album];
-      if(ts) showMetadata(`Album: ${e.dataset.album}`,formatAlbumMeta(e.dataset.album,ts));
+      const album=ts?.[0].album||'Unknown Album';
+      if(ts) showMetadata(`Album: ${album}`,formatAlbumMeta(album,ts));
     };
   });
 }
@@ -402,7 +407,7 @@ async function refreshVolume(){
   if(isLocal()){
     const audio=$('#localAudio');
     $('#volume').max=100;
-    $('#volume').value=Math.round((audio.volume||1)*100);
+    $('#volume').value=Math.round(audio.volume*100);
     $('#volumeLabel').textContent=`${$('#volume').value}%`;
     return;
   }

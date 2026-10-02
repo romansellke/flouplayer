@@ -1,9 +1,8 @@
 from __future__ import annotations
-import copy, html, socket, threading, json, time
+import copy, os, threading, json, time
 import concurrent.futures as cf
 from pathlib import Path
 from typing import Any, Optional
-from urllib.parse import urlparse
 import xml.etree.ElementTree as ET
 import upnpclient
 from fastapi import FastAPI, HTTPException
@@ -11,8 +10,11 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+# Resolve static files relative to this module, not the current working
+# directory, so the app also works when started from another folder.
+STATIC_DIR=Path(__file__).resolve().parent/"static"
 app=FastAPI(title="Flou Player", version="0.2.0")
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 lock=threading.Lock(); devices:dict[str,Any]={}
 scan_lock=threading.Lock(); scan_state:dict[str,Any]={"running":False,"count":0,"containers":0}
 SCAN_WORKERS=6
@@ -46,7 +48,7 @@ def find_volume_service(d):
         if "openhome" in sid and "volume" in sid: return s,"openhome"
     for s in d.services:
         sid=(getattr(s,"service_id","")+" "+getattr(s,"service_type","")).lower()
-        if "renderingcontrol" in sid or "volume" in sid: return s,"avtransport"
+        if "renderingcontrol" in sid or "volume" in sid: return s,"renderingcontrol"
     return None,None
 
 def device_json(key,d):
@@ -56,7 +58,7 @@ def device_json(key,d):
     return {"id":key,"name":getattr(d,"friendly_name",key),"manufacturer":getattr(d,"manufacturer",None),"model":getattr(d,"model_name",None),"server":is_server,"renderer":is_renderer,"services":sv}
 
 @app.get("/")
-def index(): return FileResponse("app/static/index.html")
+def index(): return FileResponse(STATIC_DIR/"index.html")
 
 @app.get("/api/discover")
 def discover(timeout:int=4):
@@ -79,7 +81,7 @@ def services(device_id:str):
 def get_volume(device_id:str):
     """Read current volume. For Linn/OpenHome devices (kind 'openhome')
     this returns a real dB reading via the Volume service, otherwise
-    (kind 'avtransport') only the standard UPnP 0-100 percentage.
+    (kind 'renderingcontrol') only the standard UPnP 0-100 percentage.
     NOTE: the exact scaling (VolumeMilliDbPerStep) has not been verified
     against real hardware -- if the dB values look obviously wrong,
     please report it."""
@@ -98,7 +100,7 @@ def get_volume(device_id:str):
             return {"kind":"openhome","raw":raw,"max":vmax,"db":round(db,1),"percent":round(100*raw/vmax)}
         v=vol.GetVolume(InstanceID=0,Channel="Master")
         raw=int(v.get("CurrentVolume",0))
-        return {"kind":"avtransport","raw":raw,"max":100,"db":None,"percent":raw}
+        return {"kind":"renderingcontrol","raw":raw,"max":100,"db":None,"percent":raw}
     except Exception as e:
         raise HTTPException(502,f"Could not read volume: {e}")
 
@@ -242,12 +244,17 @@ def load_cached_library():
 def save_cached_library(data):
     # Caching is a convenience, never a reason to fail the request that
     # produced the data -- swallow any disk error.
+    # Write to a temp file and swap it in, so a crash mid-write can't
+    # leave a truncated library.json behind.
+    tmp=CACHE_FILE.with_suffix(".json.tmp")
     try:
         CACHE_DIR.mkdir(parents=True,exist_ok=True)
-        with open(CACHE_FILE,"w",encoding="utf-8") as f:
+        with open(tmp,"w",encoding="utf-8") as f:
             json.dump(data,f)
+        os.replace(tmp,CACHE_FILE)
     except Exception:
-        pass
+        try: tmp.unlink(missing_ok=True)
+        except Exception: pass
 
 @app.get("/api/library/cached")
 def get_cached_library():
@@ -291,12 +298,14 @@ def scan(req: ScanReq):
     s=service(d,["ContentDirectory"])
     if not s: raise HTTPException(400,"No ContentDirectory service present")
 
-    scan_root,scan_root_name=pick_scan_root(s,req.object_id)
-
-    tracks=[]; visited={scan_root}; seen_uris=set()
-    with scan_lock: scan_state.update(running=True,count=0,containers=0)
+    # Only one scan at a time -- they'd share scan_state and the cache file.
+    with scan_lock:
+        if scan_state["running"]: raise HTTPException(409,"A library scan is already running")
+        scan_state.update(running=True,count=0,containers=0)
 
     try:
+        scan_root,scan_root_name=pick_scan_root(s,req.object_id)
+        tracks=[]; visited={scan_root}; seen_uris=set()
         with cf.ThreadPoolExecutor(max_workers=SCAN_WORKERS) as executor:
             pending={executor.submit(browse_all,s,scan_root)}
             while pending:
@@ -340,6 +349,8 @@ def control(req:Control):
     d=devices.get(req.device_id)
     if not d: raise HTTPException(404,"Output device not found")
     av=service(d,["AVTransport"])
+    if not av and req.action in ("play","pause","stop","next","previous","set_uri"):
+        raise HTTPException(400,"No AVTransport service on this device")
     try:
         if req.action=="play": av.Play(InstanceID=0,Speed="1")
         elif req.action=="pause": av.Pause(InstanceID=0)
