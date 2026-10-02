@@ -133,7 +133,7 @@ function showToast(msg){
   el.textContent=msg;
   el.classList.remove('hidden');
   clearTimeout(toastTimer);
-  toastTimer=setTimeout(()=>el.classList.add('hidden'),3200);
+  toastTimer=setTimeout(()=>el.classList.add('hidden'),Math.max(3200,msg.length*55));
 }
 function notify(msg){ log(msg); showToast(msg); }
 
@@ -420,13 +420,49 @@ function renderAlbums(){
   });
 }
 
+// ---------- Local playback: pick a resource the built-in engine can play ----------
+// Servers like MinimServer offer several <res> variants per track (the
+// original file plus transcoded streams). The app window's web engine (Qt
+// WebEngine from PyPI) plays FLAC, WAV, MP3 and Ogg, but not AAC/ALAC
+// (.m4a), DSD, AIFF or raw PCM streams (audio/L16) -- and it doesn't
+// recognise MIME names like "audio/x-flac" that servers commonly use, so
+// they're normalised before asking canPlayType().
+const MIME_ALIASES={'audio/x-flac':'audio/flac','audio/x-wav':'audio/wav','audio/wave':'audio/wav','audio/x-ogg':'audio/ogg','audio/x-mp3':'audio/mpeg','audio/mp3':'audio/mpeg'};
+const LOCAL_UNPLAYABLE=/^audio\/(mp4|x-m4a|m4a|aac|x-aac|l16|l24|l8|x-dsf|x-dff|dsd|x-dsd|aiff|x-aiff)\b/;
+function resourceMime(res){return ((res?.protocol||'').split(':')[2]||'').trim().toLowerCase()}
+function localPlayScore(res){
+  const mime=resourceMime(res);
+  if(!mime||mime==='*') return 1; // unknown: worth a try
+  const norm=MIME_ALIASES[mime.split(';')[0]]||mime;
+  if(LOCAL_UNPLAYABLE.test(norm)) return 0;
+  const c=$('#localAudio').canPlayType(norm);
+  return c==='probably'?3:c==='maybe'?2:0;
+}
+function localCandidates(t){
+  return (t.resources||[]).map((r,i)=>({r,i,score:localPlayScore(r)}))
+    .filter(x=>x.score>0).sort((a,b)=>b.score-a.score||a.i-b.i).map(x=>x.r);
+}
+function formatName(t){
+  const mimes=[...new Set((t.resources||[]).map(resourceMime).filter(Boolean))];
+  return mimes.length?mimes.join(', '):'unknown format';
+}
+async function playLocal(t){
+  const candidates=localCandidates(t);
+  if(!candidates.length) throw Error(`"${t.title}" can't be played on this computer's speakers: its format (${formatName(t)}) isn't supported by the built-in player. Play it on the output device instead.`);
+  const audio=$('#localAudio');
+  let lastErr;
+  for(const res of candidates){ // fall back to the next variant if one fails to load
+    try{audio.src=res.uri;await audio.play();return}
+    catch(e){lastErr=e;log(`Local playback failed for ${resourceMime(res)||'?'} ${res.uri}: ${e.message}`)}
+  }
+  throw Error(`"${t.title}" couldn't be played on this computer's speakers (${formatName(t)}): ${lastErr?.message||'unknown error'}`);
+}
+
 async function playItem(t){
   if(!$('#renderer').value||!t?.resources?.[0]) return notify('Select an output device above before playing a track.');
   try{
     if(isLocal()){
-      const audio=$('#localAudio');
-      audio.src=t.resources[0].uri;
-      await audio.play();
+      await playLocal(t);
     }else{
       await api('/api/control',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({device_id:$('#renderer').value,action:'set_uri',uri:t.resources[0].uri,metadata:t.metadata})});
     }
@@ -439,7 +475,7 @@ async function playItem(t){
     $('#npCover').style.backgroundImage=t.album_art?`url('${t.album_art}')`:'';
     $('#status').textContent='Now playing';
     renderAlbums(); // update the play icon on the now-playing track
-  }catch(e){log(e.message)}
+  }catch(e){notify(e.message)}
 }
 
 // ---------- Jump to the now-playing track ----------
@@ -464,9 +500,13 @@ function jumpToNowPlaying(){
 $('#jumpNowPlaying').onclick=jumpToNowPlaying;
 
 function playNextInPlaylist(){
-  const idx=state.currentPlaylist.findIndex(t=>t.id===state.nowPlayingId);
-  if(idx<0||idx+1>=state.currentPlaylist.length) return;
-  playItem(state.currentPlaylist[idx+1]);
+  const list=state.currentPlaylist;
+  const idx=list.findIndex(t=>t.id===state.nowPlayingId);
+  if(idx<0) return;
+  // On the local speakers, skip tracks the built-in player can't play
+  // (e.g. .m4a) instead of stopping there.
+  const next=list.slice(idx+1).find(t=>!isLocal()||localCandidates(t).length);
+  if(next) playItem(next);
 }
 function playPreviousInPlaylist(){
   const idx=state.currentPlaylist.findIndex(t=>t.id===state.nowPlayingId);
