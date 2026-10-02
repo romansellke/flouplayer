@@ -124,6 +124,10 @@ main{flex:1 1 600px;min-width:320px;min-height:0;display:flex;flex-direction:col
 .colmenu input{margin-right:6px}
 
 .album{display:flex;flex-wrap:wrap;border-bottom:1px solid #b8b8b8}
+/* Skip layout/paint for albums outside the visible area -- keeps long
+   lists (the whole library, or a far jump to the playing track) fast.
+   The intrinsic size is only an estimate until an album is rendered. */
+.album{content-visibility:auto;contain-intrinsic-size:1px 250px}
 .albuminfo{flex:0 0 210px;width:210px;display:flex;gap:9px;padding:9px;background:#fafafa;border-right:1px solid #ddd}
 .cover,.bigcover{background:#d5d0be center/cover no-repeat;border:1px solid #777;border-radius:3px}
 .cover{flex:0 0 88px;width:88px;height:88px}
@@ -181,3 +185,4 @@ main{flex:1 1 600px;min-width:320px;min-height:0;display:flex;flex-direction:col
 .modal-close:hover{color:#000}
 #metaTitle{margin:0 0 12px;font-size:14px;padding-right:24px}
 #metaBody{font:11px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;white-space:pre-wrap;word-break:break-word;margin:0;color:#222}
+.sentinel{height:1px}

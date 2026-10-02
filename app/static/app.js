@@ -1,7 +1,9 @@
 const $=s=>document.querySelector(s);
 const state={devices:[],tracks:[],filters:{album_artist:'',artist:'',album:'',year:''},nowPlayingId:null,currentPlaylist:[]};
 const FACET_ORDER=['album_artist','artist','album','year'];
-const MAX_UNFILTERED_TRACKS=1500; // brake: only render once the selection is small enough
+// The album list is rendered in chunks as you scroll, so even the whole
+// unfiltered library can be shown without making the window sluggish.
+const ALBUM_CHUNK=40;
 const LOCAL_RENDERER_ID='__local__';
 
 const log=x=>{$('#log').textContent=typeof x==='string'?x:JSON.stringify(x,null,2)};
@@ -280,7 +282,7 @@ function buildColumnMenu(){
   menu.querySelectorAll('input').forEach(cb=>cb.onchange=()=>{
     state.columns[cb.dataset.col]=cb.checked;
     saveColumnPrefs();
-    renderAlbums();
+    renderAlbums(true);
   });
 }
 $('#colToggle').onclick=e=>{e.stopPropagation();buildColumnMenu();$('#colMenu').classList.toggle('hidden')};
@@ -353,7 +355,7 @@ function currentlyFiltered(){
 function trackRowCells(t,i){
   const playing=t.id===state.nowPlayingId;
   const c=state.columns;
-  let cells=`<td class="n">${playing?'▶':esc(t.track_number||(i+1))}</td><td class="title">${esc(t.title)}</td>`;
+  let cells=`<td class="n" data-n="${esc(t.track_number||(i+1))}">${playing?'▶':esc(t.track_number||(i+1))}</td><td class="title">${esc(t.title)}</td>`;
   if(c.quality) cells+=`<td class="quality">${qualityLabel(t.resources[0])}</td>`;
   if(c.bitrate) cells+=`<td class="bitrate">${bitrateLabel(t.resources[0])}</td>`;
   if(c.time) cells+=`<td class="time">${esc(t.resources[0]?.duration||'')}</td>`;
@@ -364,28 +366,13 @@ function trackRowCells(t,i){
   return `<tr class="clickable${playing?' playing':''}" data-item="${esc(t.id)}">${cells}</tr>`;
 }
 
-function renderAlbums(){
-  const filtered=currentlyFiltered();
-  const anyFilterActive=FACET_ORDER.some(k=>state.filters[k])||$('#search').value.trim();
+// state.view: what the album list currently shows -- all album groups in
+// order (rendered chunk by chunk), plus a lookup of the listed tracks.
+state.view={entries:[],groups:{},byId:new Map(),rendered:0};
 
-  // Brake: on very large libraries, don't dump the whole unfiltered
-  // library into the DOM (that makes the page noticeably sluggish) --
-  // ask the user to narrow it down instead.
-  if(!anyFilterActive && filtered.length>MAX_UNFILTERED_TRACKS){
-    $('#content').innerHTML=`<div class="empty">${filtered.length} tracks in total -- please choose an Album Artist/Artist/Album on the left, or search above, to show the album list.</div>`;
-    $('#count').textContent=`${filtered.length} tracks (unfiltered)`;
-    state.currentPlaylist=[];
-    return;
-  }
-
-  const groups={};
-  filtered.forEach(t=>(groups[albumKey(t)]??=[]).push(t));
-  Object.values(groups).forEach(list=>list.sort((a,b)=>(parseInt(a.track_number)||0)-(parseInt(b.track_number)||0)||a.title.localeCompare(b.title)));
-
-  const orderedEntries=Object.entries(groups).sort(([a],[b])=>a.localeCompare(b));
-  state.currentPlaylist=orderedEntries.flatMap(([,ts])=>ts); // used for next/previous track
-
-  const html=orderedEntries.map(([key,ts])=>{const album=ts[0].album||'Unknown Album';return `
+function albumHtml([key,ts]){
+  const album=ts[0].album||'Unknown Album';
+  return `
     <div class="album" data-album="${esc(key)}">
       <div class="albuminfo">
         <div class="cover" ${cover(ts[0].album_art)}></div>
@@ -398,27 +385,95 @@ function renderAlbums(){
       <table class="tracks"><tbody>
         ${ts.map((t,i)=>trackRowCells(t,i)).join('')}
       </tbody></table>
-    </div>`}).join('');
-
-  $('#content').innerHTML=html||'<div class="empty">No entries. Did you load the library and check your filters?</div>';
-  $('#count').textContent=`${Object.keys(groups).length} albums · ${filtered.length} tracks`;
-  document.querySelectorAll('[data-item]').forEach(e=>{
-    e.ondblclick=()=>playItem(filtered.find(x=>x.id===e.dataset.item));
-    e.oncontextmenu=ev=>{
-      ev.preventDefault(); ev.stopPropagation();
-      const t=filtered.find(x=>x.id===e.dataset.item);
-      if(t) showMetadata(`Track: ${t.title}`,formatTrackMeta(t));
-    };
-  });
-  document.querySelectorAll('.album').forEach(e=>{
-    e.oncontextmenu=ev=>{
-      ev.preventDefault();
-      const ts=groups[e.dataset.album];
-      const album=ts?.[0].album||'Unknown Album';
-      if(ts) showMetadata(`Album: ${album}`,formatAlbumMeta(album,ts));
-    };
-  });
+    </div>`;
 }
+
+// Appends the next `count` albums in front of the sentinel element.
+function renderMoreAlbums(count=ALBUM_CHUNK){
+  const v=state.view, sentinel=$('#albumSentinel');
+  if(!sentinel||v.rendered>=v.entries.length) return false;
+  const next=v.entries.slice(v.rendered,v.rendered+count);
+  sentinel.insertAdjacentHTML('beforebegin',next.map(albumHtml).join(''));
+  v.rendered+=next.length;
+  if(v.rendered>=v.entries.length) sentinel.remove();
+  return true;
+}
+// Keep adding chunks while the sentinel is within reach of the visible area.
+function fillAlbums(){
+  const c=$('#content');
+  let s;
+  while((s=$('#albumSentinel')) && s.getBoundingClientRect().top < c.getBoundingClientRect().bottom+1500){
+    if(!renderMoreAlbums()) break;
+  }
+}
+const albumObserver=new IntersectionObserver(es=>{if(es.some(e=>e.isIntersecting)) fillAlbums()},{root:$('#content'),rootMargin:'1500px'});
+
+// keep=true re-renders in place (same albums rendered, same scroll
+// position) -- used when only the look changes, e.g. the play marker.
+function renderAlbums(keep=false){
+  const c=$('#content');
+  const prevRendered=keep?state.view.rendered:0, prevScroll=keep?c.scrollTop:0;
+  const filtered=currentlyFiltered();
+
+  const groups={};
+  filtered.forEach(t=>(groups[albumKey(t)]??=[]).push(t));
+  Object.values(groups).forEach(list=>list.sort((a,b)=>(parseInt(a.track_number)||0)-(parseInt(b.track_number)||0)||a.title.localeCompare(b.title)));
+  const entries=Object.entries(groups).sort(([a],[b])=>a.localeCompare(b));
+  state.currentPlaylist=entries.flatMap(([,ts])=>ts); // used for next/previous track
+  state.view={entries,groups,byId:new Map(filtered.map(t=>[t.id,t])),rendered:0};
+
+  $('#count').textContent=`${entries.length} albums · ${filtered.length} tracks`;
+  albumObserver.disconnect();
+  if(!entries.length){
+    c.innerHTML='<div class="empty">No entries. Did you load the library and check your filters?</div>';
+    return;
+  }
+  c.innerHTML='<div id="albumSentinel" class="sentinel"></div>';
+  renderMoreAlbums(Math.max(prevRendered,ALBUM_CHUNK));
+  c.scrollTop=prevScroll;
+  fillAlbums();
+  if($('#albumSentinel')) albumObserver.observe($('#albumSentinel'));
+}
+
+// Renders further chunks until the given track's row exists (if it's in
+// the current view at all) and returns that row.
+function ensureTrackRendered(id){
+  const v=state.view;
+  if(!v.byId.has(id)) return null;
+  const idx=v.entries.findIndex(([,ts])=>ts.some(t=>t.id===id));
+  if(idx>=v.rendered) renderMoreAlbums(idx+1-v.rendered+ALBUM_CHUNK); // all at once, plus a little beyond
+  return document.querySelector(`#content [data-item="${CSS.escape(id)}"]`);
+}
+
+// Moves the ▶ marker between rows without re-rendering the list.
+function markNowPlaying(prevId,newId){
+  const row=id=>id&&document.querySelector(`#content [data-item="${CSS.escape(id)}"]`);
+  const prev=row(prevId), next=row(newId);
+  if(prev){prev.classList.remove('playing');const n=prev.querySelector('td.n');n.textContent=n.dataset.n}
+  if(next){next.classList.add('playing');next.querySelector('td.n').textContent='▶'}
+}
+
+// One set of handlers for all (also later-rendered) rows and albums.
+$('#content').addEventListener('dblclick',e=>{
+  const tr=e.target.closest('[data-item]');
+  if(tr) playItem(state.view.byId.get(tr.dataset.item));
+});
+$('#content').addEventListener('contextmenu',e=>{
+  const tr=e.target.closest('[data-item]');
+  if(tr){
+    e.preventDefault();
+    const t=state.view.byId.get(tr.dataset.item);
+    if(t) showMetadata(`Track: ${t.title}`,formatTrackMeta(t));
+    return;
+  }
+  const al=e.target.closest('.album');
+  if(al){
+    e.preventDefault();
+    const ts=state.view.groups[al.dataset.album];
+    const album=ts?.[0].album||'Unknown Album';
+    if(ts) showMetadata(`Album: ${album}`,formatAlbumMeta(album,ts));
+  }
+});
 
 // ---------- Local playback: pick a resource the built-in engine can play ----------
 // Servers like MinimServer offer several <res> variants per track (the
@@ -438,9 +493,18 @@ function localPlayScore(res){
   const c=$('#localAudio').canPlayType(norm);
   return c==='probably'?3:c==='maybe'?2:0;
 }
+// Direct variants first; as a last resort the backend re-encodes the
+// original file to FLAC (/api/transcode) -- that's how .m4a (AAC/ALAC)
+// plays. Raw PCM streams (audio/L16) can't be transcoded: they carry no
+// format header ffmpeg could read.
+const RAW_PCM=/^audio\/l(8|16|20|24)\b/;
 function localCandidates(t){
-  return (t.resources||[]).map((r,i)=>({r,i,score:localPlayScore(r)}))
+  const res=t.resources||[];
+  const direct=res.map((r,i)=>({r,i,score:localPlayScore(r)}))
     .filter(x=>x.score>0).sort((a,b)=>b.score-a.score||a.i-b.i).map(x=>x.r);
+  const src=res.find(r=>r.uri&&!RAW_PCM.test(resourceMime(r)));
+  if(src) direct.push({...src,uri:`/api/transcode?url=${encodeURIComponent(src.uri)}`,protocol:'http-get:*:audio/flac:*',transcoded:true});
+  return direct;
 }
 function formatName(t){
   const mimes=[...new Set((t.resources||[]).map(resourceMime).filter(Boolean))];
@@ -452,8 +516,13 @@ async function playLocal(t){
   const audio=$('#localAudio');
   let lastErr;
   for(const res of candidates){ // fall back to the next variant if one fails to load
-    try{audio.src=res.uri;await audio.play();return}
-    catch(e){lastErr=e;log(`Local playback failed for ${resourceMime(res)||'?'} ${res.uri}: ${e.message}`)}
+    try{
+      // Transcoded streams don't announce their length; use the server's.
+      state.localDurationHint=parseClock(res.duration||'');
+      audio.src=res.uri;await audio.play();
+      if(res.transcoded) log(`Playing "${t.title}" via transcoding to FLAC (${formatName(t)} isn't supported directly; seeking is not possible).`);
+      return;
+    }catch(e){lastErr=e;log(`Local playback failed for ${resourceMime(res)||'?'} ${res.uri}: ${e.message}`)}
   }
   throw Error(`"${t.title}" couldn't be played on this computer's speakers (${formatName(t)}): ${lastErr?.message||'unknown error'}`);
 }
@@ -466,6 +535,7 @@ async function playItem(t){
     }else{
       await api('/api/control',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({device_id:$('#renderer').value,action:'set_uri',uri:t.resources[0].uri,metadata:t.metadata})});
     }
+    const prevId=state.nowPlayingId;
     state.nowPlayingId=t.id;
     $('#jumpNowPlaying').disabled=false;
     $('#playing').textContent=t.title;
@@ -474,25 +544,24 @@ async function playItem(t){
     $('#npArtist').textContent=t.artist;
     $('#npCover').style.backgroundImage=t.album_art?`url('${t.album_art}')`:'';
     $('#status').textContent='Now playing';
-    renderAlbums(); // update the play icon on the now-playing track
+    markNowPlaying(prevId,t.id); // move the play icon to the now-playing track
   }catch(e){notify(e.message)}
 }
 
 // ---------- Jump to the now-playing track ----------
-// Scrolls the album list to the current track. If it's hidden by the
-// current filters/search (or the unfiltered-library brake), switch the
+// Scrolls the album list to the current track (rendering further chunks
+// if needed). If it's hidden by the current filters/search, switch the
 // view to its album first -- like iTunes' "Go to Current Song".
 function jumpToNowPlaying(){
   const t=state.tracks.find(x=>x.id===state.nowPlayingId);
   if(!t) return notify('Nothing from the loaded library is playing right now.');
-  const rowSel=`#content [data-item="${CSS.escape(t.id)}"]`;
-  if(!document.querySelector(rowSel)){
+  if(!state.view.byId.has(t.id)){
     $('#search').value='';
     state.filters={album_artist:t.album_artist||'',artist:t.album?'':(t.artist||''),album:t.album||'',year:''};
     render();
     document.querySelectorAll('.facets li.active').forEach(li=>li.scrollIntoView({block:'nearest'}));
   }
-  const row=document.querySelector(rowSel);
+  const row=ensureTrackRendered(t.id);
   if(!row) return;
   row.scrollIntoView({block:'center'});
   row.classList.remove('flash'); void row.offsetWidth; row.classList.add('flash');
@@ -585,7 +654,8 @@ function fmtClock(sec){sec=Math.max(0,Math.round(sec||0));const m=Math.floor(sec
 const localAudioEl=$('#localAudio');
 localAudioEl.addEventListener('timeupdate',()=>{
   if(!isLocal()) return;
-  $('#elapsed').textContent = localAudioEl.duration ? `${fmtClock(localAudioEl.currentTime)} / ${fmtClock(localAudioEl.duration)}` : '';
+  const d=localAudioEl.duration, dur=Number.isFinite(d)&&d>0?d:state.localDurationHint;
+  $('#elapsed').textContent = dur ? `${fmtClock(localAudioEl.currentTime)} / ${fmtClock(dur)}` : fmtClock(localAudioEl.currentTime);
 });
 localAudioEl.addEventListener('ended',()=>{ if(isLocal()) playNextInPlaylist() });
 

@@ -1,6 +1,8 @@
 fastapi==0.116.1
 uvicorn[standard]==0.35.0
 upnpclient==2.0.3
+# Transcodes AAC/ALAC (.m4a) etc. to FLAC for local playback; bundles ffmpeg.
+av>=12
 
 # Desktop window (no browser tab needed) -- see desktop.py.
 # pywebview needs a Qt or GTK backend to actually render web content.
