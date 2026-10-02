@@ -13,7 +13,7 @@ Flou Player runs on Linux (tested target: Linux Mint).
 
 This builds Flou Player once into a self-contained app (Python, Qt and all
 dependencies bundled -- needs internet access for the build, takes a few
-minutes and about 400 MB of disk space) and adds **Flou Player** to your
+minutes and about 500 MB of disk space) and adds **Flou Player** to your
 application menu with its icon. From then on, start it from the menu like
 any other app: no terminal, no Python setup.
 
@@ -101,7 +101,7 @@ include that file when reporting the problem.
 - **Fast, parallel library scan**: prefers a plain by-folder view (if the server offers one) instead of all the artist/album/genre views at once, and runs the network requests across several threads in parallel instead of one after another
 - **Album Artist → Artist → Album → Year** columns with a correct match count (album count for Album Artist/Artist/Year, track count for Album). Album Artist shows the tag exactly as delivered by the server -- tracks without an album-artist tag don't appear under any Album Artist entry.
 - **Deduplication** by the actual playback URL (in case server-side duplicates remain despite the by-folder view)
-- Built-in brake: on very large, unfiltered result sets, the app asks you to narrow things down instead of rendering the entire library at once
+- **All albums at a glance**: with nothing selected in the column browser, the whole library is listed; the album list is built in chunks as you scroll, so even very large libraries stay responsive
 - **Now-playing indicator**: the currently playing track shows a ▶ icon instead of its track number and is highlighted
 - **Jump to now playing**: the "▶ Now Playing" button above the album list (or Ctrl/⌘+L) scrolls to the current track and highlights it; if it's hidden by the current filters or search, the view switches to its album first
 - **Auto-advance**: once a track finishes, the next one from the currently displayed track list starts automatically (detected via position polling; manually stopping playback does not trigger this)
@@ -110,7 +110,7 @@ include that file when reporting the problem.
 - **Finer volume control**: prefers the OpenHome Volume service (typical for Linn devices) with a real dB readout; falls back to the standard UPnP 0-100% range if unavailable. **Not verified against real hardware -- the dB scaling may need adjusting.**
 - **Persistent library cache**: the scanned library is saved to disk (`~/.cache/flou_player/library.json`) and reloaded automatically on startup -- no need to rescan every time you open the app. Click "Load library" whenever you want to refresh it (e.g. after adding new music).
 - Clearly distinguishable controls: filled blue buttons, white dropdowns with an arrow, text fields with a search icon
-- **Local playback**: the output device dropdown always includes "This computer (local speakers)" -- picking it plays audio directly through the laptop's own sound output (via the app window's built-in HTML5 audio, no UPnP renderer needed). Useful for testing or listening without the Majik DSM4. Note: codec support depends on the underlying web engine (Qt WebEngine on Linux) -- common formats (MP3/AAC/WAV) work reliably; FLAC support can vary by system.
+- **Local playback**: the output device dropdown always includes "This computer (local speakers)" -- picking it plays audio directly through the laptop's own sound output (via the app window's built-in HTML5 audio, no UPnP renderer needed). Useful for testing or listening without the Majik DSM4. FLAC (incl. hi-res), WAV, MP3 and Ogg play directly. Formats the built-in web engine (Qt WebEngine) can't decode itself -- AAC/ALAC (`.m4a`), and others ffmpeg can read -- are converted to FLAC on the fly by the app (via PyAV/ffmpeg; lossless for ALAC, hi-res stays hi-res). Seeking isn't possible within such converted tracks. Raw PCM streams (`audio/L16`) can't be played locally. If the server offers several variants of a track, the app picks one it can play directly; auto-advance skips tracks it can't play at all.
 - **Selectable track-list columns**: a "Columns" button above the track list lets you toggle Quality/Time/Artist/Album Artist/Genre/Year on or off; the choice is remembered between launches (stored in the app window's web profile under `~/.local/share/flou-player/webview`).
 - **Scrollable track list**: the header, toolbar, column browser and sidebars stay fixed, only the album/track list scrolls (like the iTunes original)
 - Responsive layout: sidebars hide on narrow windows, columns stack on very narrow windows
