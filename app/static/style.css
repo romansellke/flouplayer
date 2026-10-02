@@ -7,7 +7,9 @@
 html,body{margin:0}
 body{font:12px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#222;background:#fff}
 
-.app{display:flex;flex-direction:column;height:100vh;background:#fff}
+/* The window itself never scrolls -- only #content does (see Workspace). */
+html,body{height:100%;overflow:hidden}
+.app{display:flex;flex-direction:column;height:100vh;overflow:hidden;background:#fff}
 
 /* ---------- Header ---------- */
 header{display:flex;flex-wrap:wrap;gap:13px;align-items:center;padding:9px 12px;background:linear-gradient(#fafafa,#c9c9c9);border-bottom:1px solid #888}
@@ -58,13 +60,15 @@ button.btn{
    flex:1 + min-height:0, otherwise flex children grow beyond their
    space instead of scrolling. Header, sidebars and the column browser
    stay visibly fixed this way, only the track list scrolls -- like the
-   iTunes original. */
-.workspace{display:flex;flex-wrap:wrap;flex:1 1 auto;min-height:0}
+   iTunes original. No flex-wrap here: a wrapping flex container sizes
+   its rows to their content instead of the available height, which
+   lets the album list grow to full length and scroll the whole page. */
+.workspace{display:flex;flex:1 1 auto;min-height:0;overflow:hidden}
 .active{background:var(--accent) !important;color:#fff}
 
 main{flex:1 1 600px;min-width:320px;min-height:0;display:flex;flex-direction:column}
 .facets{display:flex;flex-wrap:wrap;flex:0 0 auto;border-bottom:1px solid #888}
-.facets>div{flex:1 1 200px;min-width:150px;max-height:240px;overflow:auto;border-right:1px solid #aaa}
+.facets>div{flex:1 1 200px;min-width:150px;max-height:min(240px,30vh);overflow:auto;border-right:1px solid #aaa}
 .facets b{display:block;text-align:center;padding:6px;background:linear-gradient(#fff,#d6d6d6);position:sticky;top:0;font-size:11px;letter-spacing:.03em;text-transform:uppercase;color:#555}
 .facets ul{list-style:none;padding:3px 0;margin:0}
 .facets li{padding:3px 8px;cursor:pointer;transition:background .1s ease;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -127,8 +131,8 @@ main{flex:1 1 600px;min-width:320px;min-height:0;display:flex;flex-direction:col
   .now{display:none}
 }
 @media (max-width:640px){
-  .facets{flex-direction:column}
-  .facets>div{max-height:140px}
+  /* 2x2 column browser, kept short so the album list keeps most of the height */
+  .facets>div{flex-basis:45%;max-height:110px}
   .albuminfo{flex-basis:100%;width:100%}
 }
 
