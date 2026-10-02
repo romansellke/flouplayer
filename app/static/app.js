@@ -350,6 +350,7 @@ async function playItem(t){
       await api('/api/control',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({device_id:$('#renderer').value,action:'set_uri',uri:t.resources[0].uri,metadata:t.metadata})});
     }
     state.nowPlayingId=t.id;
+    $('#jumpNowPlaying').disabled=false;
     $('#playing').textContent=t.title;
     $('#playingSub').textContent=`${t.artist} · ${t.album}`;
     $('#npTitle').textContent=t.title;
@@ -359,6 +360,27 @@ async function playItem(t){
     renderAlbums(); // update the play icon on the now-playing track
   }catch(e){log(e.message)}
 }
+
+// ---------- Jump to the now-playing track ----------
+// Scrolls the album list to the current track. If it's hidden by the
+// current filters/search (or the unfiltered-library brake), switch the
+// view to its album first -- like iTunes' "Go to Current Song".
+function jumpToNowPlaying(){
+  const t=state.tracks.find(x=>x.id===state.nowPlayingId);
+  if(!t) return notify('Nothing from the loaded library is playing right now.');
+  const rowSel=`#content [data-item="${CSS.escape(t.id)}"]`;
+  if(!document.querySelector(rowSel)){
+    $('#search').value='';
+    state.filters={album_artist:t.album_artist||'',artist:t.album?'':(t.artist||''),album:t.album||'',year:''};
+    render();
+    document.querySelectorAll('.facets li.active').forEach(li=>li.scrollIntoView({block:'nearest'}));
+  }
+  const row=document.querySelector(rowSel);
+  if(!row) return;
+  row.scrollIntoView({block:'center'});
+  row.classList.remove('flash'); void row.offsetWidth; row.classList.add('flash');
+}
+$('#jumpNowPlaying').onclick=jumpToNowPlaying;
 
 function playNextInPlaylist(){
   const idx=state.currentPlaylist.findIndex(t=>t.id===state.nowPlayingId);
@@ -470,6 +492,7 @@ setInterval(pollTransport,1500);
 
 $('#search').oninput=renderAlbums;
 document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key==='f'){e.preventDefault();$('#search').focus()}});
+document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key==='l'&&state.nowPlayingId){e.preventDefault();jumpToNowPlaying()}});
 
 // ---------- Restore the last scanned library from disk on startup ----------
 updateReadyState();

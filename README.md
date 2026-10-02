@@ -58,6 +58,7 @@ specific backend: `PYWEBVIEW_GUI=qt ./run.command` (or `gtk`).
 - **Deduplication** by the actual playback URL (in case server-side duplicates remain despite the by-folder view)
 - Built-in brake: on very large, unfiltered result sets, the app asks you to narrow things down instead of rendering the entire library at once
 - **Now-playing indicator**: the currently playing track shows a ▶ icon instead of its track number and is highlighted
+- **Jump to now playing**: the "▶ Now Playing" button above the album list (or Ctrl/⌘+L) scrolls to the current track and highlights it; if it's hidden by the current filters or search, the view switches to its album first
 - **Auto-advance**: once a track finishes, the next one from the currently displayed track list starts automatically (detected via position polling; manually stopping playback does not trigger this)
 - **Elapsed-time display** in the LCD-style readout (elapsed/total), updated via polling
 - **Sample rate/bitrate** per track in the track list (where supplied by the server as a `res` attribute)
