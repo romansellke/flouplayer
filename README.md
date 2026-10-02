@@ -75,6 +75,10 @@ other backend the same way: `PYWEBVIEW_GUI=gtk ./run.command` (default: `qt`).
 
 ### If the app crashes ("Segmentation fault")
 
+Closing the window used to be able to crash the app on exit (a Qt
+WebEngine teardown-order problem); Flou Player now shuts the web engine
+down in the right order itself, so this should no longer happen.
+
 On Linux the window's web engine (Qt WebEngine) runs its GPU code inside
 the app process, so a graphics driver problem can take the whole app down.
 Flou Player therefore renders in software by default; if you want GPU

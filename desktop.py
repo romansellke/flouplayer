@@ -93,6 +93,38 @@ def wait_for_server(url: str, timeout: float = 10.0) -> bool:
     return False
 
 
+def shutdown_and_exit() -> None:
+    """Ends the process right after the window has been closed.
+
+    Clicking the window's X makes pywebview only *schedule* the web page
+    for deletion (deleteLater) and then stop the Qt event loop, so the
+    page is never actually deleted. Python's interpreter shutdown then
+    tears down the web profile, the page and the QApplication in no
+    particular order -- and a QtWebEngine page outliving its profile
+    segfaults (seen as a crash on the main thread with "<no Python frame>"
+    in crash.log). So: delete the pending page now, while its profile is
+    still alive, give Chromium a moment to flush its storage (settings in
+    localStorage), and then exit without running interpreter shutdown.
+    """
+    try:
+        from qtpy.QtCore import QCoreApplication, QEvent
+
+        qt_app = QCoreApplication.instance()
+        if qt_app is not None:
+            QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)
+            deadline = time.time() + 0.5
+            while time.time() < deadline:
+                qt_app.processEvents()
+                time.sleep(0.02)
+    except Exception:
+        pass
+    sys.stdout.flush()
+    sys.stderr.flush()
+    if _crash_log_file:
+        _crash_log_file.flush()
+    os._exit(0)
+
+
 def main() -> None:
     server_thread = threading.Thread(target=run_server, daemon=True)
     server_thread.start()
@@ -125,6 +157,9 @@ def main() -> None:
                 time.sleep(1)
         except KeyboardInterrupt:
             pass
+    else:
+        # The window was closed normally.
+        shutdown_and_exit()
 
 
 if __name__ == "__main__":
