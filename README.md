@@ -23,6 +23,9 @@ any other app: no terminal, no Python setup.
 - Build only, without installing: `./packaging/build.sh`
   (result in `build/dist/flou-player/`)
 
+Only one Flou Player runs at a time: starting it again (from the menu,
+`flou-player` or `./run.command`) just brings the open window to the front.
+
 The app is installed for your user only, under `~/.local/share/flou-player`;
 no `sudo` needed. Build it on the machine you run it on.
 

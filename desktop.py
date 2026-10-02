@@ -56,7 +56,7 @@ if os.environ.get("FLOU_GPU") != "1":
 import uvicorn  # noqa: E402
 import webview  # noqa: E402
 
-from app.main import STATIC_DIR, app  # noqa: E402
+from app.main import APP_ID, STATIC_DIR, app  # noqa: E402
 
 HOST = "127.0.0.1"
 PORT = 8765
@@ -74,23 +74,85 @@ APP_ICON = STATIC_DIR / "icon.svg"
 WEBVIEW_STORAGE = Path.home() / ".local" / "share" / "flou-player" / "webview"
 
 
+server = uvicorn.Server(uvicorn.Config(app, host=HOST, port=PORT, log_level="warning"))
+
+
 def run_server():
-    uvicorn.run(app, host=HOST, port=PORT, log_level="warning")
+    server.run()
 
 
-def wait_for_server(url: str, timeout: float = 10.0) -> bool:
-    """Polls the server until it responds or the timeout is hit, so the
-    window doesn't open onto a blank page during the brief startup window."""
-    import urllib.request
-
+def wait_for_server(thread: threading.Thread, timeout: float = 10.0) -> bool:
+    """Waits until OUR server is actually listening, so the window doesn't
+    open onto a blank page during the brief startup window. Checking the
+    server itself (not just whether something answers on the port) matters:
+    if the port were taken, the window would otherwise silently talk to
+    whatever else is there -- and fail with "Failed to fetch" once that goes
+    away."""
     deadline = time.time() + timeout
     while time.time() < deadline:
-        try:
-            urllib.request.urlopen(url, timeout=0.5)
+        if server.started:
             return True
-        except Exception:
-            time.sleep(0.2)
+        if not thread.is_alive():
+            return False
+        time.sleep(0.1)
     return False
+
+
+def running_instance() -> str:
+    """'flou' if Flou Player already runs on PORT, 'other' if another
+    program uses the port, '' if the port is free."""
+    import json
+    import socket
+    import urllib.request
+
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.settimeout(0.5)
+        if s.connect_ex((HOST, PORT)) != 0:
+            return ""
+    try:
+        with urllib.request.urlopen(f"http://{HOST}:{PORT}/api/app/ping", timeout=2) as r:
+            if json.load(r).get("app") == APP_ID:
+                return "flou"
+    except Exception:
+        pass
+    return "other"
+
+
+def focus_running_instance() -> None:
+    import urllib.request
+
+    try:
+        req = urllib.request.Request(f"http://{HOST}:{PORT}/api/app/focus", method="POST")
+        urllib.request.urlopen(req, timeout=2).close()
+    except Exception:
+        pass
+
+
+@app.post("/api/app/focus")
+def focus_window():
+    """Called by a second launch: bring the existing window to the front
+    instead of opening a second one."""
+    for w in webview.windows:
+        w.restore()
+        w.show()
+        # Toggling "always on top" is the most reliable way to raise a
+        # window on X11 without the window manager's focus-stealing rules.
+        w.on_top = True
+        w.on_top = False
+    return {"ok": True}
+
+
+def show_error(message: str) -> None:
+    """Shows a startup error as a dialog -- started from the app menu there
+    is no terminal to print to."""
+    print(f"[Flou Player] {message}", flush=True)
+    try:
+        from qtpy.QtWidgets import QApplication, QMessageBox
+
+        qt_app = QApplication.instance() or QApplication(sys.argv)  # noqa: F841
+        QMessageBox.critical(None, "Flou Player", message)
+    except Exception:
+        pass
 
 
 def shutdown_and_exit() -> None:
@@ -126,15 +188,24 @@ def shutdown_and_exit() -> None:
 
 
 def main() -> None:
+    # Single instance: a second launch (e.g. from the menu while the app is
+    # already open) brings the existing window to the front instead of
+    # opening a window without a server of its own.
+    other = running_instance()
+    if other == "flou":
+        print("[Flou Player] Already running -- showing the existing window.")
+        focus_running_instance()
+        return
+    if other == "other":
+        show_error(f"Flou Player can't start: port {PORT} is already used by another program.")
+        sys.exit(1)
+
     server_thread = threading.Thread(target=run_server, daemon=True)
     server_thread.start()
 
     url = f"http://{HOST}:{PORT}"
-    if not wait_for_server(url):
-        # Most likely the port is taken by another program, so the server
-        # thread couldn't bind -- don't open a window onto a blank page.
-        print(f"[Flou Player] The local server didn't start on {url}.")
-        print(f"[Flou Player] Is port {PORT} already in use by another program?")
+    if not wait_for_server(server_thread):
+        show_error(f"Flou Player's background service didn't start on {url}.")
         sys.exit(1)
 
     try:
