@@ -6,7 +6,11 @@ const LOCAL_RENDERER_ID='__local__';
 
 const log=x=>{$('#log').textContent=typeof x==='string'?x:JSON.stringify(x,null,2)};
 
-async function api(url,opt){const r=await fetch(url,opt);const j=await r.json();if(!r.ok)throw Error(j.detail||r.statusText);return j}
+async function api(url,opt){
+  let r;
+  try{r=await fetch(url,opt)}
+  catch(e){throw Error('Lost connection to the Flou Player background service -- please restart Flou Player.')}
+  const j=await r.json();if(!r.ok)throw Error(j.detail||r.statusText);return j}
 function isLocal(){return $('#renderer').value===LOCAL_RENDERER_ID}
 
 function deviceOption(d){return `<option value="${esc(d.id)}" data-icon="${esc(d.icon||'')}">${esc(d.name)}${d.model?' · '+esc(d.model):''}</option>`}
