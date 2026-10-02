@@ -1,5 +1,5 @@
 from __future__ import annotations
-import html, socket, threading, json, time
+import copy, html, socket, threading, json, time
 import concurrent.futures as cf
 from pathlib import Path
 from typing import Any, Optional
@@ -143,7 +143,23 @@ def list_sources(device_id:str):
             continue
     return {"sources":out}
 
+DIDL_NS="urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/"
+for _prefix,_uri in {"dc":"http://purl.org/dc/elements/1.1/","upnp":"urn:schemas-upnp-org:metadata-1-0/upnp/","dlna":"urn:schemas-dlna-org:metadata-1-0/"}.items():
+    ET.register_namespace(_prefix,_uri)
+
 def local_name(tag): return tag.split('}',1)[-1]
+
+def didl_document(node):
+    """Wraps a single parsed <item> back into a complete DIDL-Lite
+    document, as renderers expect for CurrentURIMetaData. Serialising
+    the bare element instead yields no <DIDL-Lite> root and
+    ElementTree's generic ns0:/ns2: prefixes, which many renderers
+    (Linn/OpenHome among them) don't accept."""
+    node=copy.deepcopy(node)
+    for el in node.iter():
+        if el.tag.startswith("{"+DIDL_NS+"}"): el.tag=local_name(el.tag)
+    root=ET.Element("DIDL-Lite",{"xmlns":DIDL_NS}); root.append(node)
+    return ET.tostring(root,encoding="unicode")
 def child_text(node,name):
     for c in node.iter():
         if local_name(c.tag)==name: return c.text or ""
@@ -179,7 +195,7 @@ def parse_didl(xml):
         for c in n:
             if local_name(c.tag)=="res": resources.append({"uri":c.text or "","protocol":c.attrib.get("protocolInfo",""),"duration":c.attrib.get("duration",""),"sample_rate":c.attrib.get("sampleFrequency",""),"bits_per_sample":c.attrib.get("bitsPerSample",""),"bitrate":c.attrib.get("bitrate","")})
         artist,album_artist=artist_fields(n)
-        out.append({"type":typ,"id":n.attrib.get("id",""),"parent_id":n.attrib.get("parentID",""),"title":child_text(n,"title"),"artist":artist,"album_artist":album_artist,"album":child_text(n,"album"),"genre":child_text(n,"genre"),"date":child_text(n,"date"),"track_number":child_text(n,"originalTrackNumber"),"album_art":child_text(n,"albumArtURI"),"class":child_text(n,"class"),"resources":resources,"metadata":ET.tostring(n,encoding="unicode")})
+        out.append({"type":typ,"id":n.attrib.get("id",""),"parent_id":n.attrib.get("parentID",""),"title":child_text(n,"title"),"artist":artist,"album_artist":album_artist,"album":child_text(n,"album"),"genre":child_text(n,"genre"),"date":child_text(n,"date"),"track_number":child_text(n,"originalTrackNumber"),"album_art":child_text(n,"albumArtURI"),"class":child_text(n,"class"),"resources":resources,"metadata":didl_document(n)})
     return out
 
 def browse_all(s, object_id):
@@ -195,7 +211,9 @@ def browse_all(s, object_id):
         number_returned=int(r.get("NumberReturned",0) or 0)
         total_matches=int(r.get("TotalMatches",0) or 0)
         start+=number_returned
-        if number_returned==0 or start>=total_matches: break
+        # TotalMatches may legitimately be 0 when the server can't compute
+        # it -- then keep paging until a page comes back empty.
+        if number_returned==0 or (total_matches>0 and start>=total_matches): break
     return items
 
 def pick_scan_root(s, root_object_id):
