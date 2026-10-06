@@ -53,10 +53,8 @@ Everything above works the same; a few differences to Ubuntu/Mint:
   recreates its virtual environment automatically (one-time reinstall, needs
   internet). The installed app bundles its own Python and keeps working;
   only `./packaging/install.sh --rebuild` builds against the new version.
-- If you enabled a firewall (`ufw`/`firewalld`; Arch has none active by
-  default), allow incoming UDP traffic from your local network -- SSDP
-  discovery (port 1900) gets its answers that way, otherwise no devices
-  are found.
+- If you enabled a firewall (Arch has none active by default), see
+  [Firewall](#firewall) below.
 
 ## Network
 
@@ -65,6 +63,27 @@ network (SSDP/UPnP discovery does not cross subnets/VLANs). It doesn't
 matter whether MinimServer, the output device and Flou Player are three
 separate machines -- everything is found and controlled purely over the
 network.
+
+### Firewall
+
+Flou Player only needs one thing let in: the answers to its device search.
+It asks the network for UPnP devices (SSDP, multicast to UDP port 1900), and
+every device answers *from* UDP port 1900 directly to the computer -- a
+firewall that blocks unrequested incoming traffic drops those answers, so
+"Search devices" finds nothing. Everything else (loading the library,
+playback control, cover art) is outgoing and works as is; the app's own
+server only listens on `127.0.0.1`.
+
+Allow UDP from source port 1900, limited to your local network
+(replace `192.168.178.0/24` with yours -- `ip -4 route` shows it):
+
+- **ufw:** `sudo ufw allow proto udp from 192.168.178.0/24 port 1900 to any`
+- **firewalld:**
+  `sudo firewall-cmd --permanent --add-rich-rule='rule family="ipv4" source address="192.168.178.0/24" source-port port="1900" protocol="udp" accept'`
+  then `sudo firewall-cmd --reload`
+- **nftables** (`/etc/nftables.conf`, in the `input` chain):
+  `ip saddr 192.168.178.0/24 udp sport 1900 accept`,
+  then `sudo systemctl reload nftables`
 
 ## Troubleshooting
 
