@@ -4,7 +4,8 @@ A local, standalone, iTunes-style desktop app for browsing and playing music
 from MinimServer through a Linn/OpenHome output device (e.g. a Majik DSM4).
 Runs as its own application window -- no browser tab needed.
 
-Flou Player runs on Linux (tested target: Linux Mint).
+Flou Player runs on Linux (tested target: Linux Mint; also works on Arch
+Linux -- see [Arch Linux](#arch-linux) below).
 
 ## Install as an app (recommended)
 
@@ -39,6 +40,23 @@ The first run creates a virtual environment and installs dependencies (needs
 internet access briefly), then opens the app in its own window. Later runs
 skip the install step and start straight away (it only runs again when
 `requirements.txt` changes).
+
+## Arch Linux
+
+Everything above works the same; a few differences to Ubuntu/Mint:
+
+- Python isn't part of a minimal Arch install: `sudo pacman -S --needed python git`
+  (`venv` is included, there's no separate `python3-venv` package).
+- `~/.local/bin` isn't on the `PATH` by default, so the `flou-player`
+  terminal command may not be found -- the menu entry works regardless.
+- After a system Python upgrade (e.g. 3.14 -> 3.15), `./run.command`
+  recreates its virtual environment automatically (one-time reinstall, needs
+  internet). The installed app bundles its own Python and keeps working;
+  only `./packaging/install.sh --rebuild` builds against the new version.
+- If you enabled a firewall (`ufw`/`firewalld`; Arch has none active by
+  default), allow incoming UDP traffic from your local network -- SSDP
+  discovery (port 1900) gets its answers that way, otherwise no devices
+  are found.
 
 ## Network
 
