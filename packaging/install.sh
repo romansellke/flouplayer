@@ -53,4 +53,7 @@ update-desktop-database "$DATA_HOME/applications" >/dev/null 2>&1 || true
 
 echo
 echo "Flou Player is installed -- find it in your application menu."
-echo "(It can also be started with: flou-player)"
+case ":$PATH:" in
+  *":$HOME/.local/bin:"*) echo "(It can also be started with: flou-player)" ;;
+  *) echo "(To also start it with 'flou-player' from a terminal, add ~/.local/bin to your PATH.)" ;;
+esac

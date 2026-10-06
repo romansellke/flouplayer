@@ -12,7 +12,9 @@ cd "$(dirname "$0")/.."
 ROOT="$PWD"
 VENV="$ROOT/build/venv"
 
-if [ ! -f "$VENV/bin/activate" ]; then
+# Recreate the build venv after a system Python upgrade (see run.command).
+PYVER=$(python3 -c 'import sys; print("%d.%d" % sys.version_info[:2])')
+if [ ! -f "$VENV/bin/activate" ] || [ ! -d "$VENV/lib/python$PYVER" ]; then
   rm -rf "$VENV"
   python3 -m venv "$VENV" || {
     echo "Could not create the build environment."

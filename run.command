@@ -2,7 +2,11 @@
 set -e
 cd "$(dirname "$0")"
 
-if [ ! -f .venv/bin/activate ]; then
+# (Re)create the venv if it's missing or was made with another Python
+# version -- e.g. after a system Python upgrade on a rolling-release
+# distribution like Arch, which leaves the old venv's packages unusable.
+PYVER=$(python3 -c 'import sys; print("%d.%d" % sys.version_info[:2])')
+if [ ! -f .venv/bin/activate ] || [ ! -d ".venv/lib/python$PYVER" ]; then
   rm -rf .venv
   python3 -m venv .venv
   if [ ! -f .venv/bin/activate ]; then
