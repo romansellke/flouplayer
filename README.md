@@ -55,6 +55,11 @@ Everything above works the same; a few differences to Ubuntu/Mint:
   only `./packaging/install.sh --rebuild` builds against the new version.
 - If you enabled a firewall (Arch has none active by default), see
   [Firewall](#firewall) below.
+- Window managers without an application menu (e.g. Hyprland): the
+  installer's menu entry shows up in any app launcher (fuzzel, wofi,
+  rofi, ...). Or bind a key to the installed app, e.g. in
+  `~/.config/hypr/hyprland.conf`:
+  `bind = SUPER SHIFT, M, exec, ~/.local/share/flou-player/app/flou-player`
 
 ## Network
 
