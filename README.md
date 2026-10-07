@@ -68,22 +68,29 @@ network.
 
 Flou Player only needs one thing let in: the answers to its device search.
 It asks the network for UPnP devices (SSDP, multicast to UDP port 1900), and
-every device answers *from* UDP port 1900 directly to the computer -- a
-firewall that blocks unrequested incoming traffic drops those answers, so
-"Search devices" finds nothing. Everything else (loading the library,
-playback control, cover art) is outgoing and works as is; the app's own
-server only listens on `127.0.0.1`.
+every device answers directly to the computer -- a firewall that blocks
+unrequested incoming traffic drops those answers, so "Search devices" finds
+nothing. The answers don't come from a fixed port: Linn devices and
+MinimServer reply from random UDP ports (only some devices, e.g. a FRITZ!Box,
+use port 1900), so a rule on the source port isn't enough. Everything else
+(loading the library, playback control, cover art) is outgoing and works as
+is; the app's own server only listens on `127.0.0.1`.
 
-Allow UDP from source port 1900, limited to your local network
-(replace `192.168.178.0/24` with yours -- `ip -4 route` shows it):
+Allow incoming UDP from your local network (replace `192.168.178.0/24`
+with yours -- `ip -4 route` shows it):
 
-- **ufw:** `sudo ufw allow proto udp from 192.168.178.0/24 port 1900 to any`
+- **ufw:** `sudo ufw allow proto udp from 192.168.178.0/24 to any`
 - **firewalld:**
-  `sudo firewall-cmd --permanent --add-rich-rule='rule family="ipv4" source address="192.168.178.0/24" source-port port="1900" protocol="udp" accept'`
+  `sudo firewall-cmd --permanent --add-rich-rule='rule family="ipv4" source address="192.168.178.0/24" protocol value="udp" accept'`
   then `sudo firewall-cmd --reload`
 - **nftables** (`/etc/nftables.conf`, in the `input` chain):
-  `ip saddr 192.168.178.0/24 udp sport 1900 accept`,
+  `ip saddr 192.168.178.0/24 meta l4proto udp accept`,
   then `sudo systemctl reload nftables`
+
+A VPN that routes all traffic through its tunnel (e.g. Proton VPN) also
+sends the device search there, so nothing on the local network is found;
+disconnect it, or allow local network access in the VPN app, while using
+Flou Player.
 
 ## Troubleshooting
 
