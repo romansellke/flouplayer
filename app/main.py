@@ -16,6 +16,15 @@ from pydantic import BaseModel
 STATIC_DIR=Path(__file__).resolve().parent/"static"
 app=FastAPI(title="Flou Player", version="0.2.0")
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+@app.middleware("http")
+async def no_cache_ui(request,call_next):
+    """The app window keeps a persistent web profile; without this it can
+    serve an old index.html/style.css/app.js after an update."""
+    resp=await call_next(request)
+    if request.url.path=="/" or request.url.path.startswith("/static/"):
+        resp.headers["Cache-Control"]="no-cache"
+    return resp
 lock=threading.Lock(); devices:dict[str,Any]={}
 scan_lock=threading.Lock(); scan_state:dict[str,Any]={"running":False,"count":0,"containers":0}
 SCAN_WORKERS=6
