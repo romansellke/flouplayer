@@ -94,11 +94,21 @@ def device_json(key,d):
 def index(): return FileResponse(STATIC_DIR/"index.html")
 
 APP_ID="flou-player"
+def _build_id():
+    """Fingerprint of the code/UI this process serves, so a newly started
+    Flou Player can tell whether the instance already running is outdated."""
+    import hashlib
+    h=hashlib.sha1()
+    for f in [Path(__file__)]+sorted(STATIC_DIR.rglob("*")):
+        if f.is_file(): h.update(f.name.encode()); h.update(f.read_bytes())
+    return h.hexdigest()[:12]
+BUILD_ID=_build_id()
+
 @app.get("/api/app/ping")
 def ping():
     """Lets a newly started Flou Player recognise an already running one
     on the same port (see desktop.py)."""
-    return {"app":APP_ID}
+    return {"app":APP_ID,"build":BUILD_ID}
 
 @app.get("/api/discover")
 def discover(timeout:int=4):
