@@ -56,7 +56,7 @@ if os.environ.get("FLOU_GPU") != "1":
 import uvicorn  # noqa: E402
 import webview  # noqa: E402
 
-from app.main import APP_ID, STATIC_DIR, app  # noqa: E402
+from app.main import APP_ID, BUILD_ID, STATIC_DIR, app  # noqa: E402
 
 HOST = "127.0.0.1"
 PORT = 8765
@@ -99,8 +99,9 @@ def wait_for_server(thread: threading.Thread, timeout: float = 10.0) -> bool:
 
 
 def running_instance() -> str:
-    """'flou' if Flou Player already runs on PORT, 'other' if another
-    program uses the port, '' if the port is free."""
+    """'flou' if the same build of Flou Player already runs on PORT, 'old'
+    if an outdated one does, 'other' if another program uses the port,
+    '' if the port is free."""
     import json
     import socket
     import urllib.request
@@ -111,8 +112,9 @@ def running_instance() -> str:
             return ""
     try:
         with urllib.request.urlopen(f"http://{HOST}:{PORT}/api/app/ping", timeout=2) as r:
-            if json.load(r).get("app") == APP_ID:
-                return "flou"
+            info = json.load(r)
+            if info.get("app") == APP_ID:
+                return "flou" if info.get("build") == BUILD_ID else "old"
     except Exception:
         pass
     return "other"
@@ -126,6 +128,30 @@ def focus_running_instance() -> None:
         urllib.request.urlopen(req, timeout=2).close()
     except Exception:
         pass
+
+
+def stop_old_instance() -> bool:
+    """Asks an outdated instance to quit and waits for the port to free up.
+    Instances from before this feature don't know the request."""
+    import urllib.request
+
+    try:
+        req = urllib.request.Request(f"http://{HOST}:{PORT}/api/app/quit", method="POST")
+        urllib.request.urlopen(req, timeout=2).close()
+    except Exception:
+        pass
+    for _ in range(30):
+        if running_instance() == "":
+            return True
+        time.sleep(0.2)
+    return False
+
+
+@app.post("/api/app/quit")
+def quit_app():
+    """Called by a newer launch to replace this (outdated) instance."""
+    threading.Timer(0.3, shutdown_and_exit).start()
+    return {"ok": True}
 
 
 @app.post("/api/app/focus")
@@ -196,7 +222,15 @@ def main() -> None:
         print("[Flou Player] Already running -- showing the existing window.")
         focus_running_instance()
         return
-    if other == "other":
+    if other == "old":
+        print("[Flou Player] An older version is running -- replacing it.")
+        if not stop_old_instance():
+            show_error(
+                "An older Flou Player is still running and has to be closed first.\n"
+                "Quit it (or run 'pkill -f flou' in a terminal) and start again."
+            )
+            sys.exit(1)
+    elif other == "other":
         show_error(f"Flou Player can't start: port {PORT} is already used by another program.")
         sys.exit(1)
 
