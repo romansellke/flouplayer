@@ -12,6 +12,16 @@
   --chevron:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="10" height="6" fill="none" stroke="%236c6c73" stroke-width="1.5"><path d="M1 1l4 4 4-4"/></svg>');
   --search:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="%236c6c73" stroke-width="1.6"><circle cx="6" cy="6" r="4.5"/><path d="M9.5 9.5L13 13"/></svg>');
 }
+/* Light theme: toggled via the button in the header (see index.html) */
+:root[data-theme=light]{
+  --bg:#ffffff; --surface:#f6f6f7; --hover:#efeff1; --line:#e6e6e8;
+  --text:#18181b; --muted:#8b8b93;
+  --accent:#000000; --accent-soft:#f0f0f2; --accent-text:#000000;
+  --shadow:0 0 0 1px #d8d8dc;
+  color-scheme:light;
+  --chevron:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="10" height="6" fill="none" stroke="%238b8b93" stroke-width="1.5"><path d="M1 1l4 4 4-4"/></svg>');
+  --search:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="%238b8b93" stroke-width="1.6"><circle cx="6" cy="6" r="4.5"/><path d="M9.5 9.5L13 13"/></svg>');
+}
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;overflow:hidden}
 body{font:13px/1.45 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;color:var(--text);background:var(--bg);-webkit-font-smoothing:antialiased}
@@ -30,8 +40,8 @@ header{display:flex;flex-wrap:wrap;gap:20px;align-items:center;padding:14px 20px
 .transport button svg{width:16px;height:16px;fill:currentColor}
 .transport button:hover{background:var(--hover);color:var(--text)}
 .transport button:active{transform:scale(.92)}
-.transport button[data-action=play]{width:40px;height:40px;margin:0 2px;background:var(--text);color:var(--bg)}
-.transport button[data-action=play]:hover{background:#fff;color:#000}
+.transport button[data-action=play]{width:40px;height:40px;margin:0 2px;background:var(--accent);color:var(--bg)}
+.transport button[data-action=play]:hover{background:var(--accent);color:var(--bg);opacity:.85}
 .transport button.disabled,.transport input.disabled{opacity:.35;pointer-events:none}
 .transport input[type=range]{margin-left:14px}
 #volumeLabel{display:inline-block;min-width:56px;margin-left:4px;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
@@ -110,7 +120,7 @@ input[type=range]:hover::-webkit-slider-thumb{transform:scale(1.25)}
    flex container sizes its rows to their content instead of the
    available height, which lets the album list grow to full length. */
 .workspace{display:flex;flex:1 1 auto;min-height:0;overflow:hidden}
-.active{background:var(--accent-soft) !important;color:#fff;font-weight:500}
+.active{background:var(--accent-soft) !important;color:var(--accent-text);font-weight:500}
 
 main{flex:1 1 600px;min-width:320px;min-height:0;display:flex;flex-direction:column}
 .facets{display:flex;flex-wrap:wrap;flex:0 0 auto;border-bottom:1px solid var(--line)}
@@ -163,7 +173,7 @@ main{flex:1 1 600px;min-width:320px;min-height:0;display:flex;flex-direction:col
 .tracks .genre{width:90px;color:var(--muted)}
 .tracks .year{width:50px;text-align:right;color:var(--muted)}
 /* the currently playing track: accent colour and a play icon instead of the track number */
-.tracks tr.playing{background:var(--accent-soft);color:#fff;font-weight:600;box-shadow:inset 2px 0 0 #fff}
+.tracks tr.playing{background:var(--accent-soft);color:var(--accent-text);font-weight:600;box-shadow:inset 2px 0 0 var(--accent)}
 .tracks tr.playing td{color:var(--accent-text)}
 
 /* ---------- Now playing sidebar ---------- */
@@ -207,3 +217,10 @@ main{flex:1 1 600px;min-width:320px;min-height:0;display:flex;flex-direction:col
 #metaTitle{margin:0 0 14px;font-size:14px;padding-right:24px}
 #metaBody{font:11.5px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;white-space:pre-wrap;word-break:break-word;margin:0}
 .sentinel{height:1px}
+
+#themeToggle{display:grid;place-items:center;width:34px;height:34px;padding:0;margin-left:auto;border:0;background:none;color:var(--muted);cursor:pointer;transition:background .15s,color .15s}
+#themeToggle:hover{background:var(--hover);color:var(--text)}
+#themeToggle svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round}
+#themeToggle .sun{display:none}
+:root[data-theme=light] #themeToggle .moon{display:none}
+:root[data-theme=light] #themeToggle .sun{display:block}
