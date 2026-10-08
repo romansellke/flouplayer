@@ -208,16 +208,16 @@ input[type=range]:hover::-webkit-slider-thumb{transform:scale(1.25)}
 .workspace{gap:8px;display:flex;flex:1 1 auto;min-height:0;overflow:hidden}
 .active{background:var(--track) !important;color:var(--text);font-weight:500;box-shadow:inset 2px 0 0 var(--highlight)}
 
-main{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;flex:1 1 600px;min-width:320px;min-height:0;display:flex;flex-direction:column}
-.facets{display:flex;flex-wrap:wrap;flex:0 0 auto;border-bottom:1px solid var(--line)}
-.facets>div{flex:1 1 200px;min-width:150px;max-height:min(240px,30vh);overflow:auto;border-right:1px solid var(--line)}
+main{gap:8px;flex:1 1 600px;min-width:320px;min-height:0;display:flex;flex-direction:column}
+.facets{display:flex;flex-wrap:wrap;flex:0 0 auto;background:var(--card);border:1px solid var(--line-strong);border-radius:var(--radius);overflow:hidden}
+.facets>div{flex:1 1 200px;min-width:150px;max-height:min(240px,30vh);overflow:auto;border-right:1px solid var(--line-strong)}
 .facets>div:last-child{border-right:0}
-.facets b{display:block;padding:12px 14px 6px;background:var(--bg);position:sticky;top:0;font-size:10.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.facets b{display:block;padding:12px 14px 6px;background:var(--card);position:sticky;top:0;font-size:10.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .facets ul{list-style:none;padding:0 6px 6px;margin:0}
 .facets li{padding:4px 8px;border-radius:6px;cursor:pointer;transition:background .1s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.facets li:hover{background:var(--hover)}
+.facets li:hover{background:var(--track)}
 
-.albums{flex:1 1 auto;min-height:0;display:flex;flex-direction:column}
+.albums{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
 .sectionhead{flex:0 0 auto;display:flex;justify-content:space-between;align-items:center;padding:12px 20px;font-weight:600;font-size:14px;letter-spacing:-.01em}
 .sectionhead-right{display:flex;align-items:center;gap:12px;font-weight:400;font-size:12px;color:var(--muted)}
 #content{flex:1 1 auto;min-height:0;overflow-y:auto}
