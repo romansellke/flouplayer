@@ -500,7 +500,9 @@ def control(req:Control):
         elif req.action=="volume":
             vol,kind=find_volume_service(d)
             if not vol: raise HTTPException(400,"No volume service on this device")
-            if kind=="openhome": vol.SetVolume(Value=max(0,req.value or 0))
+            if kind=="openhome":
+                vmax=int(vol.Characteristics().get("VolumeMax",100)) or 100
+                vol.SetVolume(Value=max(0,min(vmax,req.value or 0)))
             else: vol.SetVolume(InstanceID=0,Channel="Master",DesiredVolume=max(0,min(100,req.value or 0)))
         elif req.action=="set_source":
             prod=service(d,["product"])

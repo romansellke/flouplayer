@@ -334,7 +334,49 @@ function facetColumn(containerId,key,label,countBy){
   });
 }
 
+// ---------- Type-ahead in the column browser ----------
+// Typing letters jumps to the first entry starting with them in the column
+// that was last clicked (or, failing that, the one under the mouse).
+// Enter selects the highlighted entry; Escape clears the highlight.
+const facetCols=[...document.querySelectorAll('.facets>div')];
+let facetCurrent=null, facetHover=null, typeBuf='', typeTimer=null, typeHit=null;
+facetCols.forEach(div=>{
+  div.tabIndex=0;
+  div.addEventListener('pointerdown',()=>{facetCurrent=div; div.focus({preventScroll:true}); clearTypeHit()});
+  div.addEventListener('mouseenter',()=>{facetHover=div});
+  div.addEventListener('mouseleave',()=>{if(facetHover===div) facetHover=null});
+});
+function clearTypeHit(){ if(typeHit) typeHit.classList.remove('typehit'); typeHit=null; typeBuf='' }
+const sortKey=s=>s.replace(/^[^\p{L}\p{N}]+/u,'').toLowerCase();
+document.addEventListener('keydown',e=>{
+  if(e.metaKey||e.ctrlKey||e.altKey) return;
+  const t=e.target;
+  if(t && (t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.tagName==='SELECT'||t.isContentEditable)) return;
+  if(!$('#metaModal').classList.contains('hidden')) return;
+  const col=facetCurrent||facetHover;
+  if(!col) return;
+  if(e.key==='Escape'){ clearTypeHit(); return }
+  if(e.key==='Enter'){
+    if(typeHit){ e.preventDefault(); typeHit.click(); }
+    return;
+  }
+  if(e.key.length!==1 || (e.key===' ' && !typeBuf)) return;
+  e.preventDefault();
+  typeBuf+=e.key.toLowerCase();
+  clearTimeout(typeTimer);
+  typeTimer=setTimeout(()=>{typeBuf=''},900);
+  const items=[...col.querySelectorAll('li')].filter(li=>li.dataset.v);
+  const match=items.find(li=>sortKey(li.dataset.v).startsWith(typeBuf));
+  if(!match) return;
+  if(typeHit) typeHit.classList.remove('typehit');
+  typeHit=match; match.classList.add('typehit');
+  // Scroll within the column only (not the page), leaving room for the sticky header.
+  const head=col.querySelector('b').offsetHeight;
+  col.scrollTop=Math.max(0,match.offsetTop-head-4);
+});
+
 function render(){
+  typeHit=null; typeBuf='';
   facetColumn('#albumArtists','album_artist','Album Artists','albums');
   facetColumn('#artists','artist','Artists','albums');
   facetColumn('#albumNames','album','Albums','tracks');
@@ -614,6 +656,13 @@ $('#renderer').addEventListener('change',()=>{
   refreshVolume();
   updateReadyState();
 });
+let volDragging=false;   // user is holding the slider: don't overwrite it from device readbacks
+let volCur=null;         // value last sent to the device (what the device is at / heading to)
+let volTarget=null;      // where the slider wants the device to go
+let volTimer=null;
+const VOL_STEP_MAX=2;    // max device steps per tick, so clicks/fast drags ramp instead of jumping
+const VOL_TICK_MS=80;
+const volLabel=(v)=>v.db!=null ? `${v.db>0?'+':''}${v.db.toFixed(1)} dB` : `${v.percent}%`;
 async function refreshVolume(){
   if(!$('#renderer').value) return;
   if(isLocal()){
@@ -625,26 +674,49 @@ async function refreshVolume(){
   }
   try{
     const v=await api(`/api/devices/${$('#renderer').value}/volume`);
-    $('#volume').max=v.max; $('#volume').value=v.raw;
-    $('#volumeLabel').textContent = v.db!=null ? `${v.db>0?'+':''}${v.db.toFixed(1)} dB` : `${v.percent}%`;
+    $('#volume').max=v.max;
+    volCur=v.raw;
+    if(!volDragging && volTimer===null){ $('#volume').value=v.raw; }
+    $('#volumeLabel').textContent=volLabel(v);
   }catch(e){/* volume info is optional, ignore */}
 }
-let volDebounce;
+function volRamp(){
+  if(volTimer!==null) return;
+  const tick=async()=>{
+    if(volTarget===null || volCur===null || volCur===volTarget){ volTimer=null; refreshVolume(); return; }
+    const delta=Math.max(-VOL_STEP_MAX,Math.min(VOL_STEP_MAX,volTarget-volCur));
+    const next=volCur+delta;
+    try{
+      await api('/api/control',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({device_id:$('#renderer').value,action:'volume',value:next})});
+      volCur=next;
+    }catch(x){log(x.message); volTimer=null; volTarget=null; return}
+    volTimer=setTimeout(tick,VOL_TICK_MS);
+  };
+  volTimer=setTimeout(tick,0);
+}
+async function setVolumeTarget(val){
+  if(volCur===null){ await refreshVolume(); if(volCur===null) return; }
+  volTarget=Math.max(0,Math.min(+$('#volume').max,val));
+  volRamp();
+}
+$('#volume').addEventListener('pointerdown',()=>{volDragging=true});
+window.addEventListener('pointerup',()=>{ if(volDragging){ volDragging=false; } });
 $('#volume').oninput=e=>{
   if(isLocal()){
     $('#localAudio').volume=Math.max(0,Math.min(100,+e.target.value))/100;
     $('#volumeLabel').textContent=`${e.target.value}%`;
     return;
   }
-  clearTimeout(volDebounce);
-  volDebounce=setTimeout(async()=>{
-    if(!$('#renderer').value) return;
-    try{
-      await api('/api/control',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({device_id:$('#renderer').value,action:'volume',value:+e.target.value})});
-      refreshVolume();
-    }catch(x){log(x.message)}
-  },150);
+  if(!$('#renderer').value) return;
+  setVolumeTarget(+e.target.value);
 };
+// Mouse wheel: one step at a time (shift = 5), instead of the browser default.
+$('#volume').addEventListener('wheel',e=>{
+  e.preventDefault();
+  const el=e.currentTarget, dir=e.deltaY<0?1:-1, step=e.shiftKey?5:1;
+  el.value=Math.max(+el.min,Math.min(+el.max,+el.value+dir*step));
+  el.dispatchEvent(new Event('input'));
+},{passive:false});
 
 // ---------- Elapsed-time display + auto-advance to the next track ----------
 function fmtClock(sec){sec=Math.max(0,Math.round(sec||0));const m=Math.floor(sec/60),ss=sec%60;return `${m}:${String(ss).padStart(2,'0')}`}
