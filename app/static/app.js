@@ -334,7 +334,49 @@ function facetColumn(containerId,key,label,countBy){
   });
 }
 
+// ---------- Type-ahead in the column browser ----------
+// Typing letters jumps to the first entry starting with them in the column
+// that was last clicked (or, failing that, the one under the mouse).
+// Enter selects the highlighted entry; Escape clears the highlight.
+const facetCols=[...document.querySelectorAll('.facets>div')];
+let facetCurrent=null, facetHover=null, typeBuf='', typeTimer=null, typeHit=null;
+facetCols.forEach(div=>{
+  div.tabIndex=0;
+  div.addEventListener('pointerdown',()=>{facetCurrent=div; div.focus({preventScroll:true}); clearTypeHit()});
+  div.addEventListener('mouseenter',()=>{facetHover=div});
+  div.addEventListener('mouseleave',()=>{if(facetHover===div) facetHover=null});
+});
+function clearTypeHit(){ if(typeHit) typeHit.classList.remove('typehit'); typeHit=null; typeBuf='' }
+const sortKey=s=>s.replace(/^[^\p{L}\p{N}]+/u,'').toLowerCase();
+document.addEventListener('keydown',e=>{
+  if(e.metaKey||e.ctrlKey||e.altKey) return;
+  const t=e.target;
+  if(t && (t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.tagName==='SELECT'||t.isContentEditable)) return;
+  if(!$('#metaModal').classList.contains('hidden')) return;
+  const col=facetCurrent||facetHover;
+  if(!col) return;
+  if(e.key==='Escape'){ clearTypeHit(); return }
+  if(e.key==='Enter'){
+    if(typeHit){ e.preventDefault(); typeHit.click(); }
+    return;
+  }
+  if(e.key.length!==1 || (e.key===' ' && !typeBuf)) return;
+  e.preventDefault();
+  typeBuf+=e.key.toLowerCase();
+  clearTimeout(typeTimer);
+  typeTimer=setTimeout(()=>{typeBuf=''},900);
+  const items=[...col.querySelectorAll('li')].filter(li=>li.dataset.v);
+  const match=items.find(li=>sortKey(li.dataset.v).startsWith(typeBuf));
+  if(!match) return;
+  if(typeHit) typeHit.classList.remove('typehit');
+  typeHit=match; match.classList.add('typehit');
+  // Scroll within the column only (not the page), leaving room for the sticky header.
+  const head=col.querySelector('b').offsetHeight;
+  col.scrollTop=Math.max(0,match.offsetTop-head-4);
+});
+
 function render(){
+  typeHit=null; typeBuf='';
   facetColumn('#albumArtists','album_artist','Album Artists','albums');
   facetColumn('#artists','artist','Artists','albums');
   facetColumn('#albumNames','album','Albums','tracks');

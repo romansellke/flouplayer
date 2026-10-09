@@ -127,6 +127,7 @@ include that file when reporting the problem.
 - **Auto-advance**: once a track finishes, the next one from the currently displayed track list starts automatically (detected via position polling; manually stopping playback does not trigger this)
 - **Elapsed-time display** in the LCD-style readout (elapsed/total), updated via polling
 - **Sample rate/bitrate** per track in the track list (where supplied by the server as a `res` attribute)
+- **Type-ahead in the column browser**: click a column and type letters to jump to the first entry starting with them; Enter selects it, Escape clears the highlight.
 - **Smooth volume control**: changes are ramped in small steps (no sudden jumps on clicks or fast drags), the mouse wheel moves one step at a time (Shift = 5), and the slider no longer snaps back while dragging. Prefers the OpenHome Volume service (typical for Linn devices) with a real dB readout; falls back to the standard UPnP 0-100% range if unavailable. **Not verified against real hardware -- the dB scaling may need adjusting.**
 - **Persistent library cache**: the scanned library is saved to disk (`~/.cache/flou_player/library.json`) and reloaded automatically on startup -- no need to rescan every time you open the app. Click "Load library" whenever you want to refresh it (e.g. after adding new music).
 - Clearly distinguishable controls: filled blue buttons, white dropdowns with an arrow, text fields with a search icon
