@@ -4,6 +4,8 @@ A local, standalone, iTunes-style desktop app for browsing and playing music
 from MinimServer through a Linn/OpenHome output device (e.g. a Majik DSM4).
 Runs as its own application window -- no browser tab needed.
 
+![Flou Player screenshot](docs/screenshot.png)
+
 Flou Player runs on Linux (tested target: Linux Mint; also works on Arch
 Linux -- see [Arch Linux](#arch-linux) below).
 
