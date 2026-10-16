@@ -209,19 +209,6 @@ def get_volume(device_id:str):
     except Exception as e:
         raise HTTPException(502,f"Could not read volume: {e}")
 
-@app.get("/api/devices/{device_id}/standby")
-def get_standby(device_id:str):
-    """Standby state via the OpenHome Product service (Standby / SetStandby).
-    `supported` is false for devices without that service."""
-    d=devices.get(device_id)
-    if not d: raise HTTPException(404,"Device not found")
-    prod=peer_service(d,["product"])
-    if not prod: return {"supported":False,"standby":False}
-    try:
-        return {"supported":True,"standby":bool(_val(prod.Standby()))}
-    except Exception as e:
-        raise HTTPException(502,f"Could not read standby state: {e}")
-
 @app.get("/api/devices/{device_id}/transport")
 def get_transport(device_id:str):
     """Playback state + position (used for the elapsed-time display and
@@ -565,10 +552,6 @@ def control(req:Control):
         elif req.action=="stop": av.Stop(InstanceID=0)
         elif req.action in ("next","previous"): getattr(av,req.action.capitalize())(InstanceID=0)
         elif req.action=="set_uri": av.SetAVTransportURI(InstanceID=0,CurrentURI=req.uri or "",CurrentURIMetaData=req.metadata or ""); av.Play(InstanceID=0,Speed="1")
-        elif req.action=="standby":
-            prod=peer_service(d,["product"])
-            if not prod: raise HTTPException(400,"No OpenHome Product service on this device -- standby not possible")
-            prod.SetStandby(Value=bool(req.value))
         elif req.action=="seek":
             sec=max(0,req.value or 0)
             av.Seek(InstanceID=0,Unit="REL_TIME",Target=f"{sec//3600}:{sec%3600//60:02d}:{sec%60:02d}")
