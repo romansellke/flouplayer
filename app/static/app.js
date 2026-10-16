@@ -217,7 +217,22 @@ function updateReadyState(){
   if(!state.nowPlayingId) $('#playingSub').textContent = ready ? 'Local Music Control' : 'Select an output device to enable playback';
 }
 
+// Busy state for toolbar buttons: a spinner and new label, same width (no
+// layout jump), no focus ring left behind; the button ignores clicks meanwhile.
+function setBusy(btn,on,label){
+  if(on){
+    btn._label=btn.textContent; btn.style.minWidth=btn.offsetWidth+'px';
+    btn.innerHTML=`<span class="spinner" aria-hidden="true"></span>${esc(label)}`;
+    btn.classList.add('busy'); btn.setAttribute('aria-busy','true'); btn.blur();
+  }else{
+    btn.textContent=btn._label??btn.textContent; btn.style.minWidth='';
+    btn.classList.remove('busy'); btn.removeAttribute('aria-busy');
+  }
+}
 $('#discover').onclick=async()=>{
+  const btn=$('#discover');
+  if(btn.classList.contains('busy')) return;
+  setBusy(btn,true,'Searching');
   try{
     log('Searching local network ...');
     const x=await api('/api/discover');
@@ -227,19 +242,21 @@ $('#discover').onclick=async()=>{
     log(`Found ${x.devices.length} device(s): `+x.devices.map(d=>d.name+(d.server?' [server]':'')+(d.renderer?' [output]':'')).join(', '));
     updateReadyState();
   }catch(e){logErr(e.message)}
+  finally{ setBusy(btn,false) }
 };
 
 $('#loadLibrary').onclick=async()=>{
   if(!$('#server').value){notify('Please select a media server first.');return}
-  const btn=$('#loadLibrary'); const original=btn.textContent;
-  btn.disabled=true;
+  const btn=$('#loadLibrary');
+  if(btn.classList.contains('busy')) return;
+  setBusy(btn,true,'Loading');
   $('#content').innerHTML='<div class="empty">Loading library ...</div>';
 
   const poll=setInterval(async()=>{
     try{
       const p=await api('/api/scan/progress');
       if(p.running){
-        btn.textContent=`${p.count} tracks ...`;
+        btn.lastChild.textContent=`${p.count} tracks`;
         $('#content').innerHTML=`<div class="empty">Loading library: ${p.count} tracks found in ${p.containers} folders ... please wait.</div>`;
       }
     }catch(e){/* progress reporting is optional */}
@@ -256,7 +273,7 @@ $('#loadLibrary').onclick=async()=>{
     $('#content').innerHTML=`<div class="empty">Failed to load: ${esc(e.message)}</div>`;
   }finally{
     clearInterval(poll);
-    btn.textContent=original; btn.disabled=false;
+    setBusy(btn,false);
   }
 };
 
