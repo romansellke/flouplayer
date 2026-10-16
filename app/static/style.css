@@ -353,3 +353,17 @@ main{gap:8px;flex:1 1 600px;min-width:320px;min-height:0;display:flex;flex-direc
 .albumqueue{margin-top:4px}
 
 .facets.collapsed{display:none}
+
+/* ---------- About ---------- */
+.iconbtn{display:grid;place-items:center;width:34px;height:34px;padding:0;border:0;border-radius:var(--radius);background:none;color:var(--muted);cursor:pointer;flex:0 0 auto}
+.iconbtn:hover{background:var(--hover);color:var(--text)}
+.iconbtn svg{width:16px;height:16px}
+.modal-content.about{min-width:320px;max-width:460px}
+.about h3{margin:0 0 2px}
+.aboutver{margin:0 0 12px;color:var(--muted);font-size:13px}
+.about p{line-height:1.5}
+.about table{border-collapse:collapse;margin:12px 0;font-size:12px;width:100%}
+.about td{padding:3px 0;color:var(--muted)}
+.about td:first-child{padding-right:16px;white-space:nowrap}
+.about td:last-child{color:var(--text);word-break:break-all}
+.about a{color:var(--highlight)}

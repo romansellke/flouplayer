@@ -14,7 +14,8 @@ from pydantic import BaseModel
 # Resolve static files relative to this module, not the current working
 # directory, so the app also works when started from another folder.
 STATIC_DIR=Path(__file__).resolve().parent/"static"
-app=FastAPI(title="Flou Player", version="0.2.0")
+from app import __version__
+app=FastAPI(title="Flou Player", version=__version__)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 @app.middleware("http")
@@ -123,6 +124,18 @@ def _build_id():
         if f.is_file(): h.update(f.name.encode()); h.update(f.read_bytes())
     return h.hexdigest()[:12]
 BUILD_ID=_build_id()
+
+REPO_URL="https://github.com/romansellke/flouplayer"
+
+@app.get("/api/app/about")
+def about():
+    import platform, importlib.metadata as md
+    deps={}
+    for name in ["fastapi","uvicorn","upnpclient","av","pywebview","PyQt5"]:
+        try: deps[name]=md.version(name)
+        except Exception: pass
+    return {"name":"Flou Player","version":__version__,"build":BUILD_ID,"python":platform.python_version(),
+            "platform":platform.platform(),"repo":REPO_URL,"dependencies":deps}
 
 @app.get("/api/app/ping")
 def ping():
