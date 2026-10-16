@@ -330,22 +330,6 @@ main{gap:8px;flex:1 1 600px;min-width:320px;min-height:0;display:flex;flex-direc
 #themeMenu .sw{flex:0 0 28px;height:14px;border-radius:4px;border:1px solid var(--line-strong)}
 
 /* ---------- Device queue (OpenHome Playlist) ---------- */
-.queue.hidden{display:none}
-.queue{text-align:left;padding:0 12px}
-.queuehead{display:flex;justify-content:space-between;align-items:center;padding:0 8px 6px}
-.queuehead b{font-size:10.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-.queuebtns,.queue .queuebtns{display:flex;gap:8px}
-.queue .btn-link.on{color:var(--text);font-weight:600}
-#queueList{list-style:none;margin:0;padding:0;max-height:260px;overflow:auto}
-#queueList li{display:flex;align-items:center;gap:6px;padding:4px 8px;border-radius:6px;cursor:pointer;font-size:12px}
-#queueList li:hover{background:var(--hover)}
-#queueList li.cur{background:var(--track);color:var(--text);font-weight:600}
-#queueList .qt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#queueList .qt small{display:block;color:var(--muted);font-weight:400}
-#queueList .qx{border:0;background:none;color:var(--muted);cursor:pointer;font-size:14px;padding:0 2px;visibility:hidden}
-#queueList li:hover .qx{visibility:visible}
-.queueempty{color:var(--muted);font-size:12px;padding:4px 8px}
-.queueempty.hidden{display:none}
 .tracks .qadd{width:30px;text-align:center}
 .tracks .qadd button,.albumqueue button{border:0;background:none;color:var(--muted);cursor:pointer;font-size:14px;padding:0 4px;visibility:hidden}
 .tracks tr:hover .qadd button,.album:hover .albumqueue button{visibility:visible}
@@ -385,3 +369,24 @@ main{gap:8px;flex:1 1 600px;min-width:320px;min-height:0;display:flex;flex-direc
 #diagList li.warn .lv{color:#d4a72c}
 #diagList .msg{flex:1;white-space:pre-wrap;word-break:break-word;color:var(--text)}
 #diagList .empty{color:var(--muted);padding:8px 0}
+
+/* ---------- Tabs + Queue view ---------- */
+.tabs{display:flex;gap:4px;flex:0 0 auto}
+.tab{border:0;background:none;color:var(--muted);cursor:pointer;font:inherit;font-size:13px;padding:6px 14px;border-radius:var(--radius);border-bottom:2px solid transparent}
+.tab:hover:not(:disabled){background:var(--hover);color:var(--text)}
+.tab.active{color:var(--text);font-weight:600;border-bottom-color:var(--accent)}
+.tab:disabled{opacity:.4;cursor:default}
+main[data-tab=queue]>.facets,main[data-tab=queue]>.albums:not(#queueView){display:none}
+main:not([data-tab=queue])>#queueView{display:none}
+#queueBody{flex:1 1 auto;min-height:0;overflow:auto;padding:0 20px 12px}
+.qtable{margin:0}
+.qtable .n{width:38px}
+.qtable .qcover{width:44px;padding:3px 6px}
+.qtable .qcover div{width:36px;height:36px;border-radius:4px;background:var(--card) center/cover no-repeat}
+.qtable .sub{color:var(--muted)}
+.qtable .qx{width:34px;text-align:center}
+.qtable .qx button{border:0;background:none;color:var(--muted);cursor:pointer;font-size:15px;visibility:hidden}
+.qtable tr:hover .qx button{visibility:visible}
+.qtable .qx button:hover{color:var(--text)}
+.qtable tr{cursor:default}
+#queueEmpty.hidden{display:none}

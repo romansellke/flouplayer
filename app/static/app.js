@@ -487,7 +487,7 @@ document.addEventListener('keydown',e=>{
   if(t && (t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.tagName==='SELECT'||t.isContentEditable)) return;
   if(!$('#metaModal').classList.contains('hidden')||!$('#aboutModal').classList.contains('hidden')) return;
   const col=facetCurrent||facetHover;
-  if(!col || col.parentElement.classList.contains('collapsed')) return;
+  if(!col || col.offsetParent===null) return;
   if(e.key==='Escape'){ clearTypeHit(); return }
   if(e.key==='Enter'){
     if(typeHit){ e.preventDefault(); typeHit.click(); }
@@ -932,22 +932,55 @@ $('#content').addEventListener('click',e=>{
 const shownTracks=()=>state.currentPlaylist.filter(t=>t.resources?.[0]);
 $('#qAddAll').onclick=()=>queueAdd(shownTracks(),!queue.entries.length||!queue.active);
 $('#qPlayAll').onclick=()=>queueAdd(shownTracks(),true,true);
+const fmtDurClock=d=>{const n=parseClock(d||''); return n?fmtClock(n):''};
 function renderQueue(){
-  const box=$('#queue');
-  box.classList.toggle('hidden',!queue.supported||isLocal());
-  $('#queueEmpty').classList.toggle('hidden',queue.entries.length>0);
+  const usable=queue.supported&&!isLocal();
+  $('#tabQueue').disabled=!usable;
+  $('#tabQueue').title=usable?'':'Select a Linn/OpenHome output device to use the queue';
+  if(!usable && currentTab()==='queue') showTab('library');
+  const n=queue.entries.length;
+  $('#queueCount').textContent=n; $('#queueCount').classList.toggle('hidden',!n);
+  $('#queueEmpty').classList.toggle('hidden',n>0);
   $('#qShuffle').classList.toggle('on',queue.shuffle);
   $('#qRepeat').classList.toggle('on',queue.repeat);
-  $('#queueList').innerHTML=queue.entries.map(en=>
-    `<li data-id="${en.id}" class="${queue.active&&en.id===queue.currentId?'cur':''}"><span class="qt">${esc(en.title)}<small>${esc(en.artist)}</small></span><button class="qx" data-qdel="${en.id}" title="Remove" aria-label="Remove">×</button></li>`).join('');
+  const total=queue.entries.reduce((a,en)=>a+parseClock(en.duration||''),0);
+  $('#queueInfo').textContent=n?`${n} track${n>1?'s':''}${total?' · '+fmtLong(total):''}`:'';
+  if(currentTab()!=='queue') return;
+  $('#queueList').innerHTML=queue.entries.map((en,i)=>{
+    const cur=queue.active&&en.id===queue.currentId;
+    return `<tr class="clickable${cur?' playing':''}" data-id="${en.id}"><td class="n">${cur?'▶':i+1}</td><td class="qcover"><div ${cover(en.album_art)}></div></td><td class="title">${esc(en.title)}</td><td class="artist sub">${esc(en.artist)}</td><td class="sub">${esc(en.album)}</td><td class="time">${esc(fmtDurClock(en.duration))}</td><td class="qx"><button type="button" data-qdel="${en.id}" title="Remove from queue" aria-label="Remove">×</button></td></tr>`;
+  }).join('');
 }
+const fmtLong=sec=>{const h=Math.floor(sec/3600),m=Math.floor(sec%3600/60);return h?`${h} h ${m} min`:`${m} min`};
+// ---- Tabs: Library <-> Queue
+const currentTab=()=>document.querySelector('main').dataset.tab;
+function showTab(name){
+  if(name==='queue' && $('#tabQueue').disabled) return;
+  document.querySelector('main').dataset.tab=name;
+  for(const t of ['Library','Queue']){
+    const on=t.toLowerCase()===name;
+    $('#tab'+t).classList.toggle('active',on); $('#tab'+t).setAttribute('aria-selected',String(on));
+  }
+  if(name==='queue'){ renderQueue(); pollQueue(true); scrollToCurrentQueue(false) }
+}
+function scrollToCurrentQueue(smooth=true){
+  const row=document.querySelector('#queueList tr.playing');
+  if(row) row.scrollIntoView({block:'center',behavior:smooth?'smooth':'auto'});
+}
+$('#tabLibrary').onclick=()=>showTab('library');
+$('#tabQueue').onclick=()=>showTab('queue');
+$('#qCurrent').onclick=()=>scrollToCurrentQueue();
+document.addEventListener('keydown',e=>{ if((e.metaKey||e.ctrlKey)&&e.key==='q'){ e.preventDefault(); showTab(currentTab()==='queue'?'library':'queue') } });
 $('#queueList').addEventListener('click',async e=>{
-  try{
-    const del=e.target.closest('[data-qdel]');
-    if(del){ await queueApi({action:'delete',id:+del.dataset.qdel}); return pollQueue(true); }
-    const li=e.target.closest('li[data-id]');
-    if(li){ await queueApi({action:'seek',id:+li.dataset.id}); pollQueue(true); }
-  }catch(x){notify(x.message)}
+  const del=e.target.closest('[data-qdel]');
+  if(!del) return;
+  try{ await queueApi({action:'delete',id:+del.dataset.qdel}); pollQueue(true) }catch(x){notify(x.message)}
+});
+$('#queueList').addEventListener('dblclick',async e=>{
+  if(e.target.closest('button')) return;
+  const tr=e.target.closest('tr[data-id]');
+  if(!tr) return;
+  try{ await queueApi({action:'seek',id:+tr.dataset.id}); pollQueue(true) }catch(x){notify(x.message)}
 });
 $('#qClear').onclick=async()=>{try{await queueApi({action:'clear'});pollQueue(true)}catch(x){notify(x.message)}};
 $('#qShuffle').onclick=async()=>{try{await queueApi({action:'shuffle',value:!queue.shuffle});pollQueue(true)}catch(x){notify(x.message)}};
