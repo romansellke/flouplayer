@@ -254,6 +254,37 @@ function bitrateLabel(res){
   return `${Math.round(parseInt(res.bitrate)*8/1000)}kbps`;
 }
 
+// ---------- Cover size + full-size cover view ----------
+function applyCoverSize(px){
+  const c=$('#content');
+  c.style.setProperty('--cover',px+'px');
+  c.classList.toggle('bigcovers',px>=140);
+}
+(function(){
+  let v=88; try{v=+localStorage.getItem('flou_cover_size')||88}catch(e){}
+  $('#coverSize').value=v; applyCoverSize(v);
+})();
+$('#coverSize').oninput=e=>{
+  const v=+e.target.value; applyCoverSize(v);
+  try{localStorage.setItem('flou_cover_size',v)}catch(x){}
+};
+function openCover(el,caption){
+  const m=/url\(["']?(.*?)["']?\)/.exec(el.style.backgroundImage||'');
+  if(!m) return;
+  const lb=$('#lightbox');
+  lb.querySelector('img').src=m[1];
+  lb.querySelector('span').textContent=caption||'';
+  lb.classList.remove('hidden');
+}
+$('#lightbox').onclick=()=>$('#lightbox').classList.add('hidden');
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') $('#lightbox').classList.add('hidden') });
+$('#content').addEventListener('click',e=>{
+  const cv=e.target.closest('.cover'); if(!cv) return;
+  const al=cv.closest('.album'); const ts=al&&state.view.groups[al.dataset.album];
+  openCover(cv,ts?`${ts[0].album||'Unknown Album'} · ${ts[0].album_artist||''}`:'');
+});
+$('#npCover').onclick=()=>openCover($('#npCover'),`${$('#npTitle').textContent} · ${$('#npArtist').textContent}`);
+
 // ---------- Which track-list columns are shown (persisted locally) ----------
 const ALL_COLUMNS=[
   {key:'quality',label:'Quality',default:true},
