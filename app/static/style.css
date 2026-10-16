@@ -140,7 +140,11 @@ input[type=range]:hover::-webkit-slider-thumb{transform:scale(1.25)}
 .lcd b,.lcd span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .lcd b{font-size:15px;font-weight:600;letter-spacing:-.01em}
 .lcd #playingSub{color:var(--muted);font-size:12px}
-#elapsed{font-size:11px;color:var(--muted);margin-top:2px;font-variant-numeric:tabular-nums}
+.progress{display:flex;align-items:center;gap:8px;margin-top:4px}
+.progress span{flex:0 0 46px;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums;overflow:visible}
+.progress #elapsedL{text-align:right}.progress #elapsedR{text-align:left}
+.progress input[type=range]{flex:1 1 auto;width:auto;min-width:80px;height:4px}
+.progress input[type=range]:disabled{opacity:.35;cursor:default}
 
 /* ---------- Toolbar ---------- */
 .toolbar{display:flex;flex-wrap:wrap;gap:8px;padding:10px 12px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);align-items:center}

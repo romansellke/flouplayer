@@ -783,6 +783,43 @@ $('#volume').addEventListener('wheel',e=>{
   el.dispatchEvent(new Event('input'));
 },{passive:false});
 
+// ---------- Position display: elapsed / remaining + seek bar ----------
+// Whatever the source (local <audio>, UPnP renderer poll, device queue),
+// it calls setProgress(seconds, duration, playing). Between polls the
+// position is extrapolated so the bar moves smoothly.
+const prog={base:0,at:0,dur:0,playing:false,seeking:false,seekable:false};
+function setProgress(sec,dur,playing=true,seekable=true){
+  Object.assign(prog,{base:sec||0,at:performance.now(),dur:dur||0,playing,seekable});
+  drawProgress();
+}
+function curPos(){
+  const p=prog.base+(prog.playing?(performance.now()-prog.at)/1000:0);
+  return prog.dur?Math.min(p,prog.dur):p;
+}
+function drawProgress(){
+  const seek=$('#seek');
+  const pos=prog.seeking?+seek.value/1000*prog.dur:curPos();
+  $('#elapsedL').textContent=prog.dur||pos?fmtClock(pos):'';
+  $('#elapsedR').textContent=prog.dur?'-'+fmtClock(prog.dur-pos):'';
+  seek.disabled=!(prog.dur&&prog.seekable);
+  if(!prog.seeking) seek.value=prog.dur?Math.round(pos/prog.dur*1000):0;
+}
+function clearProgress(){ setProgress(0,0,false,false) }
+setInterval(()=>{ if(prog.playing&&!prog.seeking) drawProgress() },250);
+$('#seek').addEventListener('pointerdown',()=>{prog.seeking=true});
+$('#seek').addEventListener('input',drawProgress);
+$('#seek').addEventListener('change',async e=>{
+  const sec=Math.round(+e.target.value/1000*prog.dur);
+  prog.seeking=false;
+  try{
+    if(isLocal()) $('#localAudio').currentTime=sec;
+    else if(queue.supported&&queue.active) await queueApi({action:'seek_time',seconds:sec});
+    else await api('/api/control',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({device_id:dev(),action:'seek',value:sec})});
+    setProgress(sec,prog.dur,prog.playing,true);
+  }catch(x){notify(x.message); prog.seeking=false}
+});
+window.addEventListener('pointerup',()=>{ if(prog.seeking&&$('#seek').disabled) prog.seeking=false });
+
 // ---------- Device queue (OpenHome Playlist) ----------
 const queue={supported:false,active:false,token:null,entries:[],currentId:0,state:'',repeat:false,shuffle:false};
 const dev=()=>$('#renderer').value;
@@ -847,7 +884,8 @@ async function pollQueue(force=false){
       $('#npTitle').textContent=cur.title; $('#npArtist').textContent=cur.artist;
       $('#npCover').style.backgroundImage=cur.album_art?`url('${cur.album_art}')`:'';
       $('#status').textContent=queue.state==='Playing'?'Now playing':queue.state;
-      if(r.duration) $('#elapsed').textContent=`${fmtClock(r.seconds)} / ${fmtClock(r.duration)}`;
+      if(r.duration) setProgress(r.seconds,r.duration,queue.state==='Playing');
+      else clearProgress();
     }
   }catch(e){ queue.supported=false; queue.active=false; queue.entries=[]; queue.token=null; renderQueue(); }
   finally{ queueBusy=false }
@@ -864,7 +902,8 @@ const localAudioEl=$('#localAudio');
 localAudioEl.addEventListener('timeupdate',()=>{
   if(!isLocal()) return;
   const d=localAudioEl.duration, dur=Number.isFinite(d)&&d>0?d:state.localDurationHint;
-  $('#elapsed').textContent = dur ? `${fmtClock(localAudioEl.currentTime)} / ${fmtClock(dur)}` : fmtClock(localAudioEl.currentTime);
+  // Transcoded streams (no known length / not seekable) just show the clock.
+  setProgress(localAudioEl.currentTime,dur,!localAudioEl.paused,Number.isFinite(d)&&d>0&&localAudioEl.seekable.length>0);
 });
 localAudioEl.addEventListener('ended',()=>{ if(isLocal()) playNextInPlaylist() });
 
@@ -879,7 +918,7 @@ async function pollTransport(){
   try{
     const t=await api(`/api/devices/${$('#renderer').value}/transport`);
     const relSec=parseClock(t.rel_time), durSec=parseClock(t.duration);
-    $('#elapsed').textContent = durSec ? `${fmtClock(relSec)} / ${fmtClock(durSec)}` : '';
+    if(durSec) setProgress(relSec,durSec,t.state==='PLAYING'); else clearProgress();
     const wasNearEnd=lastPoll.durSec>0 && (lastPoll.durSec-lastPoll.relSec)<=3;
     if(t.state==='STOPPED' && lastPoll.state==='PLAYING' && !userInitiatedStop && wasNearEnd && state.nowPlayingId){
       playNextInPlaylist();
