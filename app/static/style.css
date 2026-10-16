@@ -347,3 +347,5 @@ main{gap:8px;flex:1 1 600px;min-width:320px;min-height:0;display:flex;flex-direc
 .tracks tr:hover .qadd button,.album:hover .albumqueue button{visibility:visible}
 .tracks .qadd button:hover,.albumqueue button:hover{color:var(--text)}
 .albumqueue{margin-top:4px}
+
+.facets.collapsed{display:none}

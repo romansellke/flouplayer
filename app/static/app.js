@@ -365,6 +365,24 @@ function facetColumn(containerId,key,label,countBy){
   });
 }
 
+// ---------- Collapsible column browser ----------
+// While collapsed, the label names the active selection so a hidden filter isn't a surprise.
+function updateFacetToggle(){
+  const on=document.querySelector('.facets').classList.contains('collapsed');
+  const sel=Object.values(state.filters).filter(Boolean).join(' · ');
+  $('#facetToggle').textContent=on?('Browser ▸'+(sel?` (${sel})`:'')):'Browser ▾';
+}
+function setFacetsCollapsed(on,save=true){
+  document.querySelector('.facets').classList.toggle('collapsed',on);
+  updateFacetToggle();
+  $('#facetToggle').setAttribute('aria-expanded',String(!on));
+  if(save) try{localStorage.setItem('flou_facets_collapsed',on?'1':'0')}catch(e){}
+}
+function toggleFacets(){ setFacetsCollapsed(!document.querySelector('.facets').classList.contains('collapsed')) }
+try{ if(localStorage.getItem('flou_facets_collapsed')==='1') setFacetsCollapsed(true,false) }catch(e){}
+$('#facetToggle').onclick=toggleFacets;
+document.addEventListener('keydown',e=>{ if((e.metaKey||e.ctrlKey)&&e.key==='b'){ e.preventDefault(); toggleFacets() } });
+
 // ---------- Type-ahead in the column browser ----------
 // Typing letters jumps to the first entry starting with them in the column
 // that was last clicked (or, failing that, the one under the mouse).
@@ -385,7 +403,7 @@ document.addEventListener('keydown',e=>{
   if(t && (t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.tagName==='SELECT'||t.isContentEditable)) return;
   if(!$('#metaModal').classList.contains('hidden')) return;
   const col=facetCurrent||facetHover;
-  if(!col) return;
+  if(!col || col.parentElement.classList.contains('collapsed')) return;
   if(e.key==='Escape'){ clearTypeHit(); return }
   if(e.key==='Enter'){
     if(typeHit){ e.preventDefault(); typeHit.click(); }
@@ -408,6 +426,7 @@ document.addEventListener('keydown',e=>{
 
 function render(){
   typeHit=null; typeBuf='';
+  updateFacetToggle();
   facetColumn('#albumArtists','album_artist','Album Artists','albums');
   facetColumn('#artists','artist','Artists','albums');
   facetColumn('#albumNames','album','Albums','tracks');
