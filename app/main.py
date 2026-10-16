@@ -134,7 +134,7 @@ def about():
     for name in ["fastapi","uvicorn","upnpclient","av","pywebview","PyQt5"]:
         try: deps[name]=md.version(name)
         except Exception: pass
-    return {"name":"Flou Player","version":__version__,"build":BUILD_ID,"python":platform.python_version(),
+    return {"name":"Flou Player","version":__version__,"build":BUILD_ID,"license":"GPL-3.0-or-later","python":platform.python_version(),
             "platform":platform.platform(),"repo":REPO_URL,"dependencies":deps}
 
 @app.get("/api/app/ping")

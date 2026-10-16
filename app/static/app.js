@@ -260,7 +260,7 @@ $('#aboutBtn').onclick=async()=>{
   try{
     const a=await api('/api/app/about');
     $('#aboutVersion').textContent=`Version ${a.version} (build ${a.build})`;
-    const rows=[['Python',a.python],['System',a.platform],...Object.entries(a.dependencies).map(([k,v])=>[k,v])];
+    const rows=[['License',a.license],['Python',a.python],['System',a.platform],...Object.entries(a.dependencies).map(([k,v])=>[k,v])];
     $('#aboutTable').innerHTML=rows.map(([k,v])=>`<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join('');
     $('#aboutRepo').textContent=a.repo; $('#aboutRepo').href=a.repo;
   }catch(e){ $('#aboutVersion').textContent=e.message }

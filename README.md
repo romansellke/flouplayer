@@ -164,6 +164,13 @@ include that file when reporting the problem.
 - Album grouping depends on the server's DIDL-Lite metadata.
 - No code from proprietary apps such as mconnect was used.
 
+## License
+
+Flou Player is free software, licensed under the GNU General Public License,
+version 3 or (at your option) any later version (GPL-3.0-or-later). See
+[LICENSE](LICENSE). This matches the GPL v3 licensing of PyQt5, which the
+desktop window uses.
+
 ## Open-source dependencies
 
 - FastAPI, MIT
