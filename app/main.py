@@ -583,14 +583,14 @@ def _val(r,key="Value"):
 
 def _id_array(pl):
     r=pl.IdArray()
-    raw=r.get("Array",b"")
+    raw=r.get("Array") or b""   # an empty playlist comes back as None/""
     if isinstance(raw,str):
         import base64; raw=base64.b64decode(raw)
     return [int.from_bytes(raw[i:i+4],"big") for i in range(0,len(raw)-3,4)], r.get("Token")
 
 def _read_entries(pl,ids):
     if not ids: return []
-    xml=pl.ReadList(IdList=" ".join(map(str,ids))).get("TrackList","")
+    xml=pl.ReadList(IdList=" ".join(map(str,ids))).get("TrackList") or ""
     try: root=ET.fromstring(xml)
     except ET.ParseError: return []
     by_id={}
