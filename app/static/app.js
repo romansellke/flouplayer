@@ -405,6 +405,7 @@ function trackRowCells(t,i){
   if(c.album_artist) cells+=`<td class="albumartist">${esc(t.album_artist)}</td>`;
   if(c.genre) cells+=`<td class="genre">${esc(t.genre)}</td>`;
   if(c.year) cells+=`<td class="year">${esc(t.year)}</td>`;
+  cells+=`<td class="qadd"><button type="button" data-qadd="${esc(t.id)}" title="Add to queue" aria-label="Add to queue">+</button></td>`;
   return `<tr class="clickable${playing?' playing':''}" data-item="${esc(t.id)}">${cells}</tr>`;
 }
 
@@ -422,6 +423,7 @@ function albumHtml([key,ts]){
           <div class="albumtitle">${esc(album)} (${ts.length})</div>
           <div>${esc(ts[0].album_artist)}</div>
           <div class="meta">${esc(ts[0].year)}</div>
+          <div class="albumqueue"><button type="button" data-qplay-album="${esc(key)}" title="Play album (replaces the queue)">▶</button><button type="button" data-qadd-album="${esc(key)}" title="Add album to queue">+ Queue</button></div>
         </div>
       </div>
       <table class="tracks"><tbody>
@@ -497,6 +499,7 @@ function markNowPlaying(prevId,newId){
 
 // One set of handlers for all (also later-rendered) rows and albums.
 $('#content').addEventListener('dblclick',e=>{
+  if(e.target.closest('button')) return;
   const tr=e.target.closest('[data-item]');
   if(tr) playItem(state.view.byId.get(tr.dataset.item));
 });
@@ -633,6 +636,10 @@ let userInitiatedStop=false;
 document.querySelectorAll('[data-action]').forEach(b=>b.onclick=async()=>{
   if(!$('#renderer').value) return notify('Select an output device above first.');
   const action=b.dataset.action;
+  if(!isLocal() && queue.supported && queue.active){ // the device's own queue is the active source
+    try{await queueApi({action}); pollQueue(true)}catch(x){notify(x.message)}
+    return;
+  }
   if(action==='next') return playNextInPlaylist();
   if(action==='previous') return playPreviousInPlaylist();
 
@@ -662,6 +669,9 @@ let volTarget=null;      // where the slider wants the device to go
 let volTimer=null;
 const VOL_STEP_MAX=2;    // max device steps per tick, so clicks/fast drags ramp instead of jumping
 const VOL_TICK_MS=80;
+let volInfo=null;        // {unity, dbPerStep} of the OpenHome device, for a live dB label while dragging
+const volDb=raw=>volInfo?(raw-volInfo.unity)*volInfo.dbPerStep:null;
+const fmtDb=db=>`${db>0?'+':''}${db.toFixed(1)} dB`;
 const volLabel=(v)=>v.db!=null ? `${v.db>0?'+':''}${v.db.toFixed(1)} dB` : `${v.percent}%`;
 async function refreshVolume(){
   if(!$('#renderer').value) return;
@@ -676,6 +686,7 @@ async function refreshVolume(){
     const v=await api(`/api/devices/${$('#renderer').value}/volume`);
     $('#volume').max=v.max;
     volCur=v.raw;
+    volInfo=v.db!=null?{unity:v.unity,dbPerStep:v.db_per_step}:null;
     if(!volDragging && volTimer===null){ $('#volume').value=v.raw; }
     $('#volumeLabel').textContent=volLabel(v);
   }catch(e){/* volume info is optional, ignore */}
@@ -708,8 +719,12 @@ $('#volume').oninput=e=>{
     return;
   }
   if(!$('#renderer').value) return;
+  const db=volDb(+e.target.value);
+  if(db!==null) $('#volumeLabel').textContent=fmtDb(db);
   setVolumeTarget(+e.target.value);
 };
+// Keep the slider in sync with changes made elsewhere (remote, Linn app).
+setInterval(()=>{ if(!isLocal() && !volDragging && volTimer===null) refreshVolume() },4000);
 // Mouse wheel: one step at a time (shift = 5), instead of the browser default.
 $('#volume').addEventListener('wheel',e=>{
   e.preventDefault();
@@ -717,6 +732,73 @@ $('#volume').addEventListener('wheel',e=>{
   el.value=Math.max(+el.min,Math.min(+el.max,+el.value+dir*step));
   el.dispatchEvent(new Event('input'));
 },{passive:false});
+
+// ---------- Device queue (OpenHome Playlist) ----------
+const queue={supported:false,active:false,token:null,entries:[],currentId:0,state:'',repeat:false,shuffle:false};
+const dev=()=>$('#renderer').value;
+async function queueApi(body){
+  return api(`/api/devices/${dev()}/queue`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+}
+const queueItem=t=>({uri:t.resources[0].uri,metadata:t.metadata});
+function tracksOfAlbum(key){return (state.view.groups[key]||[]).filter(t=>t.resources?.[0])}
+async function queueAdd(tracks,play=false,replace=false){
+  if(!dev()||isLocal()) return notify('The queue needs a Linn/OpenHome output device.');
+  if(!tracks.length) return;
+  try{
+    await queueApi({action:replace?'replace':'insert',items:tracks.map(queueItem),play});
+    notify(replace?`Playing ${tracks.length} track${tracks.length>1?'s':''}`:`Added ${tracks.length} track${tracks.length>1?'s':''} to the queue`);
+    pollQueue(true);
+  }catch(e){notify(e.message)}
+}
+$('#content').addEventListener('click',e=>{
+  const add=e.target.closest('[data-qadd]'), addA=e.target.closest('[data-qadd-album]'), playA=e.target.closest('[data-qplay-album]');
+  if(add){ e.stopPropagation(); const t=state.view.byId.get(add.dataset.qadd); if(t) queueAdd([t],!queue.entries.length||!queue.active); }
+  else if(addA){ queueAdd(tracksOfAlbum(addA.dataset.qaddAlbum),!queue.entries.length||!queue.active); }
+  else if(playA){ queueAdd(tracksOfAlbum(playA.dataset.qplayAlbum),true,true); }
+});
+function renderQueue(){
+  const box=$('#queue');
+  box.classList.toggle('hidden',!queue.supported||isLocal());
+  $('#queueEmpty').classList.toggle('hidden',queue.entries.length>0);
+  $('#qShuffle').classList.toggle('on',queue.shuffle);
+  $('#qRepeat').classList.toggle('on',queue.repeat);
+  $('#queueList').innerHTML=queue.entries.map(en=>
+    `<li data-id="${en.id}" class="${queue.active&&en.id===queue.currentId?'cur':''}"><span class="qt">${esc(en.title)}<small>${esc(en.artist)}</small></span><button class="qx" data-qdel="${en.id}" title="Remove" aria-label="Remove">×</button></li>`).join('');
+}
+$('#queueList').addEventListener('click',async e=>{
+  try{
+    const del=e.target.closest('[data-qdel]');
+    if(del){ await queueApi({action:'delete',id:+del.dataset.qdel}); return pollQueue(true); }
+    const li=e.target.closest('li[data-id]');
+    if(li){ await queueApi({action:'seek',id:+li.dataset.id}); pollQueue(true); }
+  }catch(x){notify(x.message)}
+});
+$('#qClear').onclick=async()=>{try{await queueApi({action:'clear'});pollQueue(true)}catch(x){notify(x.message)}};
+$('#qShuffle').onclick=async()=>{try{await queueApi({action:'shuffle',value:!queue.shuffle});pollQueue(true)}catch(x){notify(x.message)}};
+$('#qRepeat').onclick=async()=>{try{await queueApi({action:'repeat',value:!queue.repeat});pollQueue(true)}catch(x){notify(x.message)}};
+let queueBusy=false;
+async function pollQueue(force=false){
+  if(!dev()||isLocal()){ queue.supported=false; queue.active=false; renderQueue(); return; }
+  if(queueBusy) return; queueBusy=true;
+  try{
+    const r=await api(`/api/devices/${dev()}/queue`+(!force&&queue.token!=null?`?token=${encodeURIComponent(queue.token)}`:''));
+    queue.supported=true; queue.active=r.active; queue.token=r.token;
+    queue.currentId=r.current_id; queue.state=r.state||''; queue.repeat=!!r.repeat; queue.shuffle=!!r.shuffle;
+    if(r.entries) queue.entries=r.entries;
+    renderQueue();
+    const cur=queue.entries.find(en=>en.id===queue.currentId);
+    if(queue.active && cur){
+      $('#playing').textContent=cur.title; $('#playingSub').textContent=[cur.artist,cur.album].filter(Boolean).join(' · ');
+      $('#npTitle').textContent=cur.title; $('#npArtist').textContent=cur.artist;
+      $('#npCover').style.backgroundImage=cur.album_art?`url('${cur.album_art}')`:'';
+      $('#status').textContent=queue.state==='Playing'?'Now playing':queue.state;
+      if(r.duration) $('#elapsed').textContent=`${fmtClock(r.seconds)} / ${fmtClock(r.duration)}`;
+    }
+  }catch(e){ queue.supported=false; queue.active=false; queue.entries=[]; queue.token=null; renderQueue(); }
+  finally{ queueBusy=false }
+}
+$('#renderer').addEventListener('change',()=>{queue.token=null;queue.entries=[];pollQueue(true)});
+setInterval(()=>pollQueue(),2000);
 
 // ---------- Elapsed-time display + auto-advance to the next track ----------
 function fmtClock(sec){sec=Math.max(0,Math.round(sec||0));const m=Math.floor(sec/60),ss=sec%60;return `${m}:${String(ss).padStart(2,'0')}`}
@@ -738,7 +820,7 @@ function parseClock(s){
 }
 let lastPoll={state:null,relSec:0,durSec:0};
 async function pollTransport(){
-  if(!$('#renderer').value||isLocal()) return;
+  if(!$('#renderer').value||isLocal()||(queue.supported&&queue.active)) return; // an active device queue advances and reports by itself
   try{
     const t=await api(`/api/devices/${$('#renderer').value}/transport`);
     const relSec=parseClock(t.rel_time), durSec=parseClock(t.duration);
