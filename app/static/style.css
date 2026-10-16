@@ -403,3 +403,20 @@ main:not([data-tab=queue])>#queueView{display:none}
 .qtable .qx button:hover{color:var(--text)}
 .qtable tr{cursor:default}
 #queueEmpty.hidden{display:none}
+
+/* ---------- Focus + busy buttons ---------- */
+/* No focus ring after a mouse click (the browser's default is a bright
+   yellow/blue outline); keyboard focus keeps a clear, theme-colored ring. */
+button:focus:not(:focus-visible){outline:none}
+button:focus-visible{outline:2px solid var(--highlight);outline-offset:2px}
+.spinner{display:inline-block;width:11px;height:11px;margin-right:9px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;vertical-align:-1px;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+button.busy{cursor:progress;pointer-events:none}
+@media (prefers-reduced-motion:reduce){.spinner{animation-duration:2s}}
+
+/* ---------- Power / standby ---------- */
+.transport .power{margin-left:10px}
+.transport .power.hidden{display:none}
+.transport .power.awake{color:var(--highlight)}
+.transport .power.busy{opacity:.5}
+.transport.standby>:not(.power),.transport.standby input{opacity:.35;pointer-events:none}

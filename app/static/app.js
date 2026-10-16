@@ -217,7 +217,22 @@ function updateReadyState(){
   if(!state.nowPlayingId) $('#playingSub').textContent = ready ? 'Local Music Control' : 'Select an output device to enable playback';
 }
 
+// Busy state for toolbar buttons: a spinner and new label, same width (no
+// layout jump), no focus ring left behind; the button ignores clicks meanwhile.
+function setBusy(btn,on,label){
+  if(on){
+    btn._label=btn.textContent; btn.style.minWidth=btn.offsetWidth+'px';
+    btn.innerHTML=`<span class="spinner" aria-hidden="true"></span>${esc(label)}`;
+    btn.classList.add('busy'); btn.setAttribute('aria-busy','true'); btn.blur();
+  }else{
+    btn.textContent=btn._label??btn.textContent; btn.style.minWidth='';
+    btn.classList.remove('busy'); btn.removeAttribute('aria-busy');
+  }
+}
 $('#discover').onclick=async()=>{
+  const btn=$('#discover');
+  if(btn.classList.contains('busy')) return;
+  setBusy(btn,true,'Searching');
   try{
     log('Searching local network ...');
     const x=await api('/api/discover');
@@ -227,19 +242,21 @@ $('#discover').onclick=async()=>{
     log(`Found ${x.devices.length} device(s): `+x.devices.map(d=>d.name+(d.server?' [server]':'')+(d.renderer?' [output]':'')).join(', '));
     updateReadyState();
   }catch(e){logErr(e.message)}
+  finally{ setBusy(btn,false) }
 };
 
 $('#loadLibrary').onclick=async()=>{
   if(!$('#server').value){notify('Please select a media server first.');return}
-  const btn=$('#loadLibrary'); const original=btn.textContent;
-  btn.disabled=true;
+  const btn=$('#loadLibrary');
+  if(btn.classList.contains('busy')) return;
+  setBusy(btn,true,'Loading');
   $('#content').innerHTML='<div class="empty">Loading library ...</div>';
 
   const poll=setInterval(async()=>{
     try{
       const p=await api('/api/scan/progress');
       if(p.running){
-        btn.textContent=`${p.count} tracks ...`;
+        btn.lastChild.textContent=`${p.count} tracks`;
         $('#content').innerHTML=`<div class="empty">Loading library: ${p.count} tracks found in ${p.containers} folders ... please wait.</div>`;
       }
     }catch(e){/* progress reporting is optional */}
@@ -256,7 +273,7 @@ $('#loadLibrary').onclick=async()=>{
     $('#content').innerHTML=`<div class="empty">Failed to load: ${esc(e.message)}</div>`;
   }finally{
     clearInterval(poll);
-    btn.textContent=original; btn.disabled=false;
+    setBusy(btn,false);
   }
 };
 
@@ -1022,6 +1039,43 @@ async function pollQueue(force=false){
 }
 $('#renderer').addEventListener('change',()=>{queue.token=null;queue.entries=[];pollQueue(true)});
 setInterval(()=>pollQueue(),2000);
+
+// ---------- Power / standby (OpenHome Product service) ----------
+// The power button appears only for devices that offer the service. In
+// standby the transport and volume are greyed out; the button wakes the
+// device again.
+const power={supported:false,standby:false};
+function drawPower(){
+  const b=$('#powerBtn');
+  b.classList.toggle('hidden',!power.supported||isLocal());
+  b.classList.toggle('awake',power.supported&&!power.standby);
+  b.title=power.standby?'In standby -- click to wake up':'Awake -- click to put into standby';
+  b.setAttribute('aria-label',b.title);
+  document.querySelector('.transport').classList.toggle('standby',power.supported&&power.standby&&!isLocal());
+}
+async function refreshPower(){
+  if(!dev()||isLocal()){ power.supported=false; power.standby=false; return drawPower(); }
+  try{
+    const r=await api(`/api/devices/${encodeURIComponent(dev())}/standby`);
+    power.supported=r.supported; power.standby=r.standby;
+  }catch(e){ /* device unreachable (e.g. deep standby): keep the last known state */ }
+  drawPower();
+}
+$('#powerBtn').onclick=async()=>{
+  const b=$('#powerBtn');
+  if(b.classList.contains('busy')) return;
+  const toStandby=!power.standby;
+  b.classList.add('busy'); b.blur();
+  try{
+    await api('/api/control',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({device_id:dev(),action:'standby',value:toStandby?1:0})});
+    log(toStandby?'Device put into standby.':'Device woken up.');
+    power.standby=toStandby; drawPower();
+    if(!toStandby) setTimeout(()=>{ refreshVolume(); pollQueue(true) },1500);   // give it a moment to come up
+  }catch(e){ logErr(`Standby command failed: ${e.message}`); }
+  finally{ b.classList.remove('busy'); setTimeout(refreshPower,1500) }
+};
+$('#renderer').addEventListener('change',refreshPower);
+setInterval(()=>{ if(!document.hidden) refreshPower() },5000);
 
 // ---------- Elapsed-time display + auto-advance to the next track ----------
 function fmtClock(sec){sec=Math.max(0,Math.round(sec||0));const h=Math.floor(sec/3600),m=Math.floor(sec%3600/60),ss=sec%60;return h?`${h}:${String(m).padStart(2,'0')}:${String(ss).padStart(2,'0')}`:`${m}:${String(ss).padStart(2,'0')}`}
