@@ -127,9 +127,10 @@ include that file when reporting the problem.
 - **Auto-advance**: once a track finishes, the next one from the currently displayed track list starts automatically (detected via position polling; manually stopping playback does not trigger this)
 - **Elapsed-time display** in the LCD-style readout (elapsed/total), updated via polling
 - **Sample rate/bitrate** per track in the track list (where supplied by the server as a `res` attribute)
-- **Device queue (OpenHome Playlist)**: on Linn/OpenHome devices the Now Playing panel shows the device's own playlist. Use `+` on a track or `+ Queue` on an album to append, `▶` on an album to replace the queue and play it; `▶ Play all` / `+ Queue all` above the list take everything currently shown (e.g. all albums of the selected artist); click an entry to jump to it, `×` to remove, plus Shuffle/Repeat/Clear. While the queue is the active source the transport buttons control it and the device advances by itself. **Not verified against real hardware.**
+- **Queue tab (OpenHome Playlist)**: on Linn/OpenHome devices the device's own playlist has its own `Queue` tab (Ctrl/⌘+Q toggles) with the full window: track list with cover, artist, album, length and total time, Shuffle/Repeat/Clear, double-click to jump to a track, `×` to remove. Add from the Library with `+` on a track, `+ Queue` on an album, `▶` on an album (replaces the queue and plays) or `▶ Play all` / `+ Queue all` for everything shown. While the queue is the active source the transport buttons control it and the device advances by itself. **Not verified against real hardware.**
 - **Live dB readout** while dragging the volume slider, and the slider follows changes made from other controllers.
 - **Larger covers**: a `Covers` slider above the album list scales the album covers (remembered between runs); clicking any cover -- in the list or in Now Playing -- opens it full size (click or Esc to close).
+- **Diagnostics dialog**: replaces the old one-line panel with a timestamped log (last 300 entries, errors in red, badge for unseen errors), an errors-only filter, a `Device info` button that lists all services of the selected player, and `Copy report` (versions + device services + log) for bug reports.
 - **About dialog**: the info button in the top right shows the version, build, Python/system and dependency versions, and the project link. The version lives in `app/__init__.py`.
 - **Position bar**: elapsed time, remaining time and a seek bar under the title (local playback, UPnP renderers and the device queue). Multi-device Linn players are listed once.
 - **Collapsible column browser**: the `Browser` button (or Ctrl/⌘+B) hides the Album Artist/Artist/Album/Year columns to give the album list the full height; the state is remembered. The current selection keeps filtering while hidden.
@@ -163,6 +164,13 @@ include that file when reporting the problem.
 - There is no source switcher (MinimServer/TIDAL) anymore -- only one media server is loaded at a time via "Load library".
 - Album grouping depends on the server's DIDL-Lite metadata.
 - No code from proprietary apps such as mconnect was used.
+
+## License
+
+Flou Player is free software, licensed under the GNU General Public License,
+version 3 or (at your option) any later version (GPL-3.0-or-later). See
+[LICENSE](LICENSE). This matches the GPL v3 licensing of PyQt5, which the
+desktop window uses.
 
 ## Open-source dependencies
 
