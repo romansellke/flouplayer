@@ -887,6 +887,13 @@ function drawProgress(){
   $('#elapsedR').textContent=prog.dur?'-'+fmtClock(prog.dur-pos):'';
   seek.disabled=!(prog.dur&&prog.seekable);
   if(!prog.seeking) seek.value=prog.dur?Math.round(pos/prog.dur*1000):0;
+  // Fill follows the handle; the time grid ticks every minute (5 / 10 min for long tracks).
+  seek.style.setProperty('--pct',(+seek.value/10)+'%');
+  if(prog.dur!==seek._gridDur){
+    seek._gridDur=prog.dur;
+    const step=prog.dur>3600?600:prog.dur>1200?300:60;
+    seek.style.setProperty('--tick',prog.dur?(step/prog.dur*100)+'%':'100%');
+  }
 }
 function clearProgress(){ setProgress(0,0,false,false) }
 setInterval(()=>{ if(prog.playing&&!prog.seeking) drawProgress() },250);
@@ -1011,7 +1018,7 @@ $('#renderer').addEventListener('change',()=>{queue.token=null;queue.entries=[];
 setInterval(()=>pollQueue(),2000);
 
 // ---------- Elapsed-time display + auto-advance to the next track ----------
-function fmtClock(sec){sec=Math.max(0,Math.round(sec||0));const m=Math.floor(sec/60),ss=sec%60;return `${m}:${String(ss).padStart(2,'0')}`}
+function fmtClock(sec){sec=Math.max(0,Math.round(sec||0));const h=Math.floor(sec/3600),m=Math.floor(sec%3600/60),ss=sec%60;return h?`${h}:${String(m).padStart(2,'0')}:${String(ss).padStart(2,'0')}`:`${m}:${String(ss).padStart(2,'0')}`}
 
 // Local playback: the <audio> element already knows exactly when a track
 // ends and exactly where it is -- no polling/heuristics needed.
