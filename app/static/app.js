@@ -254,6 +254,21 @@ function bitrateLabel(res){
   return `${Math.round(parseInt(res.bitrate)*8/1000)}kbps`;
 }
 
+// ---------- About ----------
+$('#aboutBtn').onclick=async()=>{
+  $('#aboutModal').classList.remove('hidden');
+  try{
+    const a=await api('/api/app/about');
+    $('#aboutVersion').textContent=`Version ${a.version} (build ${a.build})`;
+    const rows=[['Python',a.python],['System',a.platform],...Object.entries(a.dependencies).map(([k,v])=>[k,v])];
+    $('#aboutTable').innerHTML=rows.map(([k,v])=>`<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join('');
+    $('#aboutRepo').textContent=a.repo; $('#aboutRepo').href=a.repo;
+  }catch(e){ $('#aboutVersion').textContent=e.message }
+};
+$('#aboutClose').onclick=()=>$('#aboutModal').classList.add('hidden');
+$('#aboutModal').addEventListener('click',e=>{ if(e.target===$('#aboutModal')) $('#aboutModal').classList.add('hidden') });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') $('#aboutModal').classList.add('hidden') });
+
 // ---------- Cover size + full-size cover view ----------
 function applyCoverSize(px){
   const c=$('#content');
@@ -401,7 +416,7 @@ document.addEventListener('keydown',e=>{
   if(e.metaKey||e.ctrlKey||e.altKey) return;
   const t=e.target;
   if(t && (t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.tagName==='SELECT'||t.isContentEditable)) return;
-  if(!$('#metaModal').classList.contains('hidden')) return;
+  if(!$('#metaModal').classList.contains('hidden')||!$('#aboutModal').classList.contains('hidden')) return;
   const col=facetCurrent||facetHover;
   if(!col || col.parentElement.classList.contains('collapsed')) return;
   if(e.key==='Escape'){ clearTypeHit(); return }
