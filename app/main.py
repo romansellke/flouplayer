@@ -178,7 +178,9 @@ def discover(timeout:int=4):
 def services(device_id:str):
     d=devices.get(device_id)
     if not d: raise HTTPException(404,"Device not found. Please search again.")
-    return device_json(device_id,d)
+    out=device_json(device_id,d)
+    out["peers"]=[{"name":getattr(x,"friendly_name",""),"location":getattr(x,"location",""),"service_types":sorted(getattr(sv,"service_type","") for sv in x.services)} for x in peer_devices(d)]
+    return out
 
 @app.get("/api/devices/{device_id}/volume")
 def get_volume(device_id:str):

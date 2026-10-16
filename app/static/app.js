@@ -6,7 +6,76 @@ const FACET_ORDER=['album_artist','artist','album','year'];
 const ALBUM_CHUNK=40;
 const LOCAL_RENDERER_ID='__local__';
 
-const log=x=>{$('#log').textContent=typeof x==='string'?x:JSON.stringify(x,null,2)};
+// ---------- Diagnostics log ----------
+// Keeps the last LOG_MAX entries (timestamp, level, text) instead of only
+// the latest message; the Diagnostics dialog shows them, can copy a
+// complete report, and a badge counts errors that arrived unseen.
+const LOG_MAX=300;
+const logEntries=[]; let logUnseenErrors=0;
+function log(x,level='info'){
+  const msg=typeof x==='string'?x:JSON.stringify(x,null,2);
+  logEntries.push({t:new Date(),level,msg});
+  if(logEntries.length>LOG_MAX) logEntries.shift();
+  if(level==='error' && $('#diagModal').classList.contains('hidden')) logUnseenErrors++;
+  drawDiagBadge(); if(!$('#diagModal').classList.contains('hidden')) drawDiag();
+}
+const logErr=x=>log(x,'error');
+const hhmmss=d=>d.toTimeString().slice(0,8);
+function drawDiagBadge(){
+  const b=$('#diagBadge'); if(!b) return;
+  b.textContent=logUnseenErrors; b.classList.toggle('hidden',!logUnseenErrors);
+}
+function drawDiag(){
+  const errOnly=$('#diagErrOnly').checked;
+  const rows=logEntries.filter(e=>!errOnly||e.level==='error');
+  $('#diagList').innerHTML=rows.length
+    ? rows.map(e=>`<li class="${e.level}"><time>${hhmmss(e.t)}</time><span class="lv">${e.level}</span><span class="msg">${esc(e.msg)}</span></li>`).join('')
+    : '<li class="empty">Nothing logged yet.</li>';
+  const l=$('#diagList'); l.scrollTop=l.scrollHeight;
+}
+$('#diagBtn').onclick=()=>{ logUnseenErrors=0; drawDiagBadge(); $('#diagModal').classList.remove('hidden'); drawDiag() };
+$('#diagClose').onclick=()=>$('#diagModal').classList.add('hidden');
+$('#diagModal').addEventListener('click',e=>{ if(e.target===$('#diagModal')) $('#diagModal').classList.add('hidden') });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') $('#diagModal').classList.add('hidden') });
+$('#diagClear').onclick=()=>{ logEntries.length=0; logUnseenErrors=0; drawDiagBadge(); drawDiag() };
+$('#diagErrOnly').onchange=drawDiag;
+async function copyText(text){
+  try{ await navigator.clipboard.writeText(text); return true }catch(e){}
+  const ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.opacity='0';
+  document.body.appendChild(ta); ta.select();
+  let ok=false; try{ ok=document.execCommand('copy') }catch(e){}
+  ta.remove(); return ok;
+}
+async function buildReport(){
+  const lines=[];
+  try{
+    const a=await api('/api/app/about');
+    lines.push(`Flou Player ${a.version} (build ${a.build})`,`Python ${a.python} on ${a.platform}`,
+      'Dependencies: '+Object.entries(a.dependencies).map(([k,v])=>`${k} ${v}`).join(', '));
+  }catch(e){ lines.push('(about info unavailable: '+e.message+')') }
+  const d=dev();
+  if(d && !isLocal()){
+    try{
+      const x=await api(`/api/devices/${encodeURIComponent(d)}/services`);
+      lines.push('',`Output device: ${x.name} (${x.model||'?'})`);
+      (x.peers||[]).forEach(p=>lines.push(`  ${p.name} @ ${p.location}`,...p.service_types.map(t=>'    '+t)));
+    }catch(e){ lines.push('(device info unavailable: '+e.message+')') }
+  }
+  lines.push('','Log:',...logEntries.map(e=>`${hhmmss(e.t)} ${e.level.toUpperCase()} ${e.msg}`));
+  return lines.join('\n');
+}
+$('#diagCopy').onclick=async()=>{
+  const ok=await copyText(await buildReport());
+  showToast(ok?'Report copied to the clipboard':'Could not copy -- please select the log text manually');
+};
+$('#diagDevice').onclick=async()=>{
+  const d=dev();
+  if(!d||isLocal()) return log('Select an output device first.','warn');
+  try{
+    const x=await api(`/api/devices/${encodeURIComponent(d)}/services`);
+    log(`Output device: ${x.name}\n`+(x.peers||[]).map(p=>`${p.name} @ ${p.location}\n`+p.service_types.map(t=>'  '+t).join('\n')).join('\n'));
+  }catch(e){ logErr(e.message) }
+};
 
 async function api(url,opt){
   let r;
@@ -126,8 +195,8 @@ function enrichTracks(tracks){
   return tracks;
 }
 
-// Guidance messages need to be impossible to miss -- the Diagnostics panel
-// is collapsed by default, so a plain log() alone can look like nothing
+// Guidance messages need to be impossible to miss -- the Diagnostics dialog
+// is closed by default, so a plain log() alone can look like nothing
 // happened at all. notify() logs AND shows a brief on-screen toast.
 let toastTimer;
 function showToast(msg){
@@ -137,7 +206,7 @@ function showToast(msg){
   clearTimeout(toastTimer);
   toastTimer=setTimeout(()=>el.classList.add('hidden'),Math.max(3200,msg.length*55));
 }
-function notify(msg){ log(msg); showToast(msg); }
+function notify(msg){ log(msg,'warn'); showToast(msg); }
 
 // Dims the transport controls and hints in the display when playback
 // can't actually do anything yet (no output device chosen) -- so it's
@@ -155,9 +224,9 @@ $('#discover').onclick=async()=>{
     state.devices=x.devices;
     populateServerSelect(x.devices.filter(d=>d.server));
     populateRendererSelect(x.devices.filter(d=>d.renderer));
-    log(x.devices);
+    log(`Found ${x.devices.length} device(s): `+x.devices.map(d=>d.name+(d.server?' [server]':'')+(d.renderer?' [output]':'')).join(', '));
     updateReadyState();
-  }catch(e){log(e.message)}
+  }catch(e){logErr(e.message)}
 };
 
 $('#loadLibrary').onclick=async()=>{
@@ -183,7 +252,7 @@ $('#loadLibrary').onclick=async()=>{
     $('#breadcrumb').textContent=`${x.count} tracks (${x.scan_root})`;
     render();
   }catch(e){
-    log(e.message);
+    logErr(e.message);
     $('#content').innerHTML=`<div class="empty">Failed to load: ${esc(e.message)}</div>`;
   }finally{
     clearInterval(poll);
@@ -632,7 +701,7 @@ async function playLocal(t){
       audio.src=res.uri;await audio.play();
       if(res.transcoded) log(`Playing "${t.title}" via transcoding to FLAC (${formatName(t)} isn't supported directly; seeking is not possible).`);
       return;
-    }catch(e){lastErr=e;log(`Local playback failed for ${resourceMime(res)||'?'} ${res.uri}: ${e.message}`)}
+    }catch(e){lastErr=e;logErr(`Local playback failed for ${resourceMime(res)||'?'} ${res.uri}: ${e.message}`)}
   }
   throw Error(`"${t.title}" couldn't be played on this computer's speakers (${formatName(t)}): ${lastErr?.message||'unknown error'}`);
 }
@@ -710,14 +779,14 @@ document.querySelectorAll('[data-action]').forEach(b=>b.onclick=async()=>{
 
   if(isLocal()){
     const audio=$('#localAudio');
-    if(action==='play') audio.play().catch(e=>log(e.message));
+    if(action==='play') audio.play().catch(e=>logErr(e.message));
     else if(action==='pause') audio.pause();
     else if(action==='stop'){audio.pause();audio.currentTime=0}
     return;
   }
   if(action==='stop') userInitiatedStop=true;
   try{await api('/api/control',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({device_id:$('#renderer').value,action})})}
-  catch(e){log(e.message)}
+  catch(e){logErr(e.message)}
 });
 
 // ---------- Volume: finer control, with dB readout where available ----------
@@ -765,7 +834,7 @@ function volRamp(){
     try{
       await api('/api/control',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({device_id:$('#renderer').value,action:'volume',value:next})});
       volCur=next;
-    }catch(x){log(x.message); volTimer=null; volTarget=null; return}
+    }catch(x){logErr(x.message); volTimer=null; volTarget=null; return}
     volTimer=setTimeout(tick,VOL_TICK_MS);
   };
   volTimer=setTimeout(tick,0);
