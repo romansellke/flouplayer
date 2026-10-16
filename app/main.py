@@ -48,14 +48,33 @@ def service(device, needles):
         if any(n.lower() in probe for n in needles): return s
     return None
 
+def _host(d):
+    return urlparse(getattr(d,"location","") or "").hostname
+
+def peer_devices(d):
+    """The device itself plus any other discovered device on the same IP.
+    Linn/OpenHome players publish several UPnP devices (e.g. the OpenHome
+    one and a separate MediaRenderer); the OpenHome services (Playlist,
+    Product, Volume, Time) may sit on a different one than the entry the
+    user selected."""
+    h=_host(d)
+    return [d]+[o for o in list(devices.values()) if o is not d and h and _host(o)==h]
+
+def peer_service(d, needles):
+    for dev in peer_devices(d):
+        s=service(dev,needles)
+        if s: return s
+    return None
+
 def find_volume_service(d):
     """Prefers the OpenHome Volume service (typical for Linn devices):
     it offers real dB resolution via Characteristics()
     (VolumeMilliDbPerStep). Fallback: classic UPnP-AV
     RenderingControl service (0-100 only, no dB)."""
-    for s in d.services:
-        sid=(getattr(s,"service_id","")+" "+getattr(s,"service_type","")).lower()
-        if "openhome" in sid and "volume" in sid: return s,"openhome"
+    for dev in peer_devices(d):
+        for s in dev.services:
+            sid=(getattr(s,"service_id","")+" "+getattr(s,"service_type","")).lower()
+            if "openhome" in sid and "volume" in sid: return s,"openhome"
     for s in d.services:
         sid=(getattr(s,"service_id","")+" "+getattr(s,"service_type","")).lower()
         if "renderingcontrol" in sid or "volume" in sid: return s,"renderingcontrol"
@@ -180,7 +199,7 @@ def list_sources(device_id:str):
     Only available on OpenHome devices; not verified against real hardware."""
     d=devices.get(device_id)
     if not d: raise HTTPException(404,"Device not found")
-    prod=service(d,["product"])
+    prod=peer_service(d,["product"])
     if not prod: raise HTTPException(400,"No OpenHome Product service on this device -- source switching not possible")
     try:
         count=int(prod.SourceCount().get("Value",0))
@@ -505,7 +524,7 @@ def control(req:Control):
                 vol.SetVolume(Value=max(0,min(vmax,req.value or 0)))
             else: vol.SetVolume(InstanceID=0,Channel="Master",DesiredVolume=max(0,min(100,req.value or 0)))
         elif req.action=="set_source":
-            prod=service(d,["product"])
+            prod=peer_service(d,["product"])
             if not prod: raise HTTPException(400,"No OpenHome Product service on this device")
             if req.source_name: prod.SetSourceIndexByName(Value=req.source_name)
             elif req.source_index is not None: prod.SetSourceIndex(Value=req.source_index)
@@ -523,10 +542,17 @@ def control(req:Control):
 # NOTE: written against the public OpenHome Playlist/Time/Product service
 # definitions; not yet verified against real hardware.
 def find_playlist_service(d):
-    for s in d.services:
-        t=(getattr(s,"service_type","") or "").lower()
-        if "openhome" in t and ":playlist:" in t: return s
+    for dev in peer_devices(d):
+        for s in dev.services:
+            t=(getattr(s,"service_type","") or "").lower()
+            if "openhome" in t and ":playlist:" in t: return s
     return None
+
+def _service_types(d):
+    return sorted({getattr(s,"service_type","") for dev in peer_devices(d) for s in dev.services})
+
+def _no_playlist(d):
+    return HTTPException(400,"No OpenHome Playlist service on this device (services found: "+", ".join(t.rsplit(":",2)[-2] if t.count(":")>=2 else t for t in _service_types(d))+")")
 
 def _val(r,key="Value"):
     return r.get(key) if isinstance(r,dict) else r
@@ -561,7 +587,7 @@ def _playlist_source_index(prod):
     return None
 
 def _playlist_active(d):
-    prod=service(d,["product"])
+    prod=peer_service(d,["product"])
     if not prod: return True  # no Product service: assume the Playlist is usable directly
     try:
         return int(prod.SourceIndex().get("Value",-1))==_playlist_source_index(prod)
@@ -569,7 +595,7 @@ def _playlist_active(d):
         return False
 
 def _activate_playlist(d):
-    prod=service(d,["product"])
+    prod=peer_service(d,["product"])
     if not prod: return
     idx=_playlist_source_index(prod)
     if idx is None: raise HTTPException(400,"This device has no Playlist source")
@@ -582,14 +608,14 @@ def get_queue(device_id:str,token:Optional[int]=None):
     d=devices.get(device_id)
     if not d: raise HTTPException(404,"Device not found")
     pl=find_playlist_service(d)
-    if not pl: raise HTTPException(400,"No OpenHome Playlist service on this device")
+    if not pl: raise _no_playlist(d)
     try:
         ids,tok=_id_array(pl)
         out={"supported":True,"token":tok,"active":_playlist_active(d),"state":_val(pl.TransportState()),"current_id":int(_val(pl.Id()) or 0)}
         try:
             out["repeat"]=bool(_val(pl.Repeat())); out["shuffle"]=bool(_val(pl.Shuffle()))
         except Exception: pass
-        tm=service(d,["time"])
+        tm=peer_service(d,["time"])
         if tm:
             try:
                 t=tm.Time(); out["seconds"]=int(t.get("Seconds",0)); out["duration"]=int(t.get("Duration",0))
@@ -610,7 +636,7 @@ def queue_action(device_id:str,req:QueueReq):
     d=devices.get(device_id)
     if not d: raise HTTPException(404,"Device not found")
     pl=find_playlist_service(d)
-    if not pl: raise HTTPException(400,"No OpenHome Playlist service on this device")
+    if not pl: raise _no_playlist(d)
     a=req.action
     try:
         if a=="insert":
