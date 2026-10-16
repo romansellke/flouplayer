@@ -876,8 +876,10 @@ function setProgress(sec,dur,playing=true,seekable=true){
   Object.assign(prog,{base:sec||0,at:performance.now(),dur:dur||0,playing,seekable});
   drawProgress();
 }
+const PROG_MAX_EXTRAPOLATE_S=6;   // longest the clock runs on its own between readings
 function curPos(){
-  const p=prog.base+(prog.playing?(performance.now()-prog.at)/1000:0);
+  const age=Math.min((performance.now()-prog.at)/1000,PROG_MAX_EXTRAPOLATE_S);
+  const p=prog.base+(prog.playing?age:0);
   return prog.dur?Math.min(p,prog.dur):p;
 }
 function drawProgress(){
@@ -1010,8 +1012,12 @@ async function pollQueue(force=false){
       $('#status').textContent=queue.state==='Playing'?'Now playing':queue.state;
       if(r.duration) setProgress(r.seconds,r.duration,queue.state==='Playing');
       else clearProgress();
+    }else if(queue.active){
+      // Empty queue (or no current track): nothing is playing, so stop the clock.
+      clearProgress();
+      $('#status').textContent=queue.entries.length?(queue.state||'Stopped'):'Queue is empty';
     }
-  }catch(e){ queue.supported=false; queue.active=false; queue.entries=[]; queue.token=null; renderQueue(); }
+  }catch(e){ queue.supported=false; queue.active=false; queue.entries=[]; queue.token=null; renderQueue(); if(!isLocal()) prog.playing=false; }
   finally{ queueBusy=false }
 }
 $('#renderer').addEventListener('change',()=>{queue.token=null;queue.entries=[];pollQueue(true)});
@@ -1030,6 +1036,12 @@ localAudioEl.addEventListener('timeupdate',()=>{
   setProgress(localAudioEl.currentTime,dur,!localAudioEl.paused,Number.isFinite(d)&&d>0&&localAudioEl.seekable.length>0);
 });
 localAudioEl.addEventListener('ended',()=>{ if(isLocal()) playNextInPlaylist() });
+for(const ev of ['pause','ended','emptied']) localAudioEl.addEventListener(ev,()=>{
+  if(!isLocal()) return;
+  const d=localAudioEl.duration;
+  const known=Number.isFinite(d)&&d>0;
+  setProgress(ev==='emptied'?0:localAudioEl.currentTime,known?d:state.localDurationHint,false,known&&localAudioEl.seekable.length>0);
+});
 
 // UPnP renderers: no direct access to their playback clock, so poll it.
 function parseClock(s){
