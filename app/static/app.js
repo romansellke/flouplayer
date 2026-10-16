@@ -756,6 +756,11 @@ $('#content').addEventListener('click',e=>{
   else if(addA){ queueAdd(tracksOfAlbum(addA.dataset.qaddAlbum),!queue.entries.length||!queue.active); }
   else if(playA){ queueAdd(tracksOfAlbum(playA.dataset.qplayAlbum),true,true); }
 });
+// Everything currently listed (respects the column selection and search),
+// in the order shown: album by album, tracks in album order.
+const shownTracks=()=>state.currentPlaylist.filter(t=>t.resources?.[0]);
+$('#qAddAll').onclick=()=>queueAdd(shownTracks(),!queue.entries.length||!queue.active);
+$('#qPlayAll').onclick=()=>queueAdd(shownTracks(),true,true);
 function renderQueue(){
   const box=$('#queue');
   box.classList.toggle('hidden',!queue.supported||isLocal());
