@@ -48,14 +48,33 @@ def service(device, needles):
         if any(n.lower() in probe for n in needles): return s
     return None
 
+def _host(d):
+    return urlparse(getattr(d,"location","") or "").hostname
+
+def peer_devices(d):
+    """The device itself plus any other discovered device on the same IP.
+    Linn/OpenHome players publish several UPnP devices (e.g. the OpenHome
+    one and a separate MediaRenderer); the OpenHome services (Playlist,
+    Product, Volume, Time) may sit on a different one than the entry the
+    user selected."""
+    h=_host(d)
+    return [d]+[o for o in list(devices.values()) if o is not d and h and _host(o)==h]
+
+def peer_service(d, needles):
+    for dev in peer_devices(d):
+        s=service(dev,needles)
+        if s: return s
+    return None
+
 def find_volume_service(d):
     """Prefers the OpenHome Volume service (typical for Linn devices):
     it offers real dB resolution via Characteristics()
     (VolumeMilliDbPerStep). Fallback: classic UPnP-AV
     RenderingControl service (0-100 only, no dB)."""
-    for s in d.services:
-        sid=(getattr(s,"service_id","")+" "+getattr(s,"service_type","")).lower()
-        if "openhome" in sid and "volume" in sid: return s,"openhome"
+    for dev in peer_devices(d):
+        for s in dev.services:
+            sid=(getattr(s,"service_id","")+" "+getattr(s,"service_type","")).lower()
+            if "openhome" in sid and "volume" in sid: return s,"openhome"
     for s in d.services:
         sid=(getattr(s,"service_id","")+" "+getattr(s,"service_type","")).lower()
         if "renderingcontrol" in sid or "volume" in sid: return s,"renderingcontrol"
@@ -85,7 +104,8 @@ def device_icon(d):
     return url if urlparse(url).scheme in ("http","https") else None
 
 def device_json(key,d):
-    sv=[getattr(s,"service_id","") for s in d.services]
+    # A merged player (see discover) reports the services of all its sibling devices.
+    sv=[getattr(s,"service_id","") for dev in peer_devices(d) if dev is d or key in _merged_primary for s in dev.services]
     is_server=any("contentdirectory" in x.lower() for x in sv)
     is_renderer=any(x in " ".join(sv).lower() for x in ["avtransport","openhome","playlist"])
     return {"id":key,"name":getattr(d,"friendly_name",key),"manufacturer":getattr(d,"manufacturer",None),"model":getattr(d,"model_name",None),"server":is_server,"renderer":is_renderer,"icon":device_icon(d),"services":sv}
@@ -110,6 +130,11 @@ def ping():
     on the same port (see desktop.py)."""
     return {"app":APP_ID,"build":BUILD_ID}
 
+_merged_primary=set()  # keys of device entries that stand for a whole multi-device player
+
+def _has_openhome_product(d):
+    return any("openhome" in (getattr(s,"service_type","") or "").lower() and ":product:" in (getattr(s,"service_type","") or "").lower() for s in d.services)
+
 @app.get("/api/discover")
 def discover(timeout:int=4):
     global devices
@@ -119,7 +144,22 @@ def discover(timeout:int=4):
     for d in found:
         key=getattr(d,"udn",None) or getattr(d,"location",None) or str(id(d)); fresh[key]=d
     with lock: devices=fresh
-    return {"devices":[device_json(k,d) for k,d in fresh.items()]}
+    # Linn/OpenHome players show up as several UPnP devices on one IP (the
+    # OpenHome one and a separate "UPnP AV" MediaRenderer). Present each
+    # player once -- as the OpenHome device -- and let the lookups reach
+    # the sibling devices' services through peer_devices().
+    hidden=set(); primaries=set()
+    by_host={}
+    for k,d in fresh.items(): by_host.setdefault(_host(d),[]).append((k,d))
+    for h,group in by_host.items():
+        if not h or len(group)<2: continue
+        prim=next(((k,d) for k,d in group if _has_openhome_product(d)),None)
+        if not prim: continue
+        primaries.add(prim[0])
+        for k,d in group:
+            if k!=prim[0] and not any("contentdirectory" in getattr(sv,"service_id","").lower() for sv in d.services): hidden.add(k)
+    _merged_primary.clear(); _merged_primary.update(primaries)
+    return {"devices":[device_json(k,d) for k,d in fresh.items() if k not in hidden]}
 
 @app.get("/api/devices/{device_id}/services")
 def services(device_id:str):
@@ -160,7 +200,7 @@ def get_transport(device_id:str):
     for automatically advancing to the next track once one has finished)."""
     d=devices.get(device_id)
     if not d: raise HTTPException(404,"Device not found")
-    av=service(d,["AVTransport"])
+    av=peer_service(d,["AVTransport"])
     if not av: raise HTTPException(400,"No AVTransport service on this device")
     try:
         pos=av.GetPositionInfo(InstanceID=0)
@@ -180,7 +220,7 @@ def list_sources(device_id:str):
     Only available on OpenHome devices; not verified against real hardware."""
     d=devices.get(device_id)
     if not d: raise HTTPException(404,"Device not found")
-    prod=service(d,["product"])
+    prod=peer_service(d,["product"])
     if not prod: raise HTTPException(400,"No OpenHome Product service on this device -- source switching not possible")
     try:
         count=int(prod.SourceCount().get("Value",0))
@@ -488,8 +528,8 @@ def browse(req:Browse):
 def control(req:Control):
     d=devices.get(req.device_id)
     if not d: raise HTTPException(404,"Output device not found")
-    av=service(d,["AVTransport"])
-    if not av and req.action in ("play","pause","stop","next","previous","set_uri"):
+    av=peer_service(d,["AVTransport"])
+    if not av and req.action in ("play","pause","stop","next","previous","set_uri","seek"):
         raise HTTPException(400,"No AVTransport service on this device")
     try:
         if req.action=="play": av.Play(InstanceID=0,Speed="1")
@@ -497,6 +537,9 @@ def control(req:Control):
         elif req.action=="stop": av.Stop(InstanceID=0)
         elif req.action in ("next","previous"): getattr(av,req.action.capitalize())(InstanceID=0)
         elif req.action=="set_uri": av.SetAVTransportURI(InstanceID=0,CurrentURI=req.uri or "",CurrentURIMetaData=req.metadata or ""); av.Play(InstanceID=0,Speed="1")
+        elif req.action=="seek":
+            sec=max(0,req.value or 0)
+            av.Seek(InstanceID=0,Unit="REL_TIME",Target=f"{sec//3600}:{sec%3600//60:02d}:{sec%60:02d}")
         elif req.action=="volume":
             vol,kind=find_volume_service(d)
             if not vol: raise HTTPException(400,"No volume service on this device")
@@ -505,7 +548,7 @@ def control(req:Control):
                 vol.SetVolume(Value=max(0,min(vmax,req.value or 0)))
             else: vol.SetVolume(InstanceID=0,Channel="Master",DesiredVolume=max(0,min(100,req.value or 0)))
         elif req.action=="set_source":
-            prod=service(d,["product"])
+            prod=peer_service(d,["product"])
             if not prod: raise HTTPException(400,"No OpenHome Product service on this device")
             if req.source_name: prod.SetSourceIndexByName(Value=req.source_name)
             elif req.source_index is not None: prod.SetSourceIndex(Value=req.source_index)
@@ -523,10 +566,17 @@ def control(req:Control):
 # NOTE: written against the public OpenHome Playlist/Time/Product service
 # definitions; not yet verified against real hardware.
 def find_playlist_service(d):
-    for s in d.services:
-        t=(getattr(s,"service_type","") or "").lower()
-        if "openhome" in t and ":playlist:" in t: return s
+    for dev in peer_devices(d):
+        for s in dev.services:
+            t=(getattr(s,"service_type","") or "").lower()
+            if "openhome" in t and ":playlist:" in t: return s
     return None
+
+def _service_types(d):
+    return sorted({getattr(s,"service_type","") for dev in peer_devices(d) for s in dev.services})
+
+def _no_playlist(d):
+    return HTTPException(400,"No OpenHome Playlist service on this device (services found: "+", ".join(t.rsplit(":",2)[-2] if t.count(":")>=2 else t for t in _service_types(d))+")")
 
 def _val(r,key="Value"):
     return r.get(key) if isinstance(r,dict) else r
@@ -561,7 +611,7 @@ def _playlist_source_index(prod):
     return None
 
 def _playlist_active(d):
-    prod=service(d,["product"])
+    prod=peer_service(d,["product"])
     if not prod: return True  # no Product service: assume the Playlist is usable directly
     try:
         return int(prod.SourceIndex().get("Value",-1))==_playlist_source_index(prod)
@@ -569,7 +619,7 @@ def _playlist_active(d):
         return False
 
 def _activate_playlist(d):
-    prod=service(d,["product"])
+    prod=peer_service(d,["product"])
     if not prod: return
     idx=_playlist_source_index(prod)
     if idx is None: raise HTTPException(400,"This device has no Playlist source")
@@ -582,14 +632,14 @@ def get_queue(device_id:str,token:Optional[int]=None):
     d=devices.get(device_id)
     if not d: raise HTTPException(404,"Device not found")
     pl=find_playlist_service(d)
-    if not pl: raise HTTPException(400,"No OpenHome Playlist service on this device")
+    if not pl: raise _no_playlist(d)
     try:
         ids,tok=_id_array(pl)
         out={"supported":True,"token":tok,"active":_playlist_active(d),"state":_val(pl.TransportState()),"current_id":int(_val(pl.Id()) or 0)}
         try:
             out["repeat"]=bool(_val(pl.Repeat())); out["shuffle"]=bool(_val(pl.Shuffle()))
         except Exception: pass
-        tm=service(d,["time"])
+        tm=peer_service(d,["time"])
         if tm:
             try:
                 t=tm.Time(); out["seconds"]=int(t.get("Seconds",0)); out["duration"]=int(t.get("Duration",0))
@@ -603,14 +653,14 @@ def get_queue(device_id:str,token:Optional[int]=None):
 class QueueItem(BaseModel): uri:str; metadata:str=""
 class QueueReq(BaseModel):
     action:str; id:Optional[int]=None; items:list[QueueItem]=[]; play:bool=False
-    value:Optional[bool]=None
+    value:Optional[bool]=None; seconds:Optional[int]=None
 
 @app.post("/api/devices/{device_id}/queue")
 def queue_action(device_id:str,req:QueueReq):
     d=devices.get(device_id)
     if not d: raise HTTPException(404,"Device not found")
     pl=find_playlist_service(d)
-    if not pl: raise HTTPException(400,"No OpenHome Playlist service on this device")
+    if not pl: raise _no_playlist(d)
     a=req.action
     try:
         if a=="insert":
@@ -638,6 +688,8 @@ def queue_action(device_id:str,req:QueueReq):
             _activate_playlist(d); pl.SeekId(Value=req.id)
         elif a in ("play","pause","stop","next","previous"):
             _activate_playlist(d); getattr(pl,a.capitalize())()
+        elif a=="seek_time":
+            pl.SeekSecondAbsolute(Value=max(0,req.seconds or 0))
         elif a=="shuffle": pl.SetShuffle(Value=bool(req.value))
         elif a=="repeat": pl.SetRepeat(Value=bool(req.value))
         else: raise HTTPException(400,f"Unknown action: {a}")

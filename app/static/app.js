@@ -254,6 +254,37 @@ function bitrateLabel(res){
   return `${Math.round(parseInt(res.bitrate)*8/1000)}kbps`;
 }
 
+// ---------- Cover size + full-size cover view ----------
+function applyCoverSize(px){
+  const c=$('#content');
+  c.style.setProperty('--cover',px+'px');
+  c.classList.toggle('bigcovers',px>=140);
+}
+(function(){
+  let v=88; try{v=+localStorage.getItem('flou_cover_size')||88}catch(e){}
+  $('#coverSize').value=v; applyCoverSize(v);
+})();
+$('#coverSize').oninput=e=>{
+  const v=+e.target.value; applyCoverSize(v);
+  try{localStorage.setItem('flou_cover_size',v)}catch(x){}
+};
+function openCover(el,caption){
+  const m=/url\(["']?(.*?)["']?\)/.exec(el.style.backgroundImage||'');
+  if(!m) return;
+  const lb=$('#lightbox');
+  lb.querySelector('img').src=m[1];
+  lb.querySelector('span').textContent=caption||'';
+  lb.classList.remove('hidden');
+}
+$('#lightbox').onclick=()=>$('#lightbox').classList.add('hidden');
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') $('#lightbox').classList.add('hidden') });
+$('#content').addEventListener('click',e=>{
+  const cv=e.target.closest('.cover'); if(!cv) return;
+  const al=cv.closest('.album'); const ts=al&&state.view.groups[al.dataset.album];
+  openCover(cv,ts?`${ts[0].album||'Unknown Album'} · ${ts[0].album_artist||''}`:'');
+});
+$('#npCover').onclick=()=>openCover($('#npCover'),`${$('#npTitle').textContent} · ${$('#npArtist').textContent}`);
+
 // ---------- Which track-list columns are shown (persisted locally) ----------
 const ALL_COLUMNS=[
   {key:'quality',label:'Quality',default:true},
@@ -334,6 +365,24 @@ function facetColumn(containerId,key,label,countBy){
   });
 }
 
+// ---------- Collapsible column browser ----------
+// While collapsed, the label names the active selection so a hidden filter isn't a surprise.
+function updateFacetToggle(){
+  const on=document.querySelector('.facets').classList.contains('collapsed');
+  const sel=Object.values(state.filters).filter(Boolean).join(' · ');
+  $('#facetToggle').textContent=on?('Browser ▸'+(sel?` (${sel})`:'')):'Browser ▾';
+}
+function setFacetsCollapsed(on,save=true){
+  document.querySelector('.facets').classList.toggle('collapsed',on);
+  updateFacetToggle();
+  $('#facetToggle').setAttribute('aria-expanded',String(!on));
+  if(save) try{localStorage.setItem('flou_facets_collapsed',on?'1':'0')}catch(e){}
+}
+function toggleFacets(){ setFacetsCollapsed(!document.querySelector('.facets').classList.contains('collapsed')) }
+try{ if(localStorage.getItem('flou_facets_collapsed')==='1') setFacetsCollapsed(true,false) }catch(e){}
+$('#facetToggle').onclick=toggleFacets;
+document.addEventListener('keydown',e=>{ if((e.metaKey||e.ctrlKey)&&e.key==='b'){ e.preventDefault(); toggleFacets() } });
+
 // ---------- Type-ahead in the column browser ----------
 // Typing letters jumps to the first entry starting with them in the column
 // that was last clicked (or, failing that, the one under the mouse).
@@ -354,7 +403,7 @@ document.addEventListener('keydown',e=>{
   if(t && (t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.tagName==='SELECT'||t.isContentEditable)) return;
   if(!$('#metaModal').classList.contains('hidden')) return;
   const col=facetCurrent||facetHover;
-  if(!col) return;
+  if(!col || col.parentElement.classList.contains('collapsed')) return;
   if(e.key==='Escape'){ clearTypeHit(); return }
   if(e.key==='Enter'){
     if(typeHit){ e.preventDefault(); typeHit.click(); }
@@ -377,6 +426,7 @@ document.addEventListener('keydown',e=>{
 
 function render(){
   typeHit=null; typeBuf='';
+  updateFacetToggle();
   facetColumn('#albumArtists','album_artist','Album Artists','albums');
   facetColumn('#artists','artist','Artists','albums');
   facetColumn('#albumNames','album','Albums','tracks');
@@ -733,6 +783,43 @@ $('#volume').addEventListener('wheel',e=>{
   el.dispatchEvent(new Event('input'));
 },{passive:false});
 
+// ---------- Position display: elapsed / remaining + seek bar ----------
+// Whatever the source (local <audio>, UPnP renderer poll, device queue),
+// it calls setProgress(seconds, duration, playing). Between polls the
+// position is extrapolated so the bar moves smoothly.
+const prog={base:0,at:0,dur:0,playing:false,seeking:false,seekable:false};
+function setProgress(sec,dur,playing=true,seekable=true){
+  Object.assign(prog,{base:sec||0,at:performance.now(),dur:dur||0,playing,seekable});
+  drawProgress();
+}
+function curPos(){
+  const p=prog.base+(prog.playing?(performance.now()-prog.at)/1000:0);
+  return prog.dur?Math.min(p,prog.dur):p;
+}
+function drawProgress(){
+  const seek=$('#seek');
+  const pos=prog.seeking?+seek.value/1000*prog.dur:curPos();
+  $('#elapsedL').textContent=prog.dur||pos?fmtClock(pos):'';
+  $('#elapsedR').textContent=prog.dur?'-'+fmtClock(prog.dur-pos):'';
+  seek.disabled=!(prog.dur&&prog.seekable);
+  if(!prog.seeking) seek.value=prog.dur?Math.round(pos/prog.dur*1000):0;
+}
+function clearProgress(){ setProgress(0,0,false,false) }
+setInterval(()=>{ if(prog.playing&&!prog.seeking) drawProgress() },250);
+$('#seek').addEventListener('pointerdown',()=>{prog.seeking=true});
+$('#seek').addEventListener('input',drawProgress);
+$('#seek').addEventListener('change',async e=>{
+  const sec=Math.round(+e.target.value/1000*prog.dur);
+  prog.seeking=false;
+  try{
+    if(isLocal()) $('#localAudio').currentTime=sec;
+    else if(queue.supported&&queue.active) await queueApi({action:'seek_time',seconds:sec});
+    else await api('/api/control',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({device_id:dev(),action:'seek',value:sec})});
+    setProgress(sec,prog.dur,prog.playing,true);
+  }catch(x){notify(x.message); prog.seeking=false}
+});
+window.addEventListener('pointerup',()=>{ if(prog.seeking&&$('#seek').disabled) prog.seeking=false });
+
 // ---------- Device queue (OpenHome Playlist) ----------
 const queue={supported:false,active:false,token:null,entries:[],currentId:0,state:'',repeat:false,shuffle:false};
 const dev=()=>$('#renderer').value;
@@ -756,6 +843,11 @@ $('#content').addEventListener('click',e=>{
   else if(addA){ queueAdd(tracksOfAlbum(addA.dataset.qaddAlbum),!queue.entries.length||!queue.active); }
   else if(playA){ queueAdd(tracksOfAlbum(playA.dataset.qplayAlbum),true,true); }
 });
+// Everything currently listed (respects the column selection and search),
+// in the order shown: album by album, tracks in album order.
+const shownTracks=()=>state.currentPlaylist.filter(t=>t.resources?.[0]);
+$('#qAddAll').onclick=()=>queueAdd(shownTracks(),!queue.entries.length||!queue.active);
+$('#qPlayAll').onclick=()=>queueAdd(shownTracks(),true,true);
 function renderQueue(){
   const box=$('#queue');
   box.classList.toggle('hidden',!queue.supported||isLocal());
@@ -792,7 +884,8 @@ async function pollQueue(force=false){
       $('#npTitle').textContent=cur.title; $('#npArtist').textContent=cur.artist;
       $('#npCover').style.backgroundImage=cur.album_art?`url('${cur.album_art}')`:'';
       $('#status').textContent=queue.state==='Playing'?'Now playing':queue.state;
-      if(r.duration) $('#elapsed').textContent=`${fmtClock(r.seconds)} / ${fmtClock(r.duration)}`;
+      if(r.duration) setProgress(r.seconds,r.duration,queue.state==='Playing');
+      else clearProgress();
     }
   }catch(e){ queue.supported=false; queue.active=false; queue.entries=[]; queue.token=null; renderQueue(); }
   finally{ queueBusy=false }
@@ -809,7 +902,8 @@ const localAudioEl=$('#localAudio');
 localAudioEl.addEventListener('timeupdate',()=>{
   if(!isLocal()) return;
   const d=localAudioEl.duration, dur=Number.isFinite(d)&&d>0?d:state.localDurationHint;
-  $('#elapsed').textContent = dur ? `${fmtClock(localAudioEl.currentTime)} / ${fmtClock(dur)}` : fmtClock(localAudioEl.currentTime);
+  // Transcoded streams (no known length / not seekable) just show the clock.
+  setProgress(localAudioEl.currentTime,dur,!localAudioEl.paused,Number.isFinite(d)&&d>0&&localAudioEl.seekable.length>0);
 });
 localAudioEl.addEventListener('ended',()=>{ if(isLocal()) playNextInPlaylist() });
 
@@ -824,7 +918,7 @@ async function pollTransport(){
   try{
     const t=await api(`/api/devices/${$('#renderer').value}/transport`);
     const relSec=parseClock(t.rel_time), durSec=parseClock(t.duration);
-    $('#elapsed').textContent = durSec ? `${fmtClock(relSec)} / ${fmtClock(durSec)}` : '';
+    if(durSec) setProgress(relSec,durSec,t.state==='PLAYING'); else clearProgress();
     const wasNearEnd=lastPoll.durSec>0 && (lastPoll.durSec-lastPoll.relSec)<=3;
     if(t.state==='STOPPED' && lastPoll.state==='PLAYING' && !userInitiatedStop && wasNearEnd && state.nowPlayingId){
       playNextInPlaylist();

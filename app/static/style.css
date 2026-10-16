@@ -140,7 +140,11 @@ input[type=range]:hover::-webkit-slider-thumb{transform:scale(1.25)}
 .lcd b,.lcd span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .lcd b{font-size:15px;font-weight:600;letter-spacing:-.01em}
 .lcd #playingSub{color:var(--muted);font-size:12px}
-#elapsed{font-size:11px;color:var(--muted);margin-top:2px;font-variant-numeric:tabular-nums}
+.progress{display:flex;align-items:center;gap:8px;margin-top:4px}
+.progress span{flex:0 0 46px;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums;overflow:visible}
+.progress #elapsedL{text-align:right}.progress #elapsedR{text-align:left}
+.progress input[type=range]{flex:1 1 auto;width:auto;min-width:80px;height:4px}
+.progress input[type=range]:disabled{opacity:.35;cursor:default}
 
 /* ---------- Toolbar ---------- */
 .toolbar{display:flex;flex-wrap:wrap;gap:8px;padding:10px 12px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);align-items:center}
@@ -242,8 +246,15 @@ main{gap:8px;flex:1 1 600px;min-width:320px;min-height:0;display:flex;flex-direc
    The intrinsic size is only an estimate until an album is rendered. */
 .album{content-visibility:auto;contain-intrinsic-size:1px 250px}
 .albuminfo{flex:0 0 230px;width:230px;display:flex;gap:14px;padding:14px 14px 14px 0}
+#content.bigcovers .albuminfo{flex-direction:column;flex-basis:calc(var(--cover) + 14px);width:calc(var(--cover) + 14px)}
 .cover,.bigcover{background:var(--card) center/cover no-repeat;border-radius:var(--radius);box-shadow:none}
-.cover{flex:0 0 88px;width:88px;height:88px}
+.cover{flex:0 0 var(--cover,88px);width:var(--cover,88px);height:var(--cover,88px);cursor:zoom-in}
+.bigcover{cursor:zoom-in}
+#coverSize{width:80px}
+.lightbox{position:fixed;inset:0;background:rgba(0,0,0,.85);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;z-index:110;cursor:zoom-out}
+.lightbox.hidden{display:none}
+.lightbox img{max-width:92vw;max-height:84vh;border-radius:var(--radius);box-shadow:0 10px 40px rgba(0,0,0,.6)}
+.lightbox span{color:#ddd;font-size:13px}
 .albumtitle{font-weight:600;font-size:13px;line-height:1.35}
 .meta{color:var(--muted);margin-top:4px;line-height:1.5;font-size:12px}
 
@@ -340,3 +351,5 @@ main{gap:8px;flex:1 1 600px;min-width:320px;min-height:0;display:flex;flex-direc
 .tracks tr:hover .qadd button,.album:hover .albumqueue button{visibility:visible}
 .tracks .qadd button:hover,.albumqueue button:hover{color:var(--text)}
 .albumqueue{margin-top:4px}
+
+.facets.collapsed{display:none}
