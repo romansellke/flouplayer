@@ -160,7 +160,9 @@ const VOL_TICK_MS=80;
 let volInfo=null;        // {unity, dbPerStep} of the OpenHome device, for a live dB label while dragging
 const volDb=raw=>volInfo?(raw-volInfo.unity)*volInfo.dbPerStep:null;
 const fmtDb=db=>`${db>0?'+':''}${db.toFixed(1)} dB`;
-const volLabel=(v)=>v.db!=null ? `${v.db>0?'+':''}${v.db.toFixed(1)} dB` : `${v.percent}%`;
+// The step number as the Linn shows it, plus the dB it works out to (from the device's own characteristics).
+const volStep=(raw,db)=>`${raw} · ${fmtDb(db)}`;
+const volLabel=(v)=>v.db!=null ? volStep(v.raw,v.db) : `${v.percent}%`;
 async function refreshVolume(){
   if(!$('#renderer').value) return;
   if(isLocal()){
@@ -210,7 +212,7 @@ $('#volume').oninput=e=>{
   }
   if(!$('#renderer').value) return;
   const db=volDb(+e.target.value);
-  if(db!==null) $('#volumeLabel').textContent=fmtDb(db);
+  if(db!==null) $('#volumeLabel').textContent=volStep(+e.target.value,db);
   setVolumeTarget(+e.target.value);
 };
 // Keep the slider in sync with changes made elsewhere (remote, Linn app).

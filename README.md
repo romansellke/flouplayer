@@ -38,7 +38,7 @@ Linux).
   or a **cached** full-library scan with an iTunes-style column browser
   (Album Artist / Artist / Album / Year) and instant search
 - Playback on **Linn/OpenHome** devices (and other UPnP renderers) with a
-  position bar, dB volume readout and the device's own queue, or on the
+  position bar, volume readout (step and dB) and the device's own queue, or on the
   **local speakers** (AAC/ALAC are converted to FLAC on the fly)
 - Device controls for Linn/OpenHome: mute, source selection, pins and the
   stream quality the device reports
