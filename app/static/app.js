@@ -242,6 +242,7 @@ $('#discover').onclick=async()=>{
     populateServerSelect(x.devices.filter(d=>d.server));
     populateRendererSelect(x.devices.filter(d=>d.renderer));
     applySavedDevices();
+    for(const k of ['server','renderer']){ const w=savedDev(k); if(w&&w!==LOCAL_RENDERER_ID&&$('#'+k).value!==w) log(`Remembered ${k} (${w}) was not found in this search`,'warn') }
     log(`Found ${x.devices.length} device(s): `+x.devices.map(d=>d.name+(d.server?' [server]':'')+(d.renderer?' [output]':'')).join(', '));
     updateReadyState();
   }catch(e){logErr(e.message)}
@@ -1388,7 +1389,8 @@ function applySavedDevices(){
     const sel=$(id), want=savedDev(key);
     if(!want||sel.value===want||![...sel.options].some(o=>o.value===want)) continue;
     sel.value=want;
-    sel.dispatchEvent(new Event('change'));   // refreshes the picker and loads what depends on it
+    (sel.id==='server'?serverPicker:rendererPicker).refresh();   // the picker shows the select's value only when told to
+    sel.dispatchEvent(new Event('change'));   // loads what depends on it
   }
 }
 (async function restoreDevices(){
@@ -1403,7 +1405,7 @@ function applySavedDevices(){
   }catch(e){/* nothing saved yet, or the backend can't restore -- use Search devices */}
   applySavedDevices();
   updateReadyState();
-  // Saved devices exist but none answered (e.g. you changed network): search once instead of waiting for a click.
-  const hadChoice=savedDev('server')||(savedDev('renderer')&&savedDev('renderer')!==LOCAL_RENDERER_ID);
-  if(hadChoice&&!state.devices.length) $('#discover').click();
+  // A remembered device didn't come back (e.g. you changed network, or it was slow): search once instead of waiting for a click.
+  const missing=['server','renderer'].filter(k=>{ const want=savedDev(k); return want&&want!==LOCAL_RENDERER_ID&&$('#'+k).value!==want });
+  if(missing.length){ log(`Remembered ${missing.join(' and ')} not reconnected -- searching the network`,'warn'); $('#discover').click() }
 })();
