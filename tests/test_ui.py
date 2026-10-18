@@ -355,9 +355,11 @@ def test_the_volume_shows_the_device_step_and_the_db(page, api):
     open_app(page)
     select_renderer(page)
     page.wait_for_function("document.querySelector('#volumeLabel').textContent.includes('33')")
-    assert page.inner_text("#volumeLabel") == "33 · -48.1 dB"                  # the step as the Linn shows it, then the dB
+    assert page.inner_text("#volumeLabel .volstep") == "33"                     # the step as the Linn shows it (bold, larger) ...
+    assert page.inner_text("#volumeLabel .voldb") == "-48.1 dB"                 # ... then the dB
+    assert page.evaluate("getComputedStyle(document.querySelector('#volumeLabel .volstep')).fontWeight") in ("700", "bold")
     page.evaluate("() => { const v = document.querySelector('#volume'); v.value = 34; v.dispatchEvent(new Event('input')) }")
-    assert page.inner_text("#volumeLabel") == "34 · -47.4 dB"                  # live while dragging
+    assert (page.inner_text("#volumeLabel .volstep"), page.inner_text("#volumeLabel .voldb")) == ("34", "-47.4 dB")   # live while dragging
 
 
 def test_a_device_without_db_values_shows_a_percentage(page, api):
@@ -365,4 +367,4 @@ def test_a_device_without_db_values_shows_a_percentage(page, api):
     open_app(page)
     select_renderer(page)
     page.wait_for_function("document.querySelector('#volumeLabel').textContent.includes('33')")
-    assert page.inner_text("#volumeLabel") == "33%"
+    assert page.inner_text("#volumeLabel") == "33%" and page.query_selector("#volumeLabel .voldb") is None
