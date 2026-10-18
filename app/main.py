@@ -309,6 +309,52 @@ def stream_details(device_id:str):
     num=lambda k:int(r.get(k) or 0)
     return {"supported":True,"codec":(r.get("CodecName") or "").strip(),"sample_rate":num("SampleRate"),"bit_depth":num("BitDepth"),"bit_rate":num("BitRate"),"lossless":bool(r.get("Lossless"))}
 
+@app.get("/api/devices/{device_id}/capabilities")
+def capabilities(device_id:str):
+    """What the active source allows (OpenHome Transport service): pause and
+    skipping are unavailable on e.g. live radio. Each value is None when the
+    device doesn't say."""
+    d=devices.get(device_id)
+    if not d: raise HTTPException(404,"Device not found")
+    ts=_openhome_service(d,"Transport")
+    if not ts: return {"supported":False}
+    out={"supported":True,"can_pause":None,"can_skip_next":None,"can_skip_previous":None}
+    try:
+        v=ts.StreamInfo().get("CanPause")
+        if v is not None: out["can_pause"]=bool(v)
+        m=ts.ModeInfo()
+        for k,key in (("can_skip_next","CanSkipNext"),("can_skip_previous","CanSkipPrevious")):
+            if m.get(key) is not None: out[k]=bool(m.get(key))
+    except Exception as e:
+        raise HTTPException(502,f"Could not read capabilities: {e}")
+    return out
+
+@app.get("/api/devices/{device_id}/standby")
+def get_standby(device_id:str):
+    """Whether the device is in standby (OpenHome Product service)."""
+    d=devices.get(device_id)
+    if not d: raise HTTPException(404,"Device not found")
+    prod=_openhome_service(d,"Product")
+    if not prod: return {"supported":False}
+    try: return {"supported":True,"standby":bool(prod.Standby().get("Value"))}
+    except Exception as e: raise HTTPException(502,f"Could not read standby state: {e}")
+
+@app.get("/api/devices/{device_id}/firmware")
+def firmware(device_id:str):
+    """Installed firmware and whether an update is available (Linn Update
+    service). Read-only: updates are never started from here."""
+    d=devices.get(device_id)
+    if not d: raise HTTPException(404,"Device not found")
+    up=peer_service(d,["linn-co-uk:service:update"]) or peer_service(d,["linn-co-uk:serviceId:update"])
+    if not up: return {"supported":False}
+    try: st=json.loads(up.GetSoftwareStatus().get("SoftwareStatus") or "{}")
+    except Exception as e: raise HTTPException(502,f"Could not read firmware status: {e}")
+    cur=st.get("current_software") or {}
+    ups=(st.get("update_info") or {}).get("updates") or []
+    new=ups[0] if ups and isinstance(ups[0],dict) else None
+    return {"supported":True,"status":st.get("status") or "","version":cur.get("version") or "","channel":cur.get("channel") or "",
+            "update":({"version":new.get("version") or "","date":new.get("date") or "","description":new.get("description") or ""} if new else None)}
+
 @app.get("/api/devices/{device_id}/transport")
 def get_transport(device_id:str):
     """Playback state + position (used for the elapsed-time display and
@@ -659,6 +705,10 @@ def control(req:Control):
             vol,kind=find_volume_service(d)
             if kind!="openhome": raise HTTPException(400,"Mute needs the OpenHome Volume service")
             vol.SetMute(Value="1" if req.value else "0")   # upnpclient wants booleans as strings
+        elif req.action=="standby":
+            prod=_openhome_service(d,"Product")
+            if not prod: raise HTTPException(400,"No OpenHome Product service on this device")
+            prod.SetStandby(Value="1" if req.value else "0")   # upnpclient wants booleans as strings
         elif req.action=="set_source":
             prod=_openhome_service(d,"Product")
             if not prod: raise HTTPException(400,"No OpenHome Product service on this device")

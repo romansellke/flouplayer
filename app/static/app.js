@@ -58,6 +58,7 @@ async function buildReport(){
     try{
       const x=await api(`/api/devices/${encodeURIComponent(d)}/services`);
       lines.push('',`Output device: ${x.name} (${x.model||'?'})`);
+      const fw=await firmwareLine(d); if(fw) lines.push(fw);
       (x.peers||[]).forEach(p=>lines.push(`  ${p.name} @ ${p.location}`,...p.service_types.map(t=>'    '+t)));
     }catch(e){ lines.push('(device info unavailable: '+e.message+')') }
   }
@@ -73,7 +74,8 @@ $('#diagDevice').onclick=async()=>{
   if(!d||isLocal()) return log('Select an output device first.','warn');
   try{
     const x=await api(`/api/devices/${encodeURIComponent(d)}/services`);
-    log(`Output device: ${x.name}\n`+(x.peers||[]).map(p=>`${p.name} @ ${p.location}\n`+p.service_types.map(t=>'  '+t).join('\n')).join('\n'));
+    const fw=await firmwareLine(d);
+    log(`Output device: ${x.name}\n`+(fw?fw+'\n':'')+(x.peers||[]).map(p=>`${p.name} @ ${p.location}\n`+p.service_types.map(t=>'  '+t).join('\n')).join('\n'));
   }catch(e){ logErr(e.message) }
 };
 
@@ -1291,8 +1293,8 @@ async function loadPins(){
   }catch(e){ box.classList.add('hidden') }
   updateDevTools();
 }
-// The header group (source dropdown + pins button) shows only when one of them has something to offer.
-function updateDevTools(){ $('#devTools').classList.toggle('hidden',$('#sourceSel').classList.contains('hidden')&&$('#pinsBox').classList.contains('hidden')) }
+// The toolbar group next to the output device (standby, source dropdown, pins button) shows only when one of them has something to offer.
+function updateDevTools(){ $('#devTools').classList.toggle('hidden',['#powerBtn','#sourceSel','#pinsBox'].every(s=>$(s).classList.contains('hidden'))) }
 function setPinMenu(open){ $('#pinList').classList.toggle('hidden',!open); $('#pinsBtn').setAttribute('aria-expanded',String(open)) }
 $('#pinsBtn').onclick=e=>{ e.stopPropagation(); setPinMenu($('#pinList').classList.contains('hidden')) };
 document.addEventListener('click',e=>{ if(!e.target.closest('.pinpicker')) setPinMenu(false) });
@@ -1319,8 +1321,56 @@ async function pollStream(){
   }catch(e){ el.classList.add('hidden') }
 }
 
-function refreshDeviceExtras(){ loadSources(); loadPins(); pollStream(); if(!dev2()) drawMute(null) }
+// Standby / wake (OpenHome Product service).
+let standby=false;
+function drawPower(s){
+  const b=$('#powerBtn');
+  b.classList.toggle('hidden',s==null);
+  if(s!=null){ standby=s; b.classList.toggle('standby',s); b.setAttribute('aria-pressed',String(!s)); b.title=s?'In standby -- click to wake up':'On -- click for standby' }
+  updateDevTools();
+}
+async function pollStandby(){
+  const d=dev2(); if(!d){ drawPower(null); return }
+  try{ const r=await api(`/api/devices/${encodeURIComponent(d)}/standby`); drawPower(r.supported?r.standby:null) }catch(e){ drawPower(null) }
+}
+$('#powerBtn').onclick=async()=>{
+  const d=dev2(); if(!d) return;
+  const want=!standby;
+  try{
+    await api('/api/control',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({device_id:d,action:'standby',value:want?1:0})});
+    drawPower(want); showToast(want?'Standby':'Waking up');
+    setTimeout(pollStandby,2500);
+  }catch(e){ notify(e.message) }
+};
+
+// Grey out what the active source can't do (e.g. pause / skip on live radio). Unknown stays enabled.
+// Next/previous only count when the device does the skipping, not our own track list.
+async function pollCaps(){
+  const d=dev2(); const el=s=>document.querySelector(`.transport [data-action=${s}]`);
+  const set=(s,off)=>el(s).classList.toggle('nocap',!!off);
+  if(!d){ ['pause','next','previous'].forEach(s=>set(s,false)); return }
+  try{
+    const c=await api(`/api/devices/${encodeURIComponent(d)}/capabilities`);
+    const device=deviceOwnsPlayback()||(queue.supported&&queue.active);
+    set('pause',c.supported&&c.can_pause===false);
+    set('next',c.supported&&device&&c.can_skip_next===false);
+    set('previous',c.supported&&device&&c.can_skip_previous===false);
+  }catch(e){ ['pause','next','previous'].forEach(s=>set(s,false)) }
+}
+
+// Firmware (Linn Update service), shown in the Device info log and the report.
+async function firmwareLine(d){
+  try{
+    const f=await api(`/api/devices/${encodeURIComponent(d)}/firmware`);
+    if(!f.supported) return '';
+    return `Firmware: ${f.version||'?'}${f.channel?' ('+f.channel+')':''}`+(f.update?` -- update available: ${f.update.version}${f.update.date?' ('+f.update.date+')':''}`:(f.status==='update_available'?' -- update available':' -- up to date'));
+  }catch(e){ return '' }
+}
+
+function refreshDeviceExtras(){ loadSources(); loadPins(); pollStream(); pollStandby(); pollCaps(); if(!dev2()) drawMute(null) }
 setInterval(pollSource,5000);
 setInterval(loadPins,60000);
 setInterval(pollStream,4000);
+setInterval(pollStandby,6000);
+setInterval(pollCaps,3000);
 refreshDeviceExtras();

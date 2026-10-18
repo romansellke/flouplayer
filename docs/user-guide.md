@@ -173,9 +173,21 @@ offers them (not for the local speakers or plain UPnP renderers).
   `FLAC · 44.1 kHz · 16 bit · 1011 kbps`). It also works for sources that
   don't come from the media server, such as radio. Hidden while nothing is
   playing.
+- **Standby:** the power button left of the Source dropdown puts the device
+  into standby or wakes it up. It is highlighted while the device is on and
+  grey in standby, and follows changes made elsewhere. Picking a source or a
+  pin wakes a sleeping device by itself.
+- **What the source allows:** the transport buttons grey out what the active
+  source can't do -- for example pause and skip on live radio. Where the device
+  doesn't say, buttons stay enabled. Next/previous are only greyed when the
+  device does the skipping (a non-Playlist source or the device queue), not
+  when the app steps through its own track list.
+- **Firmware:** *Device info* in the Diagnostics dialog, and the copied
+  report, show the installed firmware version and whether an update is
+  available. Flou Player never installs updates.
 
 > Like the queue, these are written against the OpenHome service definitions
-> (Product, Pins, Info, Volume) and have **not been verified against real
+> (Product, Pins, Info, Transport, Update, Volume) and have **not been verified against real
 > hardware**. Please report what you see in the Diagnostics dialog (*Device
 > info*) if something doesn't show up.
 
@@ -188,8 +200,8 @@ Nord, Catppuccin Mocha, Tokyo Night, ...). The choice is remembered.
 
 - **Diagnostics** (list button in the header, with a badge for unseen errors): a timestamped log of the
   last 300 entries with errors in red and a badge for unseen errors; an
-  errors-only filter; **Device info**, which lists all services of the
-  selected player; and **Copy report** (versions, device services and log)
+  errors-only filter; **Device info**, which lists the firmware and all
+  services of the selected player; and **Copy report** (versions, device services and log)
   for bug reports.
 - **About** (info button, top right): version, build, Python/system and
   dependency versions, and the project link.
