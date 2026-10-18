@@ -208,6 +208,24 @@ Nord, Catppuccin Mocha, Tokyo Night, ...). The choice is remembered.
 
 ## Keyboard shortcuts
 
+**Playback** -- these work anywhere in the window, except while you are typing
+in a field, while a dialog is open, or while the focus is on a button or slider
+(which keep their own keys):
+
+| Shortcut | Action |
+| --- | --- |
+| Space | Play / pause (on a source that can't pause, such as live radio: stop) |
+| Shift+← / Shift+→ | Seek 10 seconds back / forward |
+| Ctrl/⌘+← / Ctrl/⌘+→ | Previous / next track |
+| Ctrl/⌘+↑ / Ctrl/⌘+↓ | Volume up / down (add Shift for 5 steps) |
+| Ctrl/⌘+M | Mute / unmute |
+| Ctrl/⌘+. | Stop |
+
+The plain arrow keys stay free for scrolling the album list, and plain letters
+for the column type-ahead.
+
+**Navigation and library**
+
 | Shortcut | Action |
 | --- | --- |
 | Ctrl/⌘+F | Focus the search field |
