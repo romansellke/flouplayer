@@ -168,7 +168,6 @@ def _has_openhome_product(d):
 
 @app.get("/api/discover")
 def discover(timeout:int=4):
-    global devices
     # SSDP answers are UDP and get lost now and then (the number of devices
     # found varied between searches), so run two passes at once and merge.
     found=[]; error=None
@@ -180,6 +179,13 @@ def discover(timeout:int=4):
     fresh={}
     for d in found:
         key=getattr(d,"udn",None) or getattr(d,"location",None) or str(id(d)); fresh[key]=d
+    result=_publish_devices(fresh)
+    _save_known_devices(fresh)
+    return result
+
+def _publish_devices(fresh):
+    """Makes `fresh` the current device list and returns it as JSON."""
+    global devices
     with lock: devices=fresh
     # Linn/OpenHome players show up as several UPnP devices on one IP (the
     # OpenHome one and a separate "UPnP AV" MediaRenderer). Present each
@@ -197,6 +203,41 @@ def discover(timeout:int=4):
             if k!=prim[0] and not any("contentdirectory" in getattr(sv,"service_id","").lower() for sv in d.services): hidden.add(k)
     _merged_primary.clear(); _merged_primary.update(primaries)
     return {"devices":[device_json(k,d) for k,d in fresh.items() if k not in hidden]}
+
+# The media servers and players found last time (key -> description URL),
+# so the next start can reconnect without a network-wide search.
+KNOWN_DEVICES_FILE=CACHE_DIR/"devices.json"
+def _is_relevant(d):
+    probe=" ".join((getattr(s,"service_id","")+" "+getattr(s,"service_type","")).lower() for s in d.services)
+    return any(x in probe for x in ("contentdirectory","avtransport","openhome"))
+def _save_known_devices(fresh):
+    # Like the library cache: a convenience, never a reason to fail the request.
+    try:
+        CACHE_DIR.mkdir(parents=True,exist_ok=True)
+        data={k:getattr(d,"location","") for k,d in fresh.items() if getattr(d,"location","") and _is_relevant(d)}
+        tmp=KNOWN_DEVICES_FILE.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(data),encoding="utf-8"); os.replace(tmp,KNOWN_DEVICES_FILE)
+    except Exception: pass
+
+@app.post("/api/devices/restore")
+def restore_devices():
+    """Reconnects to the devices found last time by their description URL --
+    fast, and no search needed. Devices that don't answer are skipped;
+    returns an empty list when nothing is known or nothing answers."""
+    try: known=json.loads(KNOWN_DEVICES_FILE.read_text(encoding="utf-8"))
+    except Exception: return {"devices":[]}
+    if not isinstance(known,dict) or not known: return {"devices":[]}
+    ex=cf.ThreadPoolExecutor(max_workers=6)
+    futs={ex.submit(upnpclient.Device,loc):k for k,loc in known.items() if isinstance(loc,str)}
+    done,_=cf.wait(futs,timeout=8)
+    ex.shutdown(wait=False)   # don't wait for devices that are gone
+    fresh={}
+    for f in done:
+        try:
+            d=f.result(); fresh[getattr(d,"udn",None) or futs[f]]=d
+        except Exception: pass
+    if not fresh: return {"devices":[]}
+    return _publish_devices(fresh)
 
 @app.get("/api/devices/{device_id}/services")
 def services(device_id:str):
