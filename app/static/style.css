@@ -309,7 +309,8 @@ button.crumb:hover{background:var(--hover);color:var(--text)}
 .tracks .quality{width:80px;color:var(--muted);font-size:11px}
 .tracks .bitrate{width:70px;text-align:right;color:var(--muted);font-size:11px}
 .tracks .time{width:60px;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
-.tracks .artist,.tracks .albumartist{width:150px;color:var(--muted)}
+.tracks .artist{width:150px;color:var(--muted)}
+.albuminfo .albumartist{margin-top:2px}
 .tracks .genre{width:90px;color:var(--muted)}
 .tracks .year{width:50px;text-align:right;color:var(--muted)}
 /* the currently playing track: accent colour and a play icon instead of the track number */

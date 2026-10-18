@@ -6,6 +6,22 @@ All notable changes to Flou Player are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-10-18
+
+### Changed
+- In the track list the **Album Artist** now stands next to the cover (for
+  albums without that tag, the artist if all tracks share one), and the
+  separate Album Artist column is gone. The **Artist** column is hidden by
+  default and can be switched on under *Columns*. The column choice starts
+  fresh with these defaults.
+
+### Fixed
+- The **Now Playing** button did nothing in Live mode once you had left the
+  playing track's folder; it now opens that folder and scrolls to the track.
+- Tracks started from the device queue (**▶ Play all**, **+ Queue**) now get
+  the ▶ marker and enable the Now Playing button too, by matching the queue
+  entry to the library track.
+
 ## [0.6.0] - 2026-10-18
 
 ### Changed
@@ -98,7 +114,8 @@ the OpenHome queue tab; a position/seek bar and a live dB volume readout; a
 Diagnostics log and About dialog; 17 colour themes; installable Linux app
 packaging; and the GPL-3.0-or-later license.
 
-[Unreleased]: https://github.com/romansellke/flouplayer/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/romansellke/flouplayer/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/romansellke/flouplayer/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/romansellke/flouplayer/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/romansellke/flouplayer/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/romansellke/flouplayer/compare/v0.4.0...v0.5.0

@@ -40,8 +40,9 @@ what you see.
 - Nothing is scanned or stored: the view is always current and starts
   instantly.
 
-Next/Previous step through the folder that is currently open, and *Now
-Playing* only jumps to a track that is in that folder.
+Next/Previous step through the folder that is currently open. *Now Playing*
+returns to the folder a playing track was started from, as long as you
+browsed it in this session.
 
 ### Cached
 
@@ -82,13 +83,18 @@ iTunes-style column browser and instant searching across everything.
 - **Covers slider:** scales the album covers (remembered). Clicking any cover
   -- in the list or in Now Playing -- opens it full size (click or Esc to
   close).
-- **Columns button:** toggles Quality, Time, Artist, Album Artist, Genre and
-  Year in the track table (remembered). The Quality column shows the sample
-  rate and bit depth, where the server supplies them.
+- **Album Artist** stands next to the cover, with the album title and year
+  (for an album without that tag, the artist if all its tracks share one).
+- **Columns button:** toggles Quality, Bitrate, Time, Artist, Genre and Year
+  in the track table (remembered). Quality and Time are on by default; the
+  Artist column is hidden by default, since the Album Artist is already shown
+  next to the cover. The Quality column shows the sample rate and bit depth,
+  where the server supplies them.
 - **Now playing:** the playing track shows a ▶ instead of its track number and
-  is highlighted. The **▶ Now Playing** button (Ctrl/⌘+L) scrolls to it; in
-  the cached library it first switches the view to its album if the current
-  filters or search hide it.
+  is highlighted. This also works for tracks started from the device queue.
+  The **▶ Now Playing** button (Ctrl/⌘+L) scrolls to the track; if the current
+  filters or search hide it (cached library), or you have since left its
+  folder (Live), it first switches back to its album or folder.
 - **Right-click** a track or an album to inspect its raw metadata.
 - Long track titles don't wrap under the cover: the track table scrolls
   sideways instead.
