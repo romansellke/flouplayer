@@ -4,8 +4,6 @@ Flou Player is a local, iTunes-style desktop app for browsing music on a
 UPnP media server (such as MinimServer) and playing it on a Linn/OpenHome
 output device (such as a Majik DSM4) -- or on the computer's own speakers.
 
-![Flou Player](screenshot.png)
-
 | Page | What's in it |
 | --- | --- |
 | [Getting started](getting-started.md) | Requirements, installing as an app, running from source, Arch Linux, first start |

@@ -2,8 +2,6 @@
 
 ## The window
 
-![Flou Player](screenshot.png)
-
 - **Header:** transport buttons (previous, play, pause, stop, next), volume
   slider with live dB readout, the LCD-style display of the current track,
   the About button and the theme picker. Under it, the **position bar**:
