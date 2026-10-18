@@ -386,7 +386,9 @@ $('#content').addEventListener('click',e=>{
   const al=cv.closest('.album'); const ts=al&&state.view.groups[al.dataset.album];
   openCover(cv,ts?`${ts[0].album||'Unknown Album'} · ${ts[0].album_artist||''}`:'');
 });
-$('#npCover').onclick=()=>openCover($('#npCover'),`${$('#npTitle').textContent} · ${$('#npArtist').textContent}`);
+$('#npCover').onclick=()=>openCover($('#npCover'),`${$('#playing').textContent} · ${$('#playingSub').textContent}`);
+// The cover thumbnail in the title display: hidden while there is no cover.
+function setNowCover(uri){ const c=$('#npCover'); c.style.backgroundImage=uri?`url('${uri}')`:''; c.classList.toggle('hidden',!uri) }
 
 // ---------- Which track-list columns are shown (persisted locally) ----------
 const ALL_COLUMNS=[
@@ -739,10 +741,7 @@ async function playItem(t){
     $('#jumpNowPlaying').disabled=false;
     $('#playing').textContent=t.title;
     $('#playingSub').textContent=`${t.artist} · ${t.album}`;
-    $('#npTitle').textContent=t.title;
-    $('#npArtist').textContent=t.artist;
-    $('#npCover').style.backgroundImage=t.album_art?`url('${t.album_art}')`:'';
-    $('#status').textContent='Now playing';
+    setNowCover(t.album_art);
     markNowPlaying(prevId,t.id); // move the play icon to the now-playing track
   }catch(e){notify(e.message)}
 }
@@ -795,8 +794,10 @@ document.querySelectorAll('[data-action]').forEach(b=>b.onclick=async()=>{
     try{await queueApi({action}); pollQueue(true)}catch(x){notify(x.message)}
     return;
   }
-  if(action==='next') return playNextInPlaylist();
-  if(action==='previous') return playPreviousInPlaylist();
+  if(!deviceOwnsPlayback()){
+    if(action==='next') return playNextInPlaylist();
+    if(action==='previous') return playPreviousInPlaylist();
+  }
 
   if(isLocal()){
     const audio=$('#localAudio');
@@ -1031,15 +1032,12 @@ async function pollQueue(force=false){
     const cur=queue.entries.find(en=>en.id===queue.currentId);
     if(queue.active && cur){
       $('#playing').textContent=cur.title; $('#playingSub').textContent=[cur.artist,cur.album].filter(Boolean).join(' · ');
-      $('#npTitle').textContent=cur.title; $('#npArtist').textContent=cur.artist;
-      $('#npCover').style.backgroundImage=cur.album_art?`url('${cur.album_art}')`:'';
-      $('#status').textContent=queue.state==='Playing'?'Now playing':queue.state;
+      setNowCover(cur.album_art);
       if(r.duration) setProgress(r.seconds,r.duration,queue.state==='Playing');
       else clearProgress();
     }else if(queue.active){
       // Empty queue (or no current track): nothing is playing, so stop the clock.
       clearProgress();
-      $('#status').textContent=queue.entries.length?(queue.state||'Stopped'):'Queue is empty';
     }
   }catch(e){ queue.supported=false; queue.active=false; queue.entries=[]; queue.token=null; renderQueue(); if(!isLocal()) prog.playing=false; }
   finally{ queueBusy=false }
@@ -1225,7 +1223,10 @@ $('#muteBtn').onclick=async()=>{
 };
 
 const dev2=()=>(!$('#renderer').value||isLocal())?null:$('#renderer').value;
-let sourceCount=0;
+let sourceCount=0, sourceTypes={}, sourceNow=null;
+// The device's active source is something other than its Playlist (Radio, AirPlay, an input ...):
+// then the transport buttons control the device itself, not our track list.
+const deviceOwnsPlayback=()=>!isLocal()&&sourceNow!=null&&(sourceTypes[sourceNow]||'Playlist')!=='Playlist';
 async function loadSources(){
   const d=dev2(); const box=$('#sourceSel');
   if(!d){ box.classList.add('hidden'); updateDevTools(); return }
@@ -1233,7 +1234,7 @@ async function loadSources(){
     const r=await api(`/api/devices/${encodeURIComponent(d)}/sources`);
     $('#sourceSel').innerHTML=r.sources.map(s=>`<option value="${s.index}">${esc(s.name)}${s.type&&s.type!==s.name?' ('+esc(s.type)+')':''}</option>`).join('');
     $('#sourceSel').value=String(r.current);
-    sourceCount=r.sources.length;
+    sourceCount=r.sources.length; sourceTypes=Object.fromEntries(r.sources.map(s=>[s.index,s.type])); sourceNow=r.current;
     box.classList.toggle('hidden',!sourceCount);
   }catch(e){ box.classList.add('hidden') }  // no Product service: no source switching
   updateDevTools();
@@ -1241,7 +1242,7 @@ async function loadSources(){
 let sourceChangedAt=0;   // the device takes a moment to switch; don't let the poll snap the dropdown back meanwhile
 $('#sourceSel').onchange=async e=>{
   const d=dev2(); if(!d) return;
-  sourceChangedAt=Date.now();
+  sourceChangedAt=Date.now(); sourceNow=+e.target.value;
   try{
     await api('/api/control',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({device_id:d,action:'set_source',value:+e.target.value})});
     showToast(`Source: ${e.target.selectedOptions[0].textContent}`); log(`Source: ${e.target.selectedOptions[0].textContent}`);
@@ -1251,7 +1252,7 @@ $('#sourceSel').onchange=async e=>{
 };
 async function pollSource(){   // follow changes made from other controllers
   const d=dev2(); if(!d||!sourceCount||document.activeElement===$('#sourceSel')||Date.now()-sourceChangedAt<2500) return;
-  try{ const r=await api(`/api/devices/${encodeURIComponent(d)}/sources?light=true`); $('#sourceSel').value=String(r.current) }catch(e){}
+  try{ const r=await api(`/api/devices/${encodeURIComponent(d)}/sources?light=true`); $('#sourceSel').value=String(r.current); sourceNow=r.current }catch(e){}
 }
 
 async function loadPins(){

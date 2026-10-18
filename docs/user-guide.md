@@ -4,8 +4,10 @@
 
 - **Header:** transport buttons (previous, play, pause, stop, next), volume
   slider with live dB readout and mute button, the Source dropdown and Pins
-  button (OpenHome devices), the LCD-style display of the current track,
-  the About button and the theme picker. Under it, the **position bar**:
+  button (OpenHome devices), the LCD-style display of the current track
+  (small cover, title, artist and album, and the stream quality -- click the
+  cover to see it full size), the Diagnostics and About buttons and the
+  theme picker. Under it, the **position bar**:
   elapsed time at the left, remaining time at the right, a thick seek bar
   with a time grid in between (a tick every minute, every 5/10 minutes for
   long tracks).
@@ -13,10 +15,9 @@
   devices**, the media server and output device dropdowns (with each
   device's own icon, taken from its UPnP description), **Load library**
   and the search field.
-- **Main area:** the library (column browser plus album list) or the queue.
-- **Now Playing panel** (right): big cover, title and artist, the stream
-  quality, status, and the Diagnostics button. It hides on narrow windows; sidebars and columns
-  also stack on very narrow windows.
+- **Main area:** the library (column browser plus album list) or the queue,
+  using the full window width. On very narrow windows the header wraps and
+  the columns stack.
 
 ## Live or cached library
 
@@ -69,7 +70,7 @@ iTunes-style column browser and instant searching across everything.
 - **All albums at a glance:** with nothing selected, the whole library is
   listed. The list is built in chunks as you scroll, so very large libraries
   stay responsive. Only the album list scrolls -- header, toolbar, column
-  browser and sidebars stay fixed.
+  browser stay fixed.
 - **Search** (Ctrl/⌘+F) filters on title, artist, album artist, album, genre
   and year of the loaded library.
 - Albums are grouped by album name **and** album artist, so same-named albums
@@ -99,7 +100,10 @@ iTunes-style column browser and instant searching across everything.
   automatically (detected by polling the position; stopping playback
   yourself does not trigger this).
 - Play, pause, stop, next, previous and the **position bar** work through
-  the standard UPnP services. Seeking works on UPnP renderers, the device
+  the standard UPnP services. On Linn/OpenHome devices the transport buttons
+  use the device's own Transport service, so they also work while another
+  source (Radio, AirPlay, an input) is active; then next/previous skip on
+  the device rather than in the track list. Seeking works on UPnP renderers, the device
   queue and local playback.
 - The LCD shows elapsed and total time, updated by polling.
 
@@ -157,7 +161,7 @@ offers them (not for the local speakers or plain UPnP renderers).
   Click one to play it; the list closes again (Esc or a click elsewhere also
   closes it). The list refreshes about once a minute and whenever you select the
   device.
-- **Stream quality:** under the title, codec, sample rate, bit depth and bit
+- **Stream quality:** as a third line in the title display, codec, sample rate, bit depth and bit
   rate as the *device* reports them (for example
   `FLAC · 44.1 kHz · 16 bit · 1011 kbps`). It also works for sources that
   don't come from the media server, such as radio. Hidden while nothing is
@@ -175,7 +179,7 @@ Nord, Catppuccin Mocha, Tokyo Night, ...). The choice is remembered.
 
 ## Diagnostics and About
 
-- **Diagnostics** (bottom of the Now Playing panel): a timestamped log of the
+- **Diagnostics** (list button in the header, with a badge for unseen errors): a timestamped log of the
   last 300 entries with errors in red and a badge for unseen errors; an
   errors-only filter; **Device info**, which lists all services of the
   selected player; and **Copy report** (versions, device services and log)
