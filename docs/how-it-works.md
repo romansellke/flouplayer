@@ -2,13 +2,15 @@
 
 ## Architecture
 
-- **Backend** (`app/main.py`): a FastAPI app served locally by Uvicorn. It
+- **Backend** (the `app/` package, see [Development](development.md#backend-files)): a FastAPI app served locally by Uvicorn. It
   discovers UPnP devices over SSDP, talks to the media server's
   ContentDirectory service (browsing and scanning) and controls the output
   device (AVTransport, and the OpenHome Volume, Playlist, Time, Product, Pins
   and Info services via `upnpclient`). It also converts tracks the built-in player
   can't decode to FLAC on the fly (PyAV/ffmpeg).
 - **Frontend** (`app/static/`): plain HTML, CSS and JavaScript, no build step.
+  The script is split into several files by topic (see
+  [Development](development.md#frontend-files)).
 - **Desktop window** (`desktop.py`): starts the backend and opens the page in
   its own native window with `pywebview` (Qt WebEngine by default), so no
   browser tab is needed. It also enforces a single running instance and
