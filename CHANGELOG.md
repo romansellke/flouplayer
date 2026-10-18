@@ -6,6 +6,15 @@ All notable changes to Flou Player are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.14.1] - 2026-10-18
+
+### Changed
+- The volume readout now shows the device's volume **step first**, as the Linn
+  does, and the dB value after it (`33 · -48.1 dB`), instead of only the dB
+  value. The dB part is calculated from the device's own characteristics and
+  is an indication, not a measurement. Devices without dB values keep showing a
+  percentage.
+
 ## [0.14.0] - 2026-10-18
 
 ### Added
@@ -232,7 +241,8 @@ the OpenHome queue tab; a position/seek bar and a live dB volume readout; a
 Diagnostics log and About dialog; 17 colour themes; installable Linux app
 packaging; and the GPL-3.0-or-later license.
 
-[Unreleased]: https://github.com/romansellke/flouplayer/compare/v0.14.0...HEAD
+[Unreleased]: https://github.com/romansellke/flouplayer/compare/v0.14.1...HEAD
+[0.14.1]: https://github.com/romansellke/flouplayer/compare/v0.14.0...v0.14.1
 [0.14.0]: https://github.com/romansellke/flouplayer/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/romansellke/flouplayer/compare/v0.12.3...v0.13.0
 [0.12.3]: https://github.com/romansellke/flouplayer/compare/v0.12.2...v0.12.3

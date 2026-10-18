@@ -345,3 +345,24 @@ def test_the_quality_filter_also_works_in_live_mode(page, api):
     page.select_option("#qualityFilter", "lossy")
     page.wait_for_timeout(150)
     assert page.eval_on_selector_all("[data-item]", "rs => rs.map(r => r.dataset.item).sort()") == ["q4", "q5"]
+
+
+# ---------- volume display ----------
+
+def test_the_volume_shows_the_device_step_and_the_db(page, api):
+    api.routes.update({"/volume": {"kind": "openhome", "raw": 33, "max": 100, "unity": 100, "db_per_step": .7179, "db": -48.1, "percent": 33, "muted": False},
+                       "control": {"ok": True}})
+    open_app(page)
+    select_renderer(page)
+    page.wait_for_function("document.querySelector('#volumeLabel').textContent.includes('33')")
+    assert page.inner_text("#volumeLabel") == "33 · -48.1 dB"                  # the step as the Linn shows it, then the dB
+    page.evaluate("() => { const v = document.querySelector('#volume'); v.value = 34; v.dispatchEvent(new Event('input')) }")
+    assert page.inner_text("#volumeLabel") == "34 · -47.4 dB"                  # live while dragging
+
+
+def test_a_device_without_db_values_shows_a_percentage(page, api):
+    api.routes["/volume"] = {"kind": "renderingcontrol", "raw": 33, "max": 100, "db": None, "percent": 33}
+    open_app(page)
+    select_renderer(page)
+    page.wait_for_function("document.querySelector('#volumeLabel').textContent.includes('33')")
+    assert page.inner_text("#volumeLabel") == "33%"
