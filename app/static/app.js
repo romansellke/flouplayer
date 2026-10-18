@@ -1237,16 +1237,19 @@ async function loadSources(){
     box.classList.toggle('hidden',!sourceCount);
   }catch(e){ box.classList.add('hidden') }  // no Product service: no source switching
 }
+let sourceChangedAt=0;   // the device takes a moment to switch; don't let the poll snap the dropdown back meanwhile
 $('#sourceSel').onchange=async e=>{
   const d=dev2(); if(!d) return;
+  sourceChangedAt=Date.now();
   try{
     await api('/api/control',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({device_id:d,action:'set_source',value:+e.target.value})});
-    log(`Source: ${e.target.selectedOptions[0].textContent}`);
+    showToast(`Source: ${e.target.selectedOptions[0].textContent}`); log(`Source: ${e.target.selectedOptions[0].textContent}`);
+    setTimeout(pollSource,3000);
     if(typeof pollQueue==='function') pollQueue(true);
   }catch(x){ notify(x.message); loadSources() }
 };
 async function pollSource(){   // follow changes made from other controllers
-  const d=dev2(); if(!d||!sourceCount||document.activeElement===$('#sourceSel')) return;
+  const d=dev2(); if(!d||!sourceCount||document.activeElement===$('#sourceSel')||Date.now()-sourceChangedAt<2500) return;
   try{ const r=await api(`/api/devices/${encodeURIComponent(d)}/sources?light=true`); $('#sourceSel').value=String(r.current) }catch(e){}
 }
 
@@ -1264,8 +1267,8 @@ $('#pinList').addEventListener('click',async e=>{
   const b=e.target.closest('.pin'); const d=dev2(); if(!b||!d) return;
   try{
     await api('/api/control',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({device_id:d,action:'invoke_pin',value:+b.dataset.slot})});
-    log(`Pin: ${b.title}`);
-    setTimeout(()=>{pollSource(); if(typeof pollQueue==='function') pollQueue(true)},800);
+    showToast(`Playing pin: ${b.title}`); log(`Pin: ${b.title}`);
+    setTimeout(()=>{pollSource(); if(typeof pollQueue==='function') pollQueue(true)},1500);
   }catch(x){ notify(x.message) }
 });
 

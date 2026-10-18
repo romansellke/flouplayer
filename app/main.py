@@ -169,8 +169,14 @@ def _has_openhome_product(d):
 @app.get("/api/discover")
 def discover(timeout:int=4):
     global devices
-    try: found=upnpclient.discover(timeout=timeout)
-    except Exception as e: raise HTTPException(502,f"SSDP discovery failed: {e}")
+    # SSDP answers are UDP and get lost now and then (the number of devices
+    # found varied between searches), so run two passes at once and merge.
+    found=[]; error=None
+    with cf.ThreadPoolExecutor(max_workers=2) as ex:
+        for fut in [ex.submit(upnpclient.discover,timeout=timeout) for _ in range(2)]:
+            try: found+=fut.result()
+            except Exception as e: error=e
+    if not found and error: raise HTTPException(502,f"SSDP discovery failed: {error}")
     fresh={}
     for d in found:
         key=getattr(d,"udn",None) or getattr(d,"location",None) or str(id(d)); fresh[key]=d
@@ -235,6 +241,13 @@ def get_volume(device_id:str):
 # real hardware.
 def _openhome_service(d, name):
     return peer_service(d,[f"openhome-org:service:{name}"]) or peer_service(d,[f"openhome-org:serviceId:{name}"])
+
+def _wake(d):
+    """A device in standby ignores source and pin requests -- wake it first."""
+    prod=_openhome_service(d,"Product")
+    try:
+        if prod and prod.Standby().get("Value"): prod.SetStandby(Value="0")
+    except Exception: pass
 
 @app.get("/api/devices/{device_id}/sources")
 def list_sources(device_id:str, light:bool=False):
@@ -630,16 +643,18 @@ def control(req:Control):
         elif req.action=="mute":
             vol,kind=find_volume_service(d)
             if kind!="openhome": raise HTTPException(400,"Mute needs the OpenHome Volume service")
-            vol.SetMute(Value=bool(req.value))
+            vol.SetMute(Value="1" if req.value else "0")   # upnpclient wants booleans as strings
         elif req.action=="set_source":
             prod=_openhome_service(d,"Product")
             if not prod: raise HTTPException(400,"No OpenHome Product service on this device")
             if req.value is None: raise HTTPException(400,"value (source index) required")
+            _wake(d)
             prod.SetSourceIndex(Value=req.value)
         elif req.action=="invoke_pin":
             pins=_openhome_service(d,"Pins")
             if not pins: raise HTTPException(400,"No OpenHome Pins service on this device")
             if req.value is None: raise HTTPException(400,"value (pin slot) required")
+            _wake(d)
             pins.InvokeIndex(Index=req.value)
         else: raise HTTPException(400,"Unknown action")
     except HTTPException: raise
