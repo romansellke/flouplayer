@@ -358,7 +358,6 @@ def clear_cached_library():
 class ScanReq(BaseModel):
     device_id: str
     object_id: str = "0"
-    cache: bool = True   # False: don't write library.json
 
 @app.get("/api/scan/progress")
 def scan_progress():
@@ -415,7 +414,7 @@ def scan(req: ScanReq):
         with scan_lock: scan_state["running"]=False
 
     result={"tracks":tracks,"count":len(tracks),"scan_root":scan_root_name or "all views (Artist/Album/Genre/...)","scanned_at":time.time()}
-    if req.cache: save_cached_library(result)
+    save_cached_library(result)
     return result
 
 # ---------- Transcoding for local playback ----------

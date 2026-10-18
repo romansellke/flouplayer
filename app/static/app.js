@@ -245,19 +245,6 @@ $('#discover').onclick=async()=>{
   finally{ setBusy(btn,false) }
 };
 
-// Cache switch: on = library saved to disk and reloaded at startup; off =
-// always read from the media server (auto-loaded when a server is picked).
-function cacheOn(){try{return localStorage.getItem('flou_cache')!=='0'}catch(e){return true}}
-$('#cacheToggle').checked=cacheOn();
-$('#cacheToggle').onchange=async e=>{
-  try{localStorage.setItem('flou_cache',e.target.checked?'1':'0')}catch(x){}
-  if(!e.target.checked){
-    try{await api('/api/library/cached',{method:'DELETE'})}catch(x){logErr(x.message)}
-    notify('Library cache off -- the library is read from the media server.');
-  }else notify('Library cache on -- it is saved the next time you load the library.');
-};
-$('#server').addEventListener('change',()=>{ if(!cacheOn()&&$('#server').value) $('#loadLibrary').click() });
-
 $('#loadLibrary').onclick=async()=>{
   if(!$('#server').value){notify('Please select a media server first.');return}
   const btn=$('#loadLibrary');
@@ -276,7 +263,7 @@ $('#loadLibrary').onclick=async()=>{
   },800);
 
   try{
-    const x=await api('/api/scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({device_id:$('#server').value,object_id:'0',cache:cacheOn()})});
+    const x=await api('/api/scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({device_id:$('#server').value,object_id:'0'})});
     state.tracks=enrichTracks(x.tracks);
     state.filters={album_artist:'',artist:'',album:'',year:''};
     $('#breadcrumb').textContent=`${x.count} tracks (${x.scan_root})`;
@@ -393,7 +380,7 @@ function openCover(el,caption){
 $('#lightbox').onclick=()=>$('#lightbox').classList.add('hidden');
 document.addEventListener('keydown',e=>{ if(e.key==='Escape') $('#lightbox').classList.add('hidden') });
 $('#content').addEventListener('click',e=>{
-  const cv=e.target.closest('.cover'); if(!cv) return;
+  const cv=e.target.closest('.cover'); if(!cv||cv.closest('.livecard')) return;
   const al=cv.closest('.album'); const ts=al&&state.view.groups[al.dataset.album];
   openCover(cv,ts?`${ts[0].album||'Unknown Album'} · ${ts[0].album_artist||''}`:'');
 });
@@ -619,6 +606,7 @@ const albumObserver=new IntersectionObserver(es=>{if(es.some(e=>e.isIntersecting
 // keep=true re-renders in place (same albums rendered, same scroll
 // position) -- used when only the look changes, e.g. the play marker.
 function renderAlbums(keep=false){
+  if(isLive()) return renderLive();
   const c=$('#content');
   const prevRendered=keep?state.view.rendered:0, prevScroll=keep?c.scrollTop:0;
   const filtered=currentlyFiltered();
@@ -762,9 +750,10 @@ async function playItem(t){
 // if needed). If it's hidden by the current filters/search, switch the
 // view to its album first -- like iTunes' "Go to Current Song".
 function jumpToNowPlaying(){
-  const t=state.tracks.find(x=>x.id===state.nowPlayingId);
-  if(!t) return notify('Nothing from the loaded library is playing right now.');
+  const t=state.view.byId.get(state.nowPlayingId)||state.tracks.find(x=>x.id===state.nowPlayingId);
+  if(!t) return notify(isLive()?'The playing track is not in this folder.':'Nothing from the loaded library is playing right now.');
   if(!state.view.byId.has(t.id)){
+    if(isLive()) return notify('The playing track is not in this folder.');
     $('#search').value='';
     state.filters={album_artist:t.album_artist||'',artist:t.album?'':(t.artist||''),album:t.album||'',year:''};
     render();
@@ -1101,8 +1090,8 @@ document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key==='l'&&
 
 // ---------- Restore the last scanned library from disk on startup ----------
 updateReadyState();
-(async function initFromCache(){
-  if(!cacheOn()) return;
+async function initFromCache(){
+  if(state.tracks.length) return render();
   try{
     const cached=await api('/api/library/cached');
     state.tracks=enrichTracks(cached.tracks);
@@ -1110,4 +1099,103 @@ updateReadyState();
     $('#breadcrumb').textContent=`${cached.count} tracks (cached, ${cached.scan_root}${when?' · '+when:''})`;
     render();
   }catch(e){/* no cached library yet -- that's fine, use Load Library */}
-})();
+}
+
+// ---------- Live browsing (like the Linn app) ----------
+// Instead of scanning the whole library, walk the media server's own
+// folder tree: Artists / Albums / Genres / Folders ... as the server
+// organises them. Containers are shown as cards, tracks as an album block
+// (the same rendering, play, queue and now-playing code as the cached view).
+const LIVE_PAGE=300;
+const live={stack:[],containers:[],tracks:[],loaded:0,total:0,loading:false,seq:0};
+function isLive(){return document.documentElement.dataset.libmode==='live'}
+function libMode(){try{return localStorage.getItem('flou_libmode')==='cached'?'cached':'live'}catch(e){return 'live'}}
+
+async function liveOpen(stack){
+  const server=$('#server').value;
+  if(!server){ $('#content').innerHTML='<div class="empty">Search for devices, then select a media server.</div>'; return }
+  const seq=++live.seq;
+  live.stack=stack; live.containers=[]; live.tracks=[]; live.loaded=0; live.total=0;
+  $('#content').innerHTML='<div class="empty">Loading ...</div>';
+  await liveMore(seq);
+}
+async function liveMore(seq=live.seq){
+  const server=$('#server').value, id=live.stack[live.stack.length-1].id;
+  if(live.loading) return;
+  live.loading=true;
+  try{
+    const r=await api('/api/browse',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({device_id:server,object_id:id,start:live.loaded,count:LIVE_PAGE})});
+    if(seq!==live.seq) return; // navigated away meanwhile
+    const items=r.items||[];
+    live.containers.push(...items.filter(i=>i.type==='container'));
+    const tr=items.filter(i=>i.type!=='container'&&i.resources?.length&&(!i.class||i.class.startsWith('object.item.audioItem')));
+    live.tracks.push(...enrichTracks(tr));
+    live.loaded+=r.number_returned||items.length;
+    live.total=r.total_matches||0;
+    if(!r.number_returned) live.total=live.loaded; // nothing more to fetch
+  }catch(e){
+    if(seq===live.seq){ logErr(e.message); $('#content').innerHTML=`<div class="empty">Failed to load: ${esc(e.message)}</div>`; }
+    return;
+  }finally{ live.loading=false }
+  if(seq===live.seq) renderLive();
+}
+function liveCrumbs(){
+  return live.stack.map((c,i)=>i===live.stack.length-1
+    ?`<span class="crumb cur">${esc(c.title)}</span>`
+    :`<button type="button" class="crumb" data-depth="${i}">${esc(c.title)}</button>`).join('<span class="sep">›</span>');
+}
+function renderLive(){
+  const c=$('#content');
+  if(!live.stack.length) return;
+  const q=$('#search').value.trim().toLowerCase();
+  const conts=live.containers.filter(x=>!q||x.title.toLowerCase().includes(q)||(x.artist||'').toLowerCase().includes(q));
+  const tracks=live.tracks.filter(t=>!q||SEARCH_FIELDS.some(k=>(t[k]||'').toLowerCase().includes(q)));
+  // tracks grouped by album, in server order (a folder is usually one album)
+  const groups={}; tracks.forEach(t=>(groups[albumKey(t)]??=[]).push(t));
+  const entries=Object.entries(groups);
+  state.currentPlaylist=entries.flatMap(([,ts])=>ts);
+  state.view={entries,groups,byId:new Map(tracks.map(t=>[t.id,t])),rendered:entries.length};
+  $('#count').textContent=[conts.length?`${conts.length} folders`:'',tracks.length?`${tracks.length} tracks`:''].filter(Boolean).join(' · ');
+  document.querySelector('#libTitle').textContent=live.stack[live.stack.length-1].title;
+  $('#breadcrumb').textContent='Live · '+($('#server').selectedOptions[0]?.textContent||'');
+  const cards=conts.map(x=>`<div class="livecard" data-cid="${esc(x.id)}" title="${esc(x.title)}"><div class="cover" ${cover(x.album_art)}>${x.album_art?'':'<span class="glyph">▤</span>'}</div><div class="livetitle">${esc(x.title)}</div>${x.artist?`<div class="livesub">${esc(x.artist)}</div>`:''}</div>`).join('');
+  const more=live.loaded<live.total?`<div class="livemore"><button type="button" id="liveMore" class="btn-link">Load more (${live.loaded} of ${live.total})</button></div>`:'';
+  const empty=(!conts.length&&!tracks.length)?`<div class="empty">${q?'Nothing matches the search.':'This folder is empty.'}</div>`:'';
+  c.innerHTML=`<div class="crumbs">${liveCrumbs()}</div>${cards?`<div class="livegrid">${cards}</div>`:''}${entries.map(albumHtml).join('')}${more}${empty}`;
+}
+$('#content').addEventListener('click',e=>{
+  if(!isLive()) return;
+  const card=e.target.closest('[data-cid]');
+  if(card){
+    const x=live.containers.find(k=>k.id===card.dataset.cid);
+    if(x){ $('#search').value=''; liveOpen([...live.stack,{id:x.id,title:x.title}]) }
+    return;
+  }
+  const crumb=e.target.closest('.crumb[data-depth]');
+  if(crumb){ $('#search').value=''; liveOpen(live.stack.slice(0,+crumb.dataset.depth+1)) ; return }
+  if(e.target.closest('#liveMore')) liveMore();
+});
+// Backspace / Alt+Left: one folder up
+document.addEventListener('keydown',e=>{
+  if(!isLive()||live.stack.length<2) return;
+  const typing=/^(input|textarea|select)$/i.test(e.target.tagName);
+  if((e.key==='Backspace'&&!typing)||(e.altKey&&e.key==='ArrowLeft')){ e.preventDefault(); liveOpen(live.stack.slice(0,-1)) }
+});
+$('#server').addEventListener('change',()=>{ if(isLive()) liveOpen($('#server').value?[{id:'0',title:'Home'}]:[]) });
+
+function setLibMode(mode,save=true){
+  document.documentElement.dataset.libmode=mode;
+  document.querySelectorAll('#libMode button').forEach(b=>b.classList.toggle('active',b.dataset.mode===mode));
+  if(save) try{localStorage.setItem('flou_libmode',mode)}catch(e){}
+  $('#search').value='';
+  if(mode==='live'){
+    $('#libTitle').textContent='Library';
+    if($('#server').value) liveOpen([{id:'0',title:'Home'}]);
+    else{ state.view={entries:[],groups:{},byId:new Map(),rendered:0}; state.currentPlaylist=[]; $('#count').textContent=''; $('#breadcrumb').textContent='Live'; $('#content').innerHTML='<div class="empty">Search for devices, then select a media server.</div>' }
+  }else{
+    live.seq++; $('#libTitle').textContent='Albums by Artist'; $('#breadcrumb').textContent='Not loaded';
+    initFromCache().then(()=>{ if(!state.tracks.length){ state.view={entries:[],groups:{},byId:new Map(),rendered:0}; state.currentPlaylist=[]; $('#count').textContent=''; $('#content').innerHTML='<div class="empty">Click "Load library" to scan the media server, or switch to Live to browse it directly.</div>' } });
+  }
+}
+document.querySelectorAll('#libMode button').forEach(b=>b.onclick=()=>{ if(b.dataset.mode!==libMode()||document.documentElement.dataset.libmode!==b.dataset.mode) setLibMode(b.dataset.mode) });
+setLibMode(libMode(),false);
