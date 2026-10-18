@@ -6,6 +6,15 @@ All notable changes to Flou Player are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-10-18
+
+### Added
+- **Keyboard control** of playback: Space for play/pause, Shift+←/→ to seek,
+  Ctrl+←/→ for previous/next, Ctrl+↑/↓ for volume, Ctrl+M for mute and Ctrl+.
+  for stop. Plain arrow keys and letters stay free for scrolling and the
+  column type-ahead; the shortcuts are ignored while typing in a field, while
+  a dialog is open and on focused buttons and sliders.
+
 ## [0.10.2] - 2026-10-18
 
 ### Fixed
@@ -163,7 +172,8 @@ the OpenHome queue tab; a position/seek bar and a live dB volume readout; a
 Diagnostics log and About dialog; 17 colour themes; installable Linux app
 packaging; and the GPL-3.0-or-later license.
 
-[Unreleased]: https://github.com/romansellke/flouplayer/compare/v0.10.2...HEAD
+[Unreleased]: https://github.com/romansellke/flouplayer/compare/v0.11.0...HEAD
+[0.11.0]: https://github.com/romansellke/flouplayer/compare/v0.10.2...v0.11.0
 [0.10.2]: https://github.com/romansellke/flouplayer/compare/v0.10.1...v0.10.2
 [0.10.1]: https://github.com/romansellke/flouplayer/compare/v0.10.0...v0.10.1
 [0.10.0]: https://github.com/romansellke/flouplayer/compare/v0.9.0...v0.10.0
