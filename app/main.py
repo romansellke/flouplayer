@@ -41,7 +41,7 @@ CANONICAL_CONTAINER_NAMES={"folder","folders","by folder","files","ordner","date
 
 class Select(BaseModel): device_id:str
 class Browse(BaseModel): device_id:str; object_id:str="0"; start:int=0; count:int=500
-class Control(BaseModel): device_id:str; action:str; value:Optional[int]=None; uri:Optional[str]=None; metadata:Optional[str]=None; source_index:Optional[int]=None; source_name:Optional[str]=None
+class Control(BaseModel): device_id:str; action:str; value:Optional[int]=None; uri:Optional[str]=None; metadata:Optional[str]=None
 
 def service(device, needles):
     for s in device.services:
@@ -227,28 +227,6 @@ def get_transport(device_id:str):
     except Exception:
         state_str=""
     return {"state":state_str,"rel_time":pos.get("RelTime",""),"duration":pos.get("TrackDuration","")}
-
-@app.get("/api/devices/{device_id}/sources")
-def list_sources(device_id:str):
-    """Lists the switchable sources on the device (OpenHome Product
-    service) -- e.g. to find a TIDAL source configured on the Majik DSM4.
-    Only available on OpenHome devices; not verified against real hardware."""
-    d=devices.get(device_id)
-    if not d: raise HTTPException(404,"Device not found")
-    prod=peer_service(d,["product"])
-    if not prod: raise HTTPException(400,"No OpenHome Product service on this device -- source switching not possible")
-    try:
-        count=int(prod.SourceCount().get("Value",0))
-    except Exception as e:
-        raise HTTPException(502,f"Could not read sources: {e}")
-    out=[]
-    for i in range(count):
-        try:
-            r=prod.Source(Index=i)
-            out.append({"index":i,"system_name":r.get("SystemName",""),"type":r.get("Type",""),"name":r.get("Name",""),"visible":r.get("Visible",True)})
-        except Exception:
-            continue
-    return {"sources":out}
 
 DIDL_NS="urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/"
 for _prefix,_uri in {"dc":"http://purl.org/dc/elements/1.1/","upnp":"urn:schemas-upnp-org:metadata-1-0/upnp/","dlna":"urn:schemas-dlna-org:metadata-1-0/"}.items():
@@ -562,12 +540,6 @@ def control(req:Control):
                 vmax=int(vol.Characteristics().get("VolumeMax",100)) or 100
                 vol.SetVolume(Value=max(0,min(vmax,req.value or 0)))
             else: vol.SetVolume(InstanceID=0,Channel="Master",DesiredVolume=max(0,min(100,req.value or 0)))
-        elif req.action=="set_source":
-            prod=peer_service(d,["product"])
-            if not prod: raise HTTPException(400,"No OpenHome Product service on this device")
-            if req.source_name: prod.SetSourceIndexByName(Value=req.source_name)
-            elif req.source_index is not None: prod.SetSourceIndex(Value=req.source_index)
-            else: raise HTTPException(400,"source_index or source_name required")
         else: raise HTTPException(400,"Unknown action")
     except HTTPException: raise
     except Exception as e: raise HTTPException(502,f"Control command failed: {e}")
