@@ -85,7 +85,7 @@ async function jumpToNowPlaying(){
       if(!seen) return notify('The playing track is not in the browsed folders.');
       $('#search').value=''; await liveOpen(seen.stack);   // go back to its folder first
     }else{
-      $('#search').value='';
+      $('#search').value=''; $('#qualityFilter').value='';   // neither may hide the track
       state.filters={album_artist:t.album_artist||'',artist:t.album?'':(t.artist||''),album:t.album||'',year:''};
       render();
       document.querySelectorAll('.facets li.active').forEach(li=>li.scrollIntoView({block:'nearest'}));

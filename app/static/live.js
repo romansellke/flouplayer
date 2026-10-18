@@ -51,7 +51,7 @@ function renderLive(){
   live.tracks.forEach(t=>{ const e={t,stack:live.stack}; liveSeen.byId.set(t.id,e); const u=t.resources?.[0]?.uri; if(u) liveSeen.byUri.set(u,e) });
   const q=$('#search').value.trim().toLowerCase();
   const conts=live.containers.filter(x=>!q||x.title.toLowerCase().includes(q)||(x.artist||'').toLowerCase().includes(q));
-  const tracks=live.tracks.filter(t=>!q||SEARCH_FIELDS.some(k=>(t[k]||'').toLowerCase().includes(q)));
+  const tracks=live.tracks.filter(t=>!q||SEARCH_FIELDS.some(k=>(t[k]||'').toLowerCase().includes(q))).filter(qualityMatch);
   // tracks grouped by album, in server order (a folder is usually one album)
   const groups={}; tracks.forEach(t=>(groups[albumKey(t)]??=[]).push(t));
   const entries=Object.entries(groups);
@@ -62,7 +62,7 @@ function renderLive(){
   $('#breadcrumb').textContent='Live · '+($('#server').selectedOptions[0]?.textContent||'');
   const cards=conts.map(x=>`<div class="livecard" data-cid="${esc(x.id)}" title="${esc(x.title)}"><div class="cover" ${cover(x.album_art)}>${x.album_art?'':'<span class="glyph">▤</span>'}</div><div class="livetitle">${esc(x.title)}</div>${x.artist?`<div class="livesub">${esc(x.artist)}</div>`:''}</div>`).join('');
   const more=live.loaded<live.total?`<div class="livemore"><button type="button" id="liveMore" class="btn-link">Load more (${live.loaded} of ${live.total})</button></div>`:'';
-  const empty=(!conts.length&&!tracks.length)?`<div class="empty">${q?'Nothing matches the search.':'This folder is empty.'}</div>`:'';
+  const empty=(!conts.length&&!tracks.length)?`<div class="empty">${q||$('#qualityFilter').value?'Nothing matches the search or filter.':'This folder is empty.'}</div>`:'';
   c.innerHTML=`<div class="crumbs">${liveCrumbs()}</div>${cards?`<div class="livegrid">${cards}</div>`:''}${entries.map(albumHtml).join('')}${more}${empty}`;
 }
 $('#content').addEventListener('click',e=>{

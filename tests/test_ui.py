@@ -287,3 +287,61 @@ def test_albums_are_ordered_by_album_artist_then_album(page, api):
     page.wait_for_selector(".album")
     albums = page.eval_on_selector_all(".album .albumtitle", "ts => ts.map(t => t.textContent.replace(/ \\(\\d+\\)$/, ''))")
     assert albums == ["Beta", "Zed", "Loner", "Alpha", "Nobody"]
+
+
+# ---------- quality filter ----------
+
+def audio_track(i, mime, rate="", bits="", album="A"):
+    t = track(i, album=album, album_artist="Band")
+    t["id"] = f"q{i}"
+    t["resources"] = [{"uri": f"u{i}", "protocol": f"http-get:*:{mime}:*", "duration": "0:03:00", "sample_rate": rate, "bits_per_sample": bits}]
+    return t
+
+
+QUALITY_TRACKS = [
+    audio_track(1, "audio/flac", "44100", "16"),      # cd
+    audio_track(2, "audio/flac", "96000", "24"),      # hires
+    audio_track(3, "audio/flac", "48000", "16"),      # cd (48 kHz is still CD-class)
+    audio_track(4, "audio/mpeg", "44100"),            # lossy
+    audio_track(5, "audio/mp4", "44100"),             # AAC (no bit depth) -> lossy
+    audio_track(6, "audio/mp4", "44100", "16"),       # ALAC states its bit depth -> lossless
+    audio_track(7, "audio/flac", "192000", "24"),     # hires
+    audio_track(8, "application/x-unknown"),          # can't tell
+]
+
+
+def test_tracks_are_classified_by_audio_quality(page, api):
+    open_app(page)
+    got = page.evaluate("ts => ts.map(t => qualityClass(t))", QUALITY_TRACKS)
+    assert got == ["cd", "hires", "cd", "lossy", "lossy", "cd", "hires", ""]
+
+
+def test_the_quality_filter_narrows_the_track_list(page, api):
+    api.routes["library/cached"] = {"tracks": QUALITY_TRACKS, "count": len(QUALITY_TRACKS), "scan_root": "root", "scanned_at": 1}
+    page.add_init_script("localStorage.setItem('flou_libmode','cached')")
+    open_app(page)
+    page.wait_for_selector(".album")
+
+    def shown(value):
+        page.select_option("#qualityFilter", value)
+        page.wait_for_timeout(150)
+        return page.eval_on_selector_all("[data-item]", "rs => rs.map(r => r.dataset.item).sort()")
+
+    assert len(shown("")) == 8                                             # all, incl. the one we can't classify
+    assert shown("hires") == ["q2", "q7"]
+    assert shown("cd") == ["q1", "q3", "q6"]
+    assert shown("lossless") == ["q1", "q2", "q3", "q6", "q7"]
+    assert shown("lossy") == ["q4", "q5"]
+    assert "2 tracks" in page.inner_text("#count")                         # the counter follows the filter
+    page.select_option("#qualityFilter", "")
+    assert len(page.eval_on_selector_all("[data-item]", "rs => rs")) == 8
+
+
+def test_the_quality_filter_also_works_in_live_mode(page, api):
+    tree = {"0": [{"type": "container", "id": "a", "title": "Albums"}], "a": QUALITY_TRACKS}
+    start_live(page, api, tree)
+    page.click("[data-cid=a]")
+    page.wait_for_selector("[data-item=q1]")
+    page.select_option("#qualityFilter", "lossy")
+    page.wait_for_timeout(150)
+    assert page.eval_on_selector_all("[data-item]", "rs => rs.map(r => r.dataset.item).sort()") == ["q4", "q5"]

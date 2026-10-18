@@ -6,6 +6,14 @@ All notable changes to Flou Player are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-10-18
+
+### Added
+- **Quality filter** above the album list: show only Hi-Res, CD quality,
+  Lossless (both) or Lossy tracks, in the cached library and in Live mode. The
+  quality is derived from the format and the sample rate / bit depth the server
+  reports.
+
 ### Changed
 - README: new screenshot of the Cached mode.
 
@@ -224,7 +232,8 @@ the OpenHome queue tab; a position/seek bar and a live dB volume readout; a
 Diagnostics log and About dialog; 17 colour themes; installable Linux app
 packaging; and the GPL-3.0-or-later license.
 
-[Unreleased]: https://github.com/romansellke/flouplayer/compare/v0.13.0...HEAD
+[Unreleased]: https://github.com/romansellke/flouplayer/compare/v0.14.0...HEAD
+[0.14.0]: https://github.com/romansellke/flouplayer/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/romansellke/flouplayer/compare/v0.12.3...v0.13.0
 [0.12.3]: https://github.com/romansellke/flouplayer/compare/v0.12.2...v0.12.3
 [0.12.2]: https://github.com/romansellke/flouplayer/compare/v0.12.1...v0.12.2
