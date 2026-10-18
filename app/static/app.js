@@ -245,6 +245,19 @@ $('#discover').onclick=async()=>{
   finally{ setBusy(btn,false) }
 };
 
+// Cache switch: on = library saved to disk and reloaded at startup; off =
+// always read from the media server (auto-loaded when a server is picked).
+function cacheOn(){try{return localStorage.getItem('flou_cache')!=='0'}catch(e){return true}}
+$('#cacheToggle').checked=cacheOn();
+$('#cacheToggle').onchange=async e=>{
+  try{localStorage.setItem('flou_cache',e.target.checked?'1':'0')}catch(x){}
+  if(!e.target.checked){
+    try{await api('/api/library/cached',{method:'DELETE'})}catch(x){logErr(x.message)}
+    notify('Library cache off -- the library is read from the media server.');
+  }else notify('Library cache on -- it is saved the next time you load the library.');
+};
+$('#server').addEventListener('change',()=>{ if(!cacheOn()&&$('#server').value) $('#loadLibrary').click() });
+
 $('#loadLibrary').onclick=async()=>{
   if(!$('#server').value){notify('Please select a media server first.');return}
   const btn=$('#loadLibrary');
@@ -263,7 +276,7 @@ $('#loadLibrary').onclick=async()=>{
   },800);
 
   try{
-    const x=await api('/api/scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({device_id:$('#server').value,object_id:'0'})});
+    const x=await api('/api/scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({device_id:$('#server').value,object_id:'0',cache:cacheOn()})});
     state.tracks=enrichTracks(x.tracks);
     state.filters={album_artist:'',artist:'',album:'',year:''};
     $('#breadcrumb').textContent=`${x.count} tracks (${x.scan_root})`;
@@ -1089,6 +1102,7 @@ document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key==='l'&&
 // ---------- Restore the last scanned library from disk on startup ----------
 updateReadyState();
 (async function initFromCache(){
+  if(!cacheOn()) return;
   try{
     const cached=await api('/api/library/cached');
     state.tracks=enrichTracks(cached.tracks);

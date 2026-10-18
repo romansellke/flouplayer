@@ -251,6 +251,8 @@ main{gap:8px;flex:1 1 600px;min-width:320px;min-height:0;display:flex;flex-direc
 .colmenu{position:absolute;right:0;top:calc(100% + 6px);background:var(--bg);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:8px 12px;z-index:5;white-space:nowrap;font-weight:400;text-align:left;color:var(--text)}
 .colmenu.hidden{display:none}
 .colmenu label{display:block;padding:4px 2px;cursor:pointer;font-size:12.5px}
+.toolcheck{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer;white-space:nowrap}
+.toolcheck input{accent-color:var(--accent);margin:0}
 .colmenu input{margin-right:8px;accent-color:var(--accent)}
 
 .album{display:flex;flex-wrap:nowrap;padding:6px 20px;border-bottom:1px solid var(--line)}
