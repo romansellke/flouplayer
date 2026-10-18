@@ -72,6 +72,9 @@ iTunes-style column browser and instant searching across everything.
 - **Collapse the browser** with the **Browser** button (Ctrl/⌘+B) to give
   the album list the full height. The current selection keeps filtering
   while hidden; the state is remembered.
+- **Album order:** albums are sorted by Album Artist (the name shown next to
+  the cover; for albums without that tag the artist, if all tracks share one),
+  then by album title. Albums with no artist information at all come last.
 - **All albums at a glance:** with nothing selected, the whole library is
   listed. The list is built in chunks as you scroll, so very large libraries
   stay responsive. Only the album list scrolls -- header, toolbar, column

@@ -271,3 +271,19 @@ def test_about_dialog_shows_version_and_source(page, api):
     page.click("#aboutBtn")
     page.wait_for_function("document.querySelector('#aboutVersion').textContent.includes('1.2.3')")
     assert "v1.2.3-4-gabc" in page.inner_text("#aboutTable")
+
+
+# ---------- album order ----------
+
+def test_albums_are_ordered_by_album_artist_then_album(page, api):
+    def t(i, album, album_artist="", artist="Someone"):
+        return dict(track(i, album=album, album_artist=album_artist, artist=artist), id=f"x{i}")
+    tracks = [t(1, "Zed", "Apple Band"), t(2, "Alpha", "Zebra Band"), t(3, "Beta", "Apple Band"),
+              t(4, "Loner", artist="Mid Artist"),                    # untagged: sorted by its artist
+              t(5, "Nobody", artist="")]                             # no artist at all: last
+    api.routes["library/cached"] = {"tracks": tracks, "count": len(tracks), "scan_root": "root", "scanned_at": 1}
+    page.add_init_script("localStorage.setItem('flou_libmode','cached')")
+    open_app(page)
+    page.wait_for_selector(".album")
+    albums = page.eval_on_selector_all(".album .albumtitle", "ts => ts.map(t => t.textContent.replace(/ \\(\\d+\\)$/, ''))")
+    assert albums == ["Beta", "Zed", "Loner", "Alpha", "Nobody"]

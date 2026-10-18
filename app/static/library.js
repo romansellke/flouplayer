@@ -266,7 +266,11 @@ function renderAlbums(keep=false){
   const groups={};
   filtered.forEach(t=>(groups[albumKey(t)]??=[]).push(t));
   Object.values(groups).forEach(list=>list.sort((a,b)=>(parseInt(a.track_number)||0)-(parseInt(b.track_number)||0)||a.title.localeCompare(b.title)));
-  const entries=Object.entries(groups).sort(([a],[b])=>a.localeCompare(b));
+  // Order: by Album Artist (the label shown next to the cover), then by album name; albums with no artist at all last.
+  const cmp=(x,y)=>x.localeCompare(y,undefined,{sensitivity:'base',numeric:true});
+  const entries=Object.entries(groups).map(([k,ts])=>[k,ts,albumArtistLabel(ts)])
+    .sort(([ka,a,la],[kb,b,lb])=>(!la-!lb)||cmp(la,lb)||cmp(a[0].album||'',b[0].album||'')||ka.localeCompare(kb))
+    .map(([k,ts])=>[k,ts]);
   state.currentPlaylist=entries.flatMap(([,ts])=>ts); // used for next/previous track
   state.view={entries,groups,byId:new Map(filtered.map(t=>[t.id,t])),rendered:0};
 
