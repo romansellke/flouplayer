@@ -10,6 +10,7 @@ output device (such as a Majik DSM4) -- or on the computer's own speakers.
 | [User guide](user-guide.md) | Live and cached library, browsing, searching, playback, the queue, local playback, volume, themes, keyboard shortcuts |
 | [Troubleshooting](troubleshooting.md) | Install problems, no devices found, blank window, crashes, bug reports |
 | [How it works](how-it-works.md) | Architecture, where files and settings are stored, known limitations |
+| [Development and tests](development.md) | Running the tests, what they cover, writing a browser test |
 | [Versioning and releases](releasing.md) | Version numbers, the changelog, how to make a release |
 
 Back to the [project README](../README.md).

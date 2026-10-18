@@ -65,6 +65,7 @@ media server and an output device, and double-click a track.
 - [Troubleshooting](docs/troubleshooting.md)
 - [How it works](docs/how-it-works.md) -- architecture, stored files, known
   limitations
+- [Development and tests](docs/development.md)
 - [Versioning and releases](docs/releasing.md) and the [changelog](CHANGELOG.md)
 
 ## License

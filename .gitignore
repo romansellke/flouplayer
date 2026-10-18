@@ -3,3 +3,4 @@ __pycache__/
 *.pyc
 build/
 app/_buildinfo.json
+.pytest_cache/
