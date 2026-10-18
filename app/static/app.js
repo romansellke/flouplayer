@@ -395,19 +395,18 @@ const ALL_COLUMNS=[
   {key:'quality',label:'Quality',default:true},
   {key:'bitrate',label:'Bitrate',default:false},
   {key:'time',label:'Time',default:true},
-  {key:'artist',label:'Artist',default:true},
-  {key:'album_artist',label:'Album Artist',default:false},
+  {key:'artist',label:'Artist',default:false},   // the Album Artist is shown next to the cover
   {key:'genre',label:'Genre',default:false},
   {key:'year',label:'Year',default:false},
 ];
 function loadColumnPrefs(){
   try{
-    const saved=JSON.parse(localStorage.getItem('flou_columns')||'null');
+    const saved=JSON.parse(localStorage.getItem('flou_columns_v2')||'null');
     if(saved) return saved;
   }catch(e){/* fall through to defaults */}
   const d={}; ALL_COLUMNS.forEach(c=>d[c.key]=c.default); return d;
 }
-function saveColumnPrefs(){try{localStorage.setItem('flou_columns',JSON.stringify(state.columns))}catch(e){}}
+function saveColumnPrefs(){try{localStorage.setItem('flou_columns_v2',JSON.stringify(state.columns))}catch(e){}}
 state.columns=loadColumnPrefs();
 
 function buildColumnMenu(){
@@ -557,7 +556,6 @@ function trackRowCells(t,i){
   if(c.bitrate) cells+=`<td class="bitrate">${bitrateLabel(t.resources[0])}</td>`;
   if(c.time) cells+=`<td class="time">${esc(t.resources[0]?.duration||'')}</td>`;
   if(c.artist) cells+=`<td class="artist">${esc(t.artist)}</td>`;
-  if(c.album_artist) cells+=`<td class="albumartist">${esc(t.album_artist)}</td>`;
   if(c.genre) cells+=`<td class="genre">${esc(t.genre)}</td>`;
   if(c.year) cells+=`<td class="year">${esc(t.year)}</td>`;
   cells+=`<td class="qadd"><button type="button" data-qadd="${esc(t.id)}" title="Add to queue" aria-label="Add to queue">+</button></td>`;
@@ -568,6 +566,13 @@ function trackRowCells(t,i){
 // order (rendered chunk by chunk), plus a lookup of the listed tracks.
 state.view={entries:[],groups:{},byId:new Map(),rendered:0};
 
+// Next to the cover: the Album Artist tag; for untagged albums the artist if all tracks share one.
+function albumArtistLabel(ts){
+  if(ts[0].album_artist) return ts[0].album_artist;
+  const artists=new Set(ts.map(t=>t.artist).filter(Boolean));
+  return artists.size===1?[...artists][0]:'';
+}
+
 function albumHtml([key,ts]){
   const album=ts[0].album||'Unknown Album';
   return `
@@ -576,7 +581,7 @@ function albumHtml([key,ts]){
         <div class="cover" ${cover(ts[0].album_art)}></div>
         <div>
           <div class="albumtitle">${esc(album)} (${ts.length})</div>
-          <div>${esc(ts[0].album_artist)}</div>
+          <div class="albumartist">${esc(albumArtistLabel(ts))}</div>
           <div class="meta">${esc(ts[0].year)}</div>
           <div class="albumqueue"><button type="button" data-qplay-album="${esc(key)}" title="Play album (replaces the queue)">▶</button><button type="button" data-qadd-album="${esc(key)}" title="Add album to queue">+ Queue</button></div>
         </div>
@@ -750,15 +755,21 @@ async function playItem(t){
 // Scrolls the album list to the current track (rendering further chunks
 // if needed). If it's hidden by the current filters/search, switch the
 // view to its album first -- like iTunes' "Go to Current Song".
-function jumpToNowPlaying(){
-  const t=state.view.byId.get(state.nowPlayingId)||state.tracks.find(x=>x.id===state.nowPlayingId);
-  if(!t) return notify(isLive()?'The playing track is not in this folder.':'Nothing from the loaded library is playing right now.');
+async function jumpToNowPlaying(){
+  const id=state.nowPlayingId;
+  const seen=liveSeen.byId.get(id);   // live browsing: the track and the folder it was seen in
+  const t=state.view.byId.get(id)||state.tracks.find(x=>x.id===id)||(isLive()&&seen?.t);
+  if(!t) return notify('Nothing from the library is playing right now.');
   if(!state.view.byId.has(t.id)){
-    if(isLive()) return notify('The playing track is not in this folder.');
-    $('#search').value='';
-    state.filters={album_artist:t.album_artist||'',artist:t.album?'':(t.artist||''),album:t.album||'',year:''};
-    render();
-    document.querySelectorAll('.facets li.active').forEach(li=>li.scrollIntoView({block:'nearest'}));
+    if(isLive()){
+      if(!seen) return notify('The playing track is not in the browsed folders.');
+      $('#search').value=''; await liveOpen(seen.stack);   // go back to its folder first
+    }else{
+      $('#search').value='';
+      state.filters={album_artist:t.album_artist||'',artist:t.album?'':(t.artist||''),album:t.album||'',year:''};
+      render();
+      document.querySelectorAll('.facets li.active').forEach(li=>li.scrollIntoView({block:'nearest'}));
+    }
   }
   const row=ensureTrackRendered(t.id);
   if(!row) return;
@@ -1020,6 +1031,17 @@ $('#qClear').onclick=async()=>{try{await queueApi({action:'clear'});pollQueue(tr
 $('#qShuffle').onclick=async()=>{try{await queueApi({action:'shuffle',value:!queue.shuffle});pollQueue(true)}catch(x){notify(x.message)}};
 $('#qRepeat').onclick=async()=>{try{await queueApi({action:'repeat',value:!queue.repeat});pollQueue(true)}catch(x){notify(x.message)}};
 let queueBusy=false;
+// Playback started from the device queue (▶ Play all, + Queue ...) never goes through playItem:
+// find the library track by its URI so the ▶ marker and the Now Playing button work too.
+function syncNowPlayingFromQueue(cur){
+  if(!cur.uri) return;
+  const hit=t=>t.resources?.some(r=>r.uri===cur.uri);
+  const t=[...state.view.byId.values()].find(hit)||state.tracks.find(hit)||liveSeen.byUri.get(cur.uri)?.t;
+  if(!t||t.id===state.nowPlayingId) return;
+  const prev=state.nowPlayingId; state.nowPlayingId=t.id;
+  $('#jumpNowPlaying').disabled=false;
+  markNowPlaying(prev,t.id);
+}
 async function pollQueue(force=false){
   if(!dev()||isLocal()){ queue.supported=false; queue.active=false; renderQueue(); return; }
   if(queueBusy) return; queueBusy=true;
@@ -1033,6 +1055,7 @@ async function pollQueue(force=false){
     if(queue.active && cur){
       $('#playing').textContent=cur.title; $('#playingSub').textContent=[cur.artist,cur.album].filter(Boolean).join(' · ');
       setNowCover(cur.album_art);
+      syncNowPlayingFromQueue(cur);
       if(r.duration) setProgress(r.seconds,r.duration,queue.state==='Playing');
       else clearProgress();
     }else if(queue.active){
@@ -1110,6 +1133,7 @@ async function initFromCache(){
 // organises them. Containers are shown as cards, tracks as an album block
 // (the same rendering, play, queue and now-playing code as the cached view).
 const LIVE_PAGE=300;
+const liveSeen={byUri:new Map(),byId:new Map()};   // every live track seen so far -> {t,stack}
 const live={stack:[],containers:[],tracks:[],loaded:0,total:0,loading:false,seq:0};
 function isLive(){return document.documentElement.dataset.libmode==='live'}
 function libMode(){try{return localStorage.getItem('flou_libmode')==='cached'?'cached':'live'}catch(e){return 'live'}}
@@ -1150,6 +1174,7 @@ function liveCrumbs(){
 function renderLive(){
   const c=$('#content');
   if(!live.stack.length) return;
+  live.tracks.forEach(t=>{ const e={t,stack:live.stack}; liveSeen.byId.set(t.id,e); const u=t.resources?.[0]?.uri; if(u) liveSeen.byUri.set(u,e) });
   const q=$('#search').value.trim().toLowerCase();
   const conts=live.containers.filter(x=>!q||x.title.toLowerCase().includes(q)||(x.artist||'').toLowerCase().includes(q));
   const tracks=live.tracks.filter(t=>!q||SEARCH_FIELDS.some(k=>(t[k]||'').toLowerCase().includes(q)));
