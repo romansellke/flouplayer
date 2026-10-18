@@ -50,7 +50,7 @@ async function buildReport(){
   const lines=[];
   try{
     const a=await api('/api/app/about');
-    lines.push(`Flou Player ${a.version} (build ${a.build})`,`Python ${a.python} on ${a.platform}`,
+    lines.push(`Flou Player ${a.version} (build ${a.build}${a.source?.describe?', '+a.source.describe:''})`,`Python ${a.python} on ${a.platform}`,
       'Dependencies: '+Object.entries(a.dependencies).map(([k,v])=>`${k} ${v}`).join(', '));
   }catch(e){ lines.push('(about info unavailable: '+e.message+')') }
   const d=dev();
@@ -345,10 +345,12 @@ $('#aboutBtn').onclick=async()=>{
   $('#aboutModal').classList.remove('hidden');
   try{
     const a=await api('/api/app/about');
-    $('#aboutVersion').textContent=`Version ${a.version} (build ${a.build})`;
-    const rows=[['License',a.license],['Python',a.python],['System',a.platform],...Object.entries(a.dependencies).map(([k,v])=>[k,v])];
+    $('#aboutVersion').textContent=`Version ${a.version}`;
+    const src=a.source||{};
+    const rows=[['Build',a.build],...(src.describe?[['Source',[src.describe,src.date].filter(Boolean).join(' · ')]]:[]),['License',a.license],['Python',a.python],['System',a.platform],...Object.entries(a.dependencies).map(([k,v])=>[k,v])];
     $('#aboutTable').innerHTML=rows.map(([k,v])=>`<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join('');
     $('#aboutRepo').textContent=a.repo; $('#aboutRepo').href=a.repo;
+    $('#aboutChangelog').href=a.changelog;
   }catch(e){ $('#aboutVersion').textContent=e.message }
 };
 $('#aboutClose').onclick=()=>$('#aboutModal').classList.add('hidden');

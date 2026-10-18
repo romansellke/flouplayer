@@ -26,6 +26,17 @@ source "$VENV/bin/activate"
 python3 -m pip install --upgrade pip >/dev/null
 python3 -m pip install -r requirements.txt "pyinstaller>=6.0"
 
+# Stamp which commit this build comes from (shown in the About dialog).
+# Not tracked by git; without git the app simply shows no source info.
+python3 - <<'PY'
+import json, subprocess
+def git(*a):
+    try: return subprocess.run(["git",*a],capture_output=True,text=True,check=True).stdout.strip()
+    except Exception: return ""
+json.dump({"describe":git("describe","--tags","--always","--dirty"),"commit":git("rev-parse","--short","HEAD"),"date":git("log","-1","--format=%cs")},
+          open("app/_buildinfo.json","w"))
+PY
+
 # The excluded PyQt5 modules are only pulled in by PyInstaller's hooks
 # (QML/Quick/3D/multimedia plugins); the app's window doesn't use them.
 # Qt libraries the web engine really links against are still bundled.
@@ -35,6 +46,7 @@ pyinstaller --noconfirm --clean \
   --workpath "$ROOT/build/work" \
   --specpath "$ROOT/build" \
   --add-data "$ROOT/app/static:app/static" \
+  --add-data "$ROOT/app/_buildinfo.json:app" \
   --exclude-module PyQt5.QtQml --exclude-module PyQt5.QtQuick \
   --exclude-module PyQt5.QtQuickWidgets --exclude-module PyQt5.QtPositioning \
   "$ROOT/desktop.py"

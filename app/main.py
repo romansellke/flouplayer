@@ -127,6 +127,24 @@ BUILD_ID=_build_id()
 
 REPO_URL="https://github.com/romansellke/flouplayer"
 
+def _source_info():
+    """Which commit this copy was built from: packaging/build.sh stamps
+    app/_buildinfo.json into the installed app; a source checkout asks git.
+    Either may be missing (e.g. a plain download) -- then there is no info."""
+    import subprocess
+    here=Path(__file__).resolve().parent
+    try:
+        info=json.loads((here/"_buildinfo.json").read_text(encoding="utf-8"))
+        if isinstance(info,dict): return {k:str(info.get(k) or "") for k in ("describe","commit","date")}
+    except Exception: pass
+    def git(*a):
+        return subprocess.run(["git","-C",str(here.parent),*a],capture_output=True,text=True,timeout=3,check=True).stdout.strip()
+    try:
+        return {"describe":git("describe","--tags","--always","--dirty"),"commit":git("rev-parse","--short","HEAD"),"date":git("log","-1","--format=%cs")}
+    except Exception:
+        return {"describe":"","commit":"","date":""}
+SOURCE_INFO=_source_info()
+
 @app.get("/api/app/about")
 def about():
     import platform, importlib.metadata as md
@@ -134,8 +152,8 @@ def about():
     for name in ["fastapi","uvicorn","upnpclient","av","pywebview","PyQt5"]:
         try: deps[name]=md.version(name)
         except Exception: pass
-    return {"name":"Flou Player","version":__version__,"build":BUILD_ID,"license":"GPL-3.0-or-later","python":platform.python_version(),
-            "platform":platform.platform(),"repo":REPO_URL,"dependencies":deps}
+    return {"name":"Flou Player","version":__version__,"build":BUILD_ID,"source":SOURCE_INFO,"license":"GPL-3.0-or-later","python":platform.python_version(),
+            "platform":platform.platform(),"repo":REPO_URL,"changelog":REPO_URL+"/blob/main/CHANGELOG.md","dependencies":deps}
 
 @app.get("/api/app/ping")
 def ping():
