@@ -6,6 +6,9 @@ All notable changes to Flou Player are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+- README: new screenshots of the Live and the Cached mode.
+
 ## [0.9.0] - 2026-10-18
 
 ### Added

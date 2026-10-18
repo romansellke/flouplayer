@@ -21,7 +21,13 @@ by or supported by Linn Products Ltd. "Linn" and the names of its products
 are trademarks of their respective owner and are used here only to describe
 compatibility.*
 
-![Flou Player screenshot](docs/screenshot.png)
+![Flou Player in Live mode: browsing the media server folder by folder](docs/screenshot.png)
+
+*Live mode -- browsing the media server folder by folder.*
+
+![Flou Player in Cached mode: column browser and album list](docs/screenshot-cached.png)
+
+*Cached mode -- the whole library with the column browser.*
 
 Flou Player runs on Linux (tested target: Linux Mint; also works on Arch
 Linux).
