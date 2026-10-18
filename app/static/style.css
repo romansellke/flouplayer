@@ -130,7 +130,8 @@ header{display:flex;flex-wrap:wrap;gap:20px;align-items:center;padding:10px 16px
 .transport button[data-action=play]:hover{background:var(--accent);opacity:.85;color:var(--on-accent)}
 .transport button.disabled,.transport input.disabled{opacity:.35;pointer-events:none}
 .transport input[type=range]{margin-left:14px;width:180px}
-#volumeLabel{display:inline-block;min-width:96px;margin-left:4px;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+#volumeLabel{display:inline-flex;align-items:baseline;gap:6px;min-width:92px;margin-left:4px;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+#volumeLabel .volstep{font-size:17px;font-weight:700;color:var(--text);letter-spacing:-.01em}
 
 input[type=range]{-webkit-appearance:none;appearance:none;width:110px;height:3px;border-radius:3px;background:var(--track);outline:none;cursor:pointer}
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:var(--accent);border:0;transition:transform .1s}

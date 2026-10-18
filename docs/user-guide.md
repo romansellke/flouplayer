@@ -131,8 +131,9 @@ iTunes-style column browser and instant searching across everything.
 ### Volume
 
 The slider prefers the OpenHome Volume service (typical for Linn devices). Its
-label shows the device's volume **step, as the Linn shows it, and the dB** it
-works out to, for example `33 · -48.1 dB`. The dB value is calculated from the
+label shows the device's volume **step, as the Linn shows it** (bold and
+larger), followed by the **dB** it works out to in smaller type, for example
+**33** -48.1 dB. The dB value is calculated from the
 device's own characteristics (the step where the gain is 0 dB, and the size of
 a step) and is an indication, not a measurement. Without that service the
 slider falls back to the standard UPnP 0-100% range. Changes are ramped in small steps, so clicks and fast

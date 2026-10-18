@@ -160,16 +160,18 @@ const VOL_TICK_MS=80;
 let volInfo=null;        // {unity, dbPerStep} of the OpenHome device, for a live dB label while dragging
 const volDb=raw=>volInfo?(raw-volInfo.unity)*volInfo.dbPerStep:null;
 const fmtDb=db=>`${db>0?'+':''}${db.toFixed(1)} dB`;
-// The step number as the Linn shows it, plus the dB it works out to (from the device's own characteristics).
-const volStep=(raw,db)=>`${raw} · ${fmtDb(db)}`;
-const volLabel=(v)=>v.db!=null ? volStep(v.raw,v.db) : `${v.percent}%`;
+// The volume label: the step number as the Linn shows it (bold, larger), then the dB it works out to
+// (from the device's own characteristics, smaller). Without dB values just the number / percentage.
+function setVolumeLabel(step,db=null){
+  $('#volumeLabel').innerHTML=`<b class="volstep">${esc(step)}</b>`+(db==null?'':`<span class="voldb">${esc(fmtDb(db))}</span>`);
+}
 async function refreshVolume(){
   if(!$('#renderer').value) return;
   if(isLocal()){
     const audio=$('#localAudio');
     $('#volume').max=100;
     $('#volume').value=Math.round(audio.volume*100);
-    $('#volumeLabel').textContent=`${$('#volume').value}%`;
+    setVolumeLabel(`${$('#volume').value}%`);
     drawMute(null);
     return;
   }
@@ -179,7 +181,7 @@ async function refreshVolume(){
     volCur=v.raw;
     volInfo=v.db!=null?{unity:v.unity,dbPerStep:v.db_per_step}:null;
     if(!volDragging && volTimer===null){ $('#volume').value=v.raw; }
-    $('#volumeLabel').textContent=volLabel(v);
+    setVolumeLabel(v.db!=null?v.raw:`${v.percent}%`,v.db);
     drawMute(v.muted);
   }catch(e){/* volume info is optional, ignore */}
 }
@@ -207,12 +209,12 @@ window.addEventListener('pointerup',()=>{ if(volDragging){ volDragging=false; } 
 $('#volume').oninput=e=>{
   if(isLocal()){
     $('#localAudio').volume=Math.max(0,Math.min(100,+e.target.value))/100;
-    $('#volumeLabel').textContent=`${e.target.value}%`;
+    setVolumeLabel(`${e.target.value}%`);
     return;
   }
   if(!$('#renderer').value) return;
   const db=volDb(+e.target.value);
-  if(db!==null) $('#volumeLabel').textContent=volStep(+e.target.value,db);
+  if(db!==null) setVolumeLabel(+e.target.value,db);
   setVolumeTarget(+e.target.value);
 };
 // Keep the slider in sync with changes made elsewhere (remote, Linn app).
