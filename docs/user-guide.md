@@ -99,7 +99,10 @@ iTunes-style column browser and instant searching across everything.
   automatically (detected by polling the position; stopping playback
   yourself does not trigger this).
 - Play, pause, stop, next, previous and the **position bar** work through
-  the standard UPnP services. Seeking works on UPnP renderers, the device
+  the standard UPnP services. On Linn/OpenHome devices the transport buttons
+  use the device's own Transport service, so they also work while another
+  source (Radio, AirPlay, an input) is active; then next/previous skip on
+  the device rather than in the track list. Seeking works on UPnP renderers, the device
   queue and local playback.
 - The LCD shows elapsed and total time, updated by polling.
 

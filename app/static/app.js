@@ -795,8 +795,10 @@ document.querySelectorAll('[data-action]').forEach(b=>b.onclick=async()=>{
     try{await queueApi({action}); pollQueue(true)}catch(x){notify(x.message)}
     return;
   }
-  if(action==='next') return playNextInPlaylist();
-  if(action==='previous') return playPreviousInPlaylist();
+  if(!deviceOwnsPlayback()){
+    if(action==='next') return playNextInPlaylist();
+    if(action==='previous') return playPreviousInPlaylist();
+  }
 
   if(isLocal()){
     const audio=$('#localAudio');
@@ -1225,7 +1227,10 @@ $('#muteBtn').onclick=async()=>{
 };
 
 const dev2=()=>(!$('#renderer').value||isLocal())?null:$('#renderer').value;
-let sourceCount=0;
+let sourceCount=0, sourceTypes={}, sourceNow=null;
+// The device's active source is something other than its Playlist (Radio, AirPlay, an input ...):
+// then the transport buttons control the device itself, not our track list.
+const deviceOwnsPlayback=()=>!isLocal()&&sourceNow!=null&&(sourceTypes[sourceNow]||'Playlist')!=='Playlist';
 async function loadSources(){
   const d=dev2(); const box=$('#sourceSel');
   if(!d){ box.classList.add('hidden'); updateDevTools(); return }
@@ -1233,7 +1238,7 @@ async function loadSources(){
     const r=await api(`/api/devices/${encodeURIComponent(d)}/sources`);
     $('#sourceSel').innerHTML=r.sources.map(s=>`<option value="${s.index}">${esc(s.name)}${s.type&&s.type!==s.name?' ('+esc(s.type)+')':''}</option>`).join('');
     $('#sourceSel').value=String(r.current);
-    sourceCount=r.sources.length;
+    sourceCount=r.sources.length; sourceTypes=Object.fromEntries(r.sources.map(s=>[s.index,s.type])); sourceNow=r.current;
     box.classList.toggle('hidden',!sourceCount);
   }catch(e){ box.classList.add('hidden') }  // no Product service: no source switching
   updateDevTools();
@@ -1241,7 +1246,7 @@ async function loadSources(){
 let sourceChangedAt=0;   // the device takes a moment to switch; don't let the poll snap the dropdown back meanwhile
 $('#sourceSel').onchange=async e=>{
   const d=dev2(); if(!d) return;
-  sourceChangedAt=Date.now();
+  sourceChangedAt=Date.now(); sourceNow=+e.target.value;
   try{
     await api('/api/control',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({device_id:d,action:'set_source',value:+e.target.value})});
     showToast(`Source: ${e.target.selectedOptions[0].textContent}`); log(`Source: ${e.target.selectedOptions[0].textContent}`);
@@ -1251,7 +1256,7 @@ $('#sourceSel').onchange=async e=>{
 };
 async function pollSource(){   // follow changes made from other controllers
   const d=dev2(); if(!d||!sourceCount||document.activeElement===$('#sourceSel')||Date.now()-sourceChangedAt<2500) return;
-  try{ const r=await api(`/api/devices/${encodeURIComponent(d)}/sources?light=true`); $('#sourceSel').value=String(r.current) }catch(e){}
+  try{ const r=await api(`/api/devices/${encodeURIComponent(d)}/sources?light=true`); $('#sourceSel').value=String(r.current); sourceNow=r.current }catch(e){}
 }
 
 async function loadPins(){

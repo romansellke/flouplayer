@@ -617,13 +617,28 @@ def browse(req:Browse):
     except Exception as e: raise HTTPException(502,f"Browse failed: {e}")
     return {"items":parse_didl(r.get("Result","")),"number_returned":int(r.get("NumberReturned",0)),"total_matches":int(r.get("TotalMatches",0)),"update_id":r.get("UpdateID")}
 
+TRANSPORT_ACTIONS={"play":"Play","pause":"Pause","stop":"Stop","next":"SkipNext","previous":"SkipPrevious"}
+
 @app.post("/api/control")
 def control(req:Control):
     d=devices.get(req.device_id)
     if not d: raise HTTPException(404,"Output device not found")
     av=peer_service(d,["AVTransport"])
-    if not av and req.action in ("play","pause","stop","next","previous","set_uri","seek"):
+    if not av and req.action in ("play","pause","stop","next","previous","set_uri","seek") \
+       and not (req.action in TRANSPORT_ACTIONS and _openhome_service(d,"Transport")):
         raise HTTPException(400,"No AVTransport service on this device")
+    # Linn/OpenHome devices have their own Transport service that controls
+    # whatever source is active (Radio, AirPlay, Playlist ...); AVTransport
+    # answers "701 Transition not available" unless the Playlist is active.
+    if req.action in TRANSPORT_ACTIONS:
+        ts=_openhome_service(d,"Transport")
+        if ts:
+            try:
+                getattr(ts,TRANSPORT_ACTIONS[req.action])()
+                return {"ok":True}
+            except Exception:
+                if not av: raise HTTPException(502,"Control command failed (OpenHome Transport)")
+                # otherwise fall through to AVTransport below
     try:
         if req.action=="play": av.Play(InstanceID=0,Speed="1")
         elif req.action=="pause": av.Pause(InstanceID=0)

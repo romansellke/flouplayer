@@ -6,6 +6,15 @@ All notable changes to Flou Player are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-10-18
+
+### Fixed
+- Play, pause, stop, next and previous failed with "701 Transition not
+  available" while the device was on a source other than its Playlist (Radio,
+  AirPlay, an input). They now go to the device's own OpenHome Transport
+  service, which controls whatever source is active; next/previous also act on
+  the device itself in that case instead of stepping through the track list.
+
 ## [0.5.1] - 2026-10-18
 
 ### Changed
@@ -81,7 +90,8 @@ the OpenHome queue tab; a position/seek bar and a live dB volume readout; a
 Diagnostics log and About dialog; 17 colour themes; installable Linux app
 packaging; and the GPL-3.0-or-later license.
 
-[Unreleased]: https://github.com/romansellke/flouplayer/compare/v0.5.1...HEAD
+[Unreleased]: https://github.com/romansellke/flouplayer/compare/v0.5.2...HEAD
+[0.5.2]: https://github.com/romansellke/flouplayer/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/romansellke/flouplayer/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/romansellke/flouplayer/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/romansellke/flouplayer/releases/tag/v0.4.0
