@@ -3,7 +3,7 @@
 ## The window
 
 - **Header:** transport buttons (previous, play, pause, stop, next), volume
-  slider with live dB readout, the LCD-style display of the current track,
+  slider with live dB readout and mute button, the LCD-style display of the current track,
   the About button and the theme picker. Under it, the **position bar**:
   elapsed time at the left, remaining time at the right, a thick seek bar
   with a time grid in between (a tick every minute, every 5/10 minutes for
@@ -13,8 +13,9 @@
   device's own icon, taken from its UPnP description), **Load library**
   and the search field.
 - **Main area:** the library (column browser plus album list) or the queue.
-- **Now Playing panel** (right): big cover, title and artist, status, and
-  the Diagnostics button. It hides on narrow windows; sidebars and columns
+- **Now Playing panel** (right): big cover, title and artist, the stream
+  quality, status, source and pins (OpenHome devices), and the Diagnostics
+  button. It hides on narrow windows; sidebars and columns
   also stack on very narrow windows.
 
 ## Live or cached library
@@ -139,6 +140,32 @@ On Linn/OpenHome devices the device's own playlist has its own **Queue** tab
   the device advances by itself.
 
 > The queue has **not been verified against real hardware**.
+
+## Device controls: mute, source, pins, stream quality
+
+These work on Linn/OpenHome output devices and appear only where the device
+offers them (not for the local speakers or plain UPnP renderers).
+
+- **Mute:** the speaker button next to the volume slider. It shows the
+  device's real mute state, also when it was changed from another controller.
+- **Source:** the *Source* dropdown in the Now Playing panel lists the
+  device's inputs (for example Playlist, Radio, Analog, Songcast, HDMI) and
+  switches to the one you pick. It follows changes made from other
+  controllers. Choosing *Playlist* returns to the queue.
+- **Pins:** the *Pins* list in the Now Playing panel shows the pins you set up
+  on the device (favourite radio stations, playlists, inputs). Click one to
+  play it. The list refreshes about once a minute and whenever you select the
+  device.
+- **Stream quality:** under the title, codec, sample rate, bit depth and bit
+  rate as the *device* reports them (for example
+  `FLAC · 44.1 kHz · 16 bit · 1011 kbps`). It also works for sources that
+  don't come from the media server, such as radio. Hidden while nothing is
+  playing.
+
+> Like the queue, these are written against the OpenHome service definitions
+> (Product, Pins, Info, Volume) and have **not been verified against real
+> hardware**. Please report what you see in the Diagnostics dialog (*Device
+> info*) if something doesn't show up.
 
 ## Themes
 

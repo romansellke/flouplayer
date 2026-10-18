@@ -816,6 +816,7 @@ document.querySelectorAll('[data-action]').forEach(b=>b.onclick=async()=>{
 $('#renderer').addEventListener('change',()=>{
   if(!isLocal()) $('#localAudio').pause(); // don't keep playing locally in the background once switched away
   refreshVolume();
+  refreshDeviceExtras();
   updateReadyState();
 });
 let volDragging=false;   // user is holding the slider: don't overwrite it from device readbacks
@@ -835,6 +836,7 @@ async function refreshVolume(){
     $('#volume').max=100;
     $('#volume').value=Math.round(audio.volume*100);
     $('#volumeLabel').textContent=`${$('#volume').value}%`;
+    drawMute(null);
     return;
   }
   try{
@@ -844,6 +846,7 @@ async function refreshVolume(){
     volInfo=v.db!=null?{unity:v.unity,dbPerStep:v.db_per_step}:null;
     if(!volDragging && volTimer===null){ $('#volume').value=v.raw; }
     $('#volumeLabel').textContent=volLabel(v);
+    drawMute(v.muted);
   }catch(e){/* volume info is optional, ignore */}
 }
 function volRamp(){
@@ -1201,3 +1204,85 @@ function setLibMode(mode,save=true){
 }
 document.querySelectorAll('#libMode button').forEach(b=>b.onclick=()=>{ if(b.dataset.mode!==libMode()||document.documentElement.dataset.libmode!==b.dataset.mode) setLibMode(b.dataset.mode) });
 setLibMode(libMode(),false);
+
+// ---------- Device extras (OpenHome): mute, source, pins, stream quality ----------
+// All of these only exist on Linn/OpenHome devices; each part hides itself
+// where the device doesn't offer it. Not verified against real hardware.
+let muted=false;
+function drawMute(m){
+  const b=$('#muteBtn');
+  b.classList.toggle('hidden',m==null);   // null: no mute available (local speakers, plain UPnP)
+  muted=!!m;
+  b.setAttribute('aria-pressed',String(muted));
+  b.title=muted?'Unmute':'Mute';
+}
+$('#muteBtn').onclick=async()=>{
+  if(!$('#renderer').value||isLocal()) return;
+  try{
+    await api('/api/control',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({device_id:$('#renderer').value,action:'mute',value:muted?0:1})});
+    drawMute(!muted);
+  }catch(e){logErr(e.message)}
+};
+
+const dev2=()=>(!$('#renderer').value||isLocal())?null:$('#renderer').value;
+let sourceCount=0;
+async function loadSources(){
+  const d=dev2(); const box=$('#sourceBox');
+  if(!d){ box.classList.add('hidden'); return }
+  try{
+    const r=await api(`/api/devices/${encodeURIComponent(d)}/sources`);
+    $('#sourceSel').innerHTML=r.sources.map(s=>`<option value="${s.index}">${esc(s.name)}${s.type&&s.type!==s.name?' ('+esc(s.type)+')':''}</option>`).join('');
+    $('#sourceSel').value=String(r.current);
+    sourceCount=r.sources.length;
+    box.classList.toggle('hidden',!sourceCount);
+  }catch(e){ box.classList.add('hidden') }  // no Product service: no source switching
+}
+$('#sourceSel').onchange=async e=>{
+  const d=dev2(); if(!d) return;
+  try{
+    await api('/api/control',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({device_id:d,action:'set_source',value:+e.target.value})});
+    log(`Source: ${e.target.selectedOptions[0].textContent}`);
+    if(typeof pollQueue==='function') pollQueue(true);
+  }catch(x){ notify(x.message); loadSources() }
+};
+async function pollSource(){   // follow changes made from other controllers
+  const d=dev2(); if(!d||!sourceCount||document.activeElement===$('#sourceSel')) return;
+  try{ const r=await api(`/api/devices/${encodeURIComponent(d)}/sources?light=true`); $('#sourceSel').value=String(r.current) }catch(e){}
+}
+
+async function loadPins(){
+  const d=dev2(); const box=$('#pinsBox');
+  if(!d){ box.classList.add('hidden'); return }
+  try{
+    const r=await api(`/api/devices/${encodeURIComponent(d)}/pins`);
+    const art=u=>/^https?:/i.test(u||'')?` style="background-image:url('${esc(u)}')"`:'';
+    $('#pinList').innerHTML=r.pins.map(p=>`<button type="button" class="pin" data-slot="${p.slot}" title="${esc(p.title)}"><span class="pinart"${art(p.artwork)}></span><span class="pintitle">${esc(p.title)}</span></button>`).join('');
+    box.classList.toggle('hidden',!(r.supported&&r.pins.length));
+  }catch(e){ box.classList.add('hidden') }
+}
+$('#pinList').addEventListener('click',async e=>{
+  const b=e.target.closest('.pin'); const d=dev2(); if(!b||!d) return;
+  try{
+    await api('/api/control',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({device_id:d,action:'invoke_pin',value:+b.dataset.slot})});
+    log(`Pin: ${b.title}`);
+    setTimeout(()=>{pollSource(); if(typeof pollQueue==='function') pollQueue(true)},800);
+  }catch(x){ notify(x.message) }
+});
+
+// What the device really plays: codec / sample rate / bit depth / bit rate.
+const fmtKhz=hz=>`${+(hz/1000).toFixed(1)} kHz`;
+async function pollStream(){
+  const d=dev2(), el=$('#npQuality');
+  if(!d){ el.classList.add('hidden'); return }
+  try{
+    const r=await api(`/api/devices/${encodeURIComponent(d)}/stream`);
+    const parts=r.supported?[r.codec,r.sample_rate&&fmtKhz(r.sample_rate),r.bit_depth&&`${r.bit_depth} bit`,r.bit_rate&&`${Math.round(r.bit_rate/1000)} kbps`].filter(Boolean):[];
+    el.textContent=parts.join(' · '); el.classList.toggle('hidden',!parts.length);
+  }catch(e){ el.classList.add('hidden') }
+}
+
+function refreshDeviceExtras(){ loadSources(); loadPins(); pollStream(); if(!dev2()) drawMute(null) }
+setInterval(pollSource,5000);
+setInterval(loadPins,60000);
+setInterval(pollStream,4000);
+refreshDeviceExtras();

@@ -220,12 +220,81 @@ def get_volume(device_id:str):
             unity=int(ch.get("VolumeUnity",0))
             milli_db_per_step=int(ch.get("VolumeMilliDbPerStep",100))
             db=(raw-unity)*milli_db_per_step/1000.0
-            return {"kind":"openhome","raw":raw,"max":vmax,"unity":unity,"db_per_step":milli_db_per_step/1000.0,"db":round(db,1),"percent":round(100*raw/vmax)}
+            try: muted=bool(vol.Mute().get("Value"))
+            except Exception: muted=None   # not every device exposes Mute
+            return {"kind":"openhome","raw":raw,"max":vmax,"unity":unity,"db_per_step":milli_db_per_step/1000.0,"db":round(db,1),"percent":round(100*raw/vmax),"muted":muted}
         v=vol.GetVolume(InstanceID=0,Channel="Master")
         raw=int(v.get("CurrentVolume",0))
         return {"kind":"renderingcontrol","raw":raw,"max":100,"db":None,"percent":raw}
     except Exception as e:
         raise HTTPException(502,f"Could not read volume: {e}")
+
+# ---------- OpenHome extras: sources, pins, what the device is really playing ----------
+# Written against the public OpenHome Product/Pins/Info service definitions
+# (cross-checked with the openhomedevice library); not verified against
+# real hardware.
+def _openhome_service(d, name):
+    return peer_service(d,[f"openhome-org:service:{name}"]) or peer_service(d,[f"openhome-org:serviceId:{name}"])
+
+@app.get("/api/devices/{device_id}/sources")
+def list_sources(device_id:str, light:bool=False):
+    """The device's selectable sources (Playlist, Radio, Analog, Songcast,
+    HDMI ...) and the current one -- OpenHome Product service. With
+    light=true only the current index is read (cheap enough to poll)."""
+    d=devices.get(device_id)
+    if not d: raise HTTPException(404,"Device not found")
+    prod=_openhome_service(d,"Product")
+    if not prod: raise HTTPException(400,"No OpenHome Product service on this device -- source switching not possible")
+    try:
+        current=int(prod.SourceIndex().get("Value",-1))
+        if light: return {"current":current}
+        count=int(prod.SourceCount().get("Value",0))
+    except Exception as e:
+        raise HTTPException(502,f"Could not read sources: {e}")
+    out=[]
+    for i in range(count):
+        try:
+            r=prod.Source(Index=i)
+            if r.get("Visible",True): out.append({"index":i,"type":r.get("Type",""),"name":r.get("Name","")})
+        except Exception:
+            continue
+    return {"current":current,"sources":out}
+
+@app.get("/api/devices/{device_id}/pins")
+def list_pins(device_id:str):
+    """The device's pins (favourites: radio stations, playlists, inputs)
+    -- OpenHome Pins service. supported=false where there is none."""
+    d=devices.get(device_id)
+    if not d: raise HTTPException(404,"Device not found")
+    pins=_openhome_service(d,"Pins")
+    if not pins: return {"supported":False,"pins":[]}
+    try:
+        slots=int(pins.GetDeviceMax().get("DeviceMax",0))
+        ids=json.loads(pins.GetIdArray().get("IdArray") or "[]")
+        meta=json.loads(pins.ReadList(Ids=json.dumps(ids)).get("List") or "[]") if ids else []
+    except Exception as e:
+        raise HTTPException(502,f"Could not read pins: {e}")
+    out=[]
+    for i,p in enumerate(meta[:slots] if slots else meta):
+        if isinstance(p,dict) and (p.get("id") or 0)>0:
+            out.append({"slot":i,"title":p.get("title") or "","artwork":p.get("artworkUri") or ""})
+    return {"supported":True,"pins":out}
+
+@app.get("/api/devices/{device_id}/stream")
+def stream_details(device_id:str):
+    """What the device itself reports about the stream it is playing
+    (OpenHome Info service): codec, sample rate, bit depth, bit rate.
+    All fields are empty/zero when nothing is playing."""
+    d=devices.get(device_id)
+    if not d: raise HTTPException(404,"Device not found")
+    info=_openhome_service(d,"Info")
+    if not info: return {"supported":False}
+    try:
+        r=info.Details()
+    except Exception as e:
+        raise HTTPException(502,f"Could not read stream details: {e}")
+    num=lambda k:int(r.get(k) or 0)
+    return {"supported":True,"codec":(r.get("CodecName") or "").strip(),"sample_rate":num("SampleRate"),"bit_depth":num("BitDepth"),"bit_rate":num("BitRate"),"lossless":bool(r.get("Lossless"))}
 
 @app.get("/api/devices/{device_id}/transport")
 def get_transport(device_id:str):
@@ -558,6 +627,20 @@ def control(req:Control):
                 vmax=int(vol.Characteristics().get("VolumeMax",100)) or 100
                 vol.SetVolume(Value=max(0,min(vmax,req.value or 0)))
             else: vol.SetVolume(InstanceID=0,Channel="Master",DesiredVolume=max(0,min(100,req.value or 0)))
+        elif req.action=="mute":
+            vol,kind=find_volume_service(d)
+            if kind!="openhome": raise HTTPException(400,"Mute needs the OpenHome Volume service")
+            vol.SetMute(Value=bool(req.value))
+        elif req.action=="set_source":
+            prod=_openhome_service(d,"Product")
+            if not prod: raise HTTPException(400,"No OpenHome Product service on this device")
+            if req.value is None: raise HTTPException(400,"value (source index) required")
+            prod.SetSourceIndex(Value=req.value)
+        elif req.action=="invoke_pin":
+            pins=_openhome_service(d,"Pins")
+            if not pins: raise HTTPException(400,"No OpenHome Pins service on this device")
+            if req.value is None: raise HTTPException(400,"value (pin slot) required")
+            pins.InvokeIndex(Index=req.value)
         else: raise HTTPException(400,"Unknown action")
     except HTTPException: raise
     except Exception as e: raise HTTPException(502,f"Control command failed: {e}")
