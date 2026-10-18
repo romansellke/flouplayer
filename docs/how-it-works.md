@@ -5,8 +5,8 @@
 - **Backend** (`app/main.py`): a FastAPI app served locally by Uvicorn. It
   discovers UPnP devices over SSDP, talks to the media server's
   ContentDirectory service (browsing and scanning) and controls the output
-  device (AVTransport, and the OpenHome Volume, Playlist, Time and Product
-  services via `upnpclient`). It also converts tracks the built-in player
+  device (AVTransport, and the OpenHome Volume, Playlist, Time, Product, Pins
+  and Info services via `upnpclient`). It also converts tracks the built-in player
   can't decode to FLAC on the fly (PyAV/ffmpeg).
 - **Frontend** (`app/static/`): plain HTML, CSS and JavaScript, no build step.
 - **Desktop window** (`desktop.py`): starts the backend and opens the page in
@@ -39,11 +39,11 @@ separate; this depends on the server's DIDL-Lite metadata.
 - A full library scan makes many network requests and can still take a while
   on very large or deeply nested libraries, even though it is parallelised.
   The app shows the number of tracks found so far during the scan.
-- The OpenHome queue (Queue tab) and the dB volume readout are **not verified
-  against real hardware** and may need adjusting. For non-OpenHome UPnP
+- The OpenHome queue (Queue tab), the dB volume readout, and mute, source,
+  pins and stream quality are **not verified against real hardware** and may need adjusting. For non-OpenHome UPnP
   renderers, playback uses AVTransport.
-- Only one media server is loaded at a time; there is no source switcher
-  (MinimServer/TIDAL).
+- Only one media server is loaded at a time. The *Source* dropdown switches
+  the output device's own inputs, not the media server.
 - In Live mode, Next/Previous step through the folder that is currently open,
   and the search only filters that folder.
 - No code from proprietary apps such as mconnect was used.

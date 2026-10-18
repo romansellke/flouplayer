@@ -6,8 +6,27 @@ All notable changes to Flou Player are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-18
+
+### Added
+- **Source selection** for Linn/OpenHome devices: a Source dropdown in the Now
+  Playing panel switches between the device's inputs (Playlist, Radio, Analog,
+  Songcast, HDMI ...) and follows changes made from other controllers.
+- **Pins**: the device's pins (favourite radio stations, playlists, inputs) are
+  listed in the Now Playing panel; a click plays one.
+- **Mute** button next to the volume slider (OpenHome devices); it follows the
+  device's mute state.
+- **Stream quality from the device** (codec, sample rate, bit depth, bit rate)
+  under the title in the Now Playing panel, also for sources that don't come
+  from the media server, such as radio.
+- Documentation for all of the above.
+
 ### Changed
 - README: explains why Flou Player exists as an alternative to the Linn app.
+- The screenshot is shown only in the README, no longer in the docs pages.
+
+> The new device features follow the OpenHome service definitions (Product,
+> Pins, Info, Volume) and are **not verified against real hardware**.
 
 ## [0.4.0] - 2026-10-18
 
@@ -42,5 +61,6 @@ the OpenHome queue tab; a position/seek bar and a live dB volume readout; a
 Diagnostics log and About dialog; 17 colour themes; installable Linux app
 packaging; and the GPL-3.0-or-later license.
 
-[Unreleased]: https://github.com/romansellke/flouplayer/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/romansellke/flouplayer/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/romansellke/flouplayer/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/romansellke/flouplayer/releases/tag/v0.4.0

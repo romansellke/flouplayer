@@ -34,6 +34,8 @@ Linux).
 - Playback on **Linn/OpenHome** devices (and other UPnP renderers) with a
   position bar, dB volume readout and the device's own queue, or on the
   **local speakers** (AAC/ALAC are converted to FLAC on the fly)
+- Device controls for Linn/OpenHome: mute, source selection, pins and the
+  stream quality the device reports
 - Album covers, selectable track columns, 17 colour themes, Diagnostics and
   About dialogs
 
