@@ -6,6 +6,9 @@ All notable changes to Flou Player are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+- README: explains why Flou Player exists as an alternative to the Linn app.
+
 ## [0.4.0] - 2026-10-18
 
 ### Added

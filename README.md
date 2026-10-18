@@ -1,8 +1,25 @@
 # Flou Player
 
+**An alternative to the Linn app for Linn DSM / Majik / Klimax / Akurate streamers.**
 A local, standalone, iTunes-style desktop app for browsing and playing music
-from MinimServer through a Linn/OpenHome output device (e.g. a Majik DSM4).
-Runs as its own application window -- no browser tab needed.
+from MinimServer (or any UPnP/DLNA media server) through a Linn/OpenHome
+output device such as a Majik DSM4. It runs as its own application window --
+no browser tab needed.
+
+## Why Flou Player?
+
+Linn builds excellent streamers, but I was never happy with Linn's own app --
+it isn't a good way to browse and play a large local music collection. Flou
+Player exists because I wanted a proper control point that simply lets me find
+my music and play it on my Linn. If you have the same frustrations with the Linn app (also known
+from its predecessors Kazoo and Kinsky) and use a Linn DSM/DSMs, Majik,
+Akurate, Klimax or Selekt streamer with MinimServer, Flou Player is for you.
+It is free, open source and runs on Linux.
+
+*Flou Player is an independent project. It is not affiliated with, endorsed
+by or supported by Linn Products Ltd. "Linn" and the names of its products
+are trademarks of their respective owner and are used here only to describe
+compatibility.*
 
 ![Flou Player screenshot](docs/screenshot.png)
 
