@@ -6,6 +6,13 @@ All notable changes to Flou Player are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-10-18
+
+### Changed
+- The albums in the cached library are now ordered by **Album Artist**, then by
+  album title, instead of alphabetically by album title. Untagged albums are
+  sorted by their artist, albums without any artist last.
+
 ## [0.12.3] - 2026-10-18
 
 ### Fixed
@@ -214,7 +221,8 @@ the OpenHome queue tab; a position/seek bar and a live dB volume readout; a
 Diagnostics log and About dialog; 17 colour themes; installable Linux app
 packaging; and the GPL-3.0-or-later license.
 
-[Unreleased]: https://github.com/romansellke/flouplayer/compare/v0.12.3...HEAD
+[Unreleased]: https://github.com/romansellke/flouplayer/compare/v0.13.0...HEAD
+[0.13.0]: https://github.com/romansellke/flouplayer/compare/v0.12.3...v0.13.0
 [0.12.3]: https://github.com/romansellke/flouplayer/compare/v0.12.2...v0.12.3
 [0.12.2]: https://github.com/romansellke/flouplayer/compare/v0.12.1...v0.12.2
 [0.12.1]: https://github.com/romansellke/flouplayer/compare/v0.12.0...v0.12.1
