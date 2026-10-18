@@ -6,6 +6,10 @@ All notable changes to Flou Player are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- Tests for Ctrl+←/→ (next/previous track) in the cached library, with a filter
+  active, and in Live mode.
+
 ## [0.15.0] - 2026-10-18
 
 ### Added

@@ -404,3 +404,55 @@ def test_the_overview_lists_what_the_user_guide_documents(page, api):
     guide = (pathlib.Path(__file__).resolve().parent.parent / "docs" / "user-guide.md").read_text(encoding="utf-8")
     missing = [keys for keys, _ in shortcuts if f"| {keys} |" not in guide]
     assert not missing, f"shortcuts in the overview but not in docs/user-guide.md: {missing}"
+
+
+# ---------- next / previous with the keyboard ----------
+
+def start_cached_with_player(page, api, tracks):
+    api.routes.update({"library/cached": {"tracks": tracks, "count": len(tracks), "scan_root": "root", "scanned_at": 1}, "control": {"ok": True}})
+    page.add_init_script("localStorage.setItem('flou_libmode','cached')")
+    open_app(page)
+    select_renderer(page)
+    page.wait_for_selector(".album")
+
+
+def test_ctrl_arrows_step_through_the_displayed_tracks_in_the_cached_library(page, api):
+    start_cached_with_player(page, api, [dict(track(i, album_artist="Band"), id=f"c{i}") for i in (1, 2, 3)])
+    page.dblclick("[data-item=c1]"); page.wait_for_timeout(150)
+    uris = lambda: [p["uri"] for p in api.posts if p.get("action") == "set_uri"]
+    assert uris() == ["u1"]
+    page.keyboard.press("Control+ArrowRight"); page.wait_for_timeout(200)
+    assert uris() == ["u1", "u2"]                                           # next
+    assert page.get_attribute("tr.playing", "data-item") == "c2"
+    page.keyboard.press("Control+ArrowLeft"); page.wait_for_timeout(200)
+    assert uris() == ["u1", "u2", "u1"]                                     # previous
+    page.keyboard.press("Control+ArrowLeft"); page.wait_for_timeout(200)
+    assert len(uris()) == 3                                                 # nothing before the first track
+    page.dblclick("[data-item=c3]"); page.wait_for_timeout(150)
+    page.keyboard.press("Control+ArrowRight"); page.wait_for_timeout(200)
+    assert uris()[-1] == "u3"                                               # nothing after the last track
+
+
+def test_next_follows_the_filtered_list_and_does_nothing_when_the_playing_track_is_hidden(page, api):
+    tracks = [audio_track(1, "audio/flac", "44100", "16"), audio_track(2, "audio/mpeg", "44100"), audio_track(3, "audio/flac", "96000", "24")]
+    start_cached_with_player(page, api, tracks)
+    page.select_option("#qualityFilter", "lossless"); page.wait_for_timeout(150)     # q1 and q3 remain
+    page.dblclick("[data-item=q1]"); page.wait_for_timeout(150)
+    page.keyboard.press("Control+ArrowRight"); page.wait_for_timeout(200)
+    assert [p["uri"] for p in api.posts if p.get("action") == "set_uri"] == ["u1", "u3"]   # skips the hidden MP3
+    page.select_option("#qualityFilter", "lossy"); page.wait_for_timeout(150)         # the playing track (q3) is now hidden
+    api.posts.clear()
+    page.keyboard.press("Control+ArrowRight"); page.wait_for_timeout(200)
+    assert api.posts == []
+
+
+def test_ctrl_arrows_step_through_the_open_folder_in_live_mode(page, api):
+    tree = {"0": [{"type": "container", "id": "a", "title": "Albums"}], "a": [track(1), track(2), track(3)]}
+    start_live(page, api, tree)
+    api.routes["control"] = {"ok": True}
+    page.click("[data-cid=a]")
+    page.dblclick("[data-item=t2]"); page.wait_for_timeout(150)
+    page.keyboard.press("Control+ArrowRight"); page.wait_for_timeout(200)
+    page.keyboard.press("Control+ArrowLeft"); page.wait_for_timeout(200)
+    page.keyboard.press("Control+ArrowLeft"); page.wait_for_timeout(200)
+    assert [p["uri"] for p in api.posts if p.get("action") == "set_uri"] == ["u2", "u3", "u2", "u1"]
