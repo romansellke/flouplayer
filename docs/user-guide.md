@@ -3,8 +3,7 @@
 ## The window
 
 - **Header:** transport buttons (previous, play, pause, stop, next), volume
-  slider with live dB readout and mute button, the Source dropdown and Pins
-  button (OpenHome devices), the LCD-style display of the current track
+  slider with live dB readout and mute button, the LCD-style display of the current track
   (small cover, title, artist and album, and the stream quality -- click the
   cover to see it full size), the Diagnostics and About buttons and the
   theme picker. Under it, the **position bar**:
@@ -13,7 +12,9 @@
   long tracks).
 - **Toolbar:** the Library/Queue tabs, the Live/Cached switch, **Search
   devices**, the media server and output device dropdowns (with each
-  device's own icon, taken from its UPnP description), **Load library**
+  device's own icon, taken from its UPnP description), the **Source**
+  dropdown and **Pins** button of the output device (OpenHome devices),
+  **Load library**
   and the search field.
 - **Main area:** the library (column browser plus album list) or the queue,
   using the full window width. On very narrow windows the header wraps and
@@ -158,11 +159,11 @@ offers them (not for the local speakers or plain UPnP renderers).
 
 - **Mute:** the speaker button next to the volume slider. It shows the
   device's real mute state, also when it was changed from another controller.
-- **Source:** the *Source* dropdown in the header, right of the volume
-  slider, lists the device's inputs (for example Playlist, Radio, Analog, Songcast, HDMI) and
-  switches to the one you pick. It follows changes made from other
+- **Source:** the *Source* dropdown in the toolbar, right of the output
+  device, lists the device's inputs (for example Playlist, Radio, Analog,
+  Songcast, HDMI) and switches to the one you pick. It follows changes made from other
   controllers. Choosing *Playlist* returns to the queue.
-- **Pins:** the pushpin button next to the Source dropdown opens the list of pins
+- **Pins:** the pushpin button right of the Source dropdown opens the list of pins
   you set up on the device (favourite radio stations, playlists, inputs).
   Click one to play it; the list closes again (Esc or a click elsewhere also
   closes it). The list refreshes about once a minute and whenever you select the

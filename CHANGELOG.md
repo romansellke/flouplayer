@@ -6,10 +6,12 @@ All notable changes to Flou Player are documented here. The format follows
 
 ## [Unreleased]
 
-## [0.7.1] - 2026-10-18
+## [0.8.0] - 2026-10-18
 
 ### Changed
-- The pins button in the header shows a pushpin instead of a star.
+- The **Source** dropdown and the **Pins** button moved from the header into
+  the toolbar, right next to the output device they belong to.
+- The pins button shows a pushpin instead of a star.
 
 ## [0.7.0] - 2026-10-18
 
@@ -119,8 +121,8 @@ the OpenHome queue tab; a position/seek bar and a live dB volume readout; a
 Diagnostics log and About dialog; 17 colour themes; installable Linux app
 packaging; and the GPL-3.0-or-later license.
 
-[Unreleased]: https://github.com/romansellke/flouplayer/compare/v0.7.1...HEAD
-[0.7.1]: https://github.com/romansellke/flouplayer/compare/v0.7.0...v0.7.1
+[Unreleased]: https://github.com/romansellke/flouplayer/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/romansellke/flouplayer/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/romansellke/flouplayer/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/romansellke/flouplayer/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/romansellke/flouplayer/compare/v0.5.0...v0.5.1
