@@ -6,6 +6,21 @@ All notable changes to Flou Player are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.12.3] - 2026-10-18
+
+### Fixed
+- **Shuffle** and **Repeat** in the Queue tab: the command failed with
+  "'bool' object has no attribute 'lower'" (the UPnP client wants booleans as
+  strings, as with Mute). Found while writing tests for the queue.
+
+### Changed
+- Internal: the backend `main.py` (900 lines) is split into modules by topic
+  (`devices`, `openhome`, `control`, `library`, `transcode`, `playlist`, ...);
+  the API is unchanged (same 27 routes). The build ID now also covers all
+  backend files. See [docs/development.md](docs/development.md#backend-files).
+- More tests: the device queue, the app's ping/page endpoints and transcoding's
+  URL check.
+
 ## [0.12.2] - 2026-10-18
 
 ### Changed
@@ -199,7 +214,8 @@ the OpenHome queue tab; a position/seek bar and a live dB volume readout; a
 Diagnostics log and About dialog; 17 colour themes; installable Linux app
 packaging; and the GPL-3.0-or-later license.
 
-[Unreleased]: https://github.com/romansellke/flouplayer/compare/v0.12.2...HEAD
+[Unreleased]: https://github.com/romansellke/flouplayer/compare/v0.12.3...HEAD
+[0.12.3]: https://github.com/romansellke/flouplayer/compare/v0.12.2...v0.12.3
 [0.12.2]: https://github.com/romansellke/flouplayer/compare/v0.12.1...v0.12.2
 [0.12.1]: https://github.com/romansellke/flouplayer/compare/v0.12.0...v0.12.1
 [0.12.0]: https://github.com/romansellke/flouplayer/compare/v0.11.0...v0.12.0

@@ -2,11 +2,13 @@
 import json
 
 import pytest
+import upnpclient
 from fastapi.testclient import TestClient
 
 import app as app_pkg
 import app.main as m
-from tests.fakes import FakeDevice, linn_player, media_server
+from app import devices as devices_api, state as app_state
+from tests.fakes import linn_player, media_server
 
 client = TestClient(m.app)
 
@@ -19,9 +21,9 @@ FOLDER = '<container id="a1" parentID="0" childCount="1"><dc:title>Albums</dc:ti
 @pytest.fixture
 def player():
     oh, av, state = linn_player()
-    m._publish_devices({oh.udn: oh, av.udn: av})
+    devices_api._publish_devices({oh.udn: oh, av.udn: av})
     yield oh, state
-    m.devices.clear()
+    app_state.devices.clear()
 
 
 def get(path):
@@ -37,14 +39,14 @@ def control(device, action, value=None):
 def test_discover_presents_a_linn_player_once_and_remembers_it(monkeypatch):
     oh, av, _ = linn_player()
     srv = media_server()
-    monkeypatch.setattr(m.upnpclient, "discover", lambda timeout=4: [oh, av, srv])
+    monkeypatch.setattr(upnpclient, "discover", lambda timeout=4: [oh, av, srv])
     r = client.get("/api/discover").json()["devices"]
     names = sorted(d["name"] for d in r)
     assert names == ["Linn Majik DSM", "Music Server"]          # the sibling "UPnP AV" device is hidden
     by_name = {d["name"]: d for d in r}
     assert by_name["Music Server"]["server"] and not by_name["Music Server"]["renderer"]
     assert by_name["Linn Majik DSM"]["renderer"]
-    known = json.loads(m.KNOWN_DEVICES_FILE.read_text())
+    known = json.loads(app_state.KNOWN_DEVICES_FILE.read_text())
     assert set(known) == {oh.udn, av.udn, srv.udn}               # incl. the sibling, needed later for the OpenHome services
 
 
@@ -52,7 +54,7 @@ def test_restore_reconnects_by_url_and_skips_dead_devices(monkeypatch):
     oh, av, _ = linn_player()
     srv = media_server()
     gone = "http://192.168.1.99:1/gone.xml"
-    m.KNOWN_DEVICES_FILE.write_text(json.dumps({oh.udn: oh.location, av.udn: av.location, srv.udn: srv.location, "uuid:gone": gone}))
+    app_state.KNOWN_DEVICES_FILE.write_text(json.dumps({oh.udn: oh.location, av.udn: av.location, srv.udn: srv.location, "uuid:gone": gone}))
     by_url = {d.location: d for d in (oh, av, srv)}
 
     def fake_device(location):
@@ -60,14 +62,14 @@ def test_restore_reconnects_by_url_and_skips_dead_devices(monkeypatch):
             raise OSError("unreachable")
         return by_url[location]
 
-    monkeypatch.setattr(m.upnpclient, "Device", fake_device)
+    monkeypatch.setattr(upnpclient, "Device", fake_device)
     r = client.post("/api/devices/restore").json()["devices"]
     assert sorted(d["name"] for d in r) == ["Linn Majik DSM", "Music Server"]
-    assert set(m.devices) == {oh.udn, av.udn, srv.udn}
+    assert set(app_state.devices) == {oh.udn, av.udn, srv.udn}
 
 
 def test_restore_without_saved_devices_is_empty():
-    m.KNOWN_DEVICES_FILE.unlink(missing_ok=True)
+    app_state.KNOWN_DEVICES_FILE.unlink(missing_ok=True)
     assert client.post("/api/devices/restore").json() == {"devices": []}
 
 
@@ -156,7 +158,7 @@ def test_transport_falls_back_to_avtransport(player, monkeypatch):
     oh, _ = player
     monkeypatch.setitem(oh.service("Transport").actions, "Play", lambda: (_ for _ in ()).throw(OSError("701")))
     assert control(oh, "play").status_code == 200
-    av = m.devices[oh.udn.replace("-oh", "-av")].services[0]
+    av = app_state.devices[oh.udn.replace("-oh", "-av")].services[0]
     assert av.calls[-1][0] == "Play"
 
 
@@ -164,7 +166,7 @@ def test_transport_falls_back_to_avtransport(player, monkeypatch):
 
 def test_browse_pages_through_a_folder():
     srv = media_server(tree={"0": [FOLDER], "a1": [TRACK]})
-    m._publish_devices({srv.udn: srv})
+    devices_api._publish_devices({srv.udn: srv})
     root = client.post("/api/browse", json={"device_id": srv.udn, "object_id": "0"}).json()
     assert [(i["type"], i["title"]) for i in root["items"]] == [("container", "Albums")]
     tracks = client.post("/api/browse", json={"device_id": srv.udn, "object_id": "a1"}).json()
@@ -175,7 +177,7 @@ def test_browse_pages_through_a_folder():
 
 def test_scan_collects_all_tracks_and_caches_them():
     srv = media_server(tree={"0": [FOLDER], "a1": [TRACK]})
-    m._publish_devices({srv.udn: srv})
+    devices_api._publish_devices({srv.udn: srv})
     r = client.post("/api/scan", json={"device_id": srv.udn, "object_id": "0"}).json()
     assert r["count"] == 1 and r["tracks"][0]["title"] == "Song"
     assert client.get("/api/library/cached").json()["count"] == 1
@@ -190,3 +192,67 @@ def test_about_reports_the_package_version():
     assert r["version"] == app_pkg.__version__
     assert r["name"] == "Flou Player"
     assert "changelog" in r and "source" in r
+
+
+# ---------- the device queue (OpenHome Playlist) ----------
+
+def queue(device, **kw):
+    return client.post(f"/api/devices/{device.udn}/queue", json=kw)
+
+
+def test_queue_lists_the_entries_and_the_state(player):
+    oh, _ = player
+    r = get(f"/api/devices/{oh.udn}/queue").json()
+    assert [e["id"] for e in r["entries"]] == [5, 6]
+    assert r["state"] == "Playing" and r["current_id"] == 5 and r["active"] is True
+    assert (r["seconds"], r["duration"]) == (42, 180)
+    # with the current token the slow entry list is left out
+    assert "entries" not in get(f"/api/devices/{oh.udn}/queue?token={r['token']}").json()
+
+
+def test_queue_shuffle_and_repeat_send_strings_not_bools(player):
+    """Same upnpclient quirk as mute: booleans must go out as strings."""
+    oh, state = player
+    assert queue(oh, action="shuffle", value=True).status_code == 200
+    assert queue(oh, action="repeat", value=True).status_code == 200
+    assert state["shuffle"] is True and state["repeat"] is True
+    pl = oh.service("Playlist")
+    assert all(isinstance(kw["Value"], str) for name, kw in pl.calls if name in ("SetShuffle", "SetRepeat"))
+
+
+def test_queue_replace_clears_inserts_in_order_and_plays_the_first(player):
+    oh, state = player
+    items = [{"uri": "http://x/a.flac", "metadata": ""}, {"uri": "http://x/b.flac", "metadata": ""}]
+    assert queue(oh, action="replace", items=items, play=True).status_code == 200
+    assert [uri for _, uri in state["inserted"]] == ["http://x/a.flac", "http://x/b.flac"]
+    assert len(state["queue"]) == 2 and state["seeked"] == [state["queue"][0]]
+
+
+def test_queue_switches_the_device_to_its_playlist_source_first(player):
+    oh, state = player
+    state["source"] = 1                                      # Radio is active
+    assert queue(oh, action="insert", items=[{"uri": "http://x/a.flac", "metadata": ""}]).status_code == 200
+    assert state["source"] == 0
+
+
+def test_queue_unknown_action_and_missing_service(player):
+    oh, _ = player
+    assert queue(oh, action="nope").status_code == 400
+    srv = media_server()
+    devices_api._publish_devices({srv.udn: srv})
+    assert client.get(f"/api/devices/{srv.udn}/queue").status_code == 400
+
+
+# ---------- the app itself ----------
+
+def test_ping_identifies_the_app_and_the_page_is_not_cached():
+    r = client.get("/api/app/ping").json()
+    assert r["app"] == m.APP_ID and r["build"] == m.BUILD_ID
+    page = client.get("/")
+    assert page.status_code == 200 and "Flou Player" in page.text
+    assert page.headers["cache-control"] == "no-cache"
+    assert client.get("/static/core.js").headers["cache-control"] == "no-cache"
+
+
+def test_transcode_only_accepts_http_urls():
+    assert client.get("/api/transcode", params={"url": "file:///etc/passwd"}).status_code == 400

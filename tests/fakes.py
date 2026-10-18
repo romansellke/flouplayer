@@ -1,5 +1,5 @@
 """Stand-ins for upnpclient devices, so the backend can be tested without a network."""
-from urllib.parse import urlparse
+import base64
 
 
 class FakeService:
@@ -44,7 +44,7 @@ class FakeDevice:
 
 def linn_player(host="192.168.1.21", **overrides):
     """A Linn-style player: an OpenHome device plus the sibling 'UPnP AV' renderer on the same IP."""
-    state = {"standby": False, "source": 0, "muted": False, "volume": 40, "pin_calls": []}
+    state = {"standby": False, "source": 0, "muted": False, "volume": 40, "pin_calls": [], "queue": [5, 6], "repeat": False, "shuffle": False, "seeked": [], "inserted": []}
     state.update(overrides)
     product = oh("Product", 4, {
         "Standby": lambda: {"Value": state["standby"]},
@@ -81,7 +81,30 @@ def linn_player(host="192.168.1.21", **overrides):
         "GetSoftwareStatus": {"SoftwareStatus": '{"status": "update_available", "current_software": {"version": "4.99.491", "channel": "release"},'
                                                 '"update_info": {"updates": [{"version": "4.100.502", "date": "07 Jun 2023", "description": "x"}]}}'},
     })
-    openhome = FakeDevice(f"uuid:{host}-oh", f"http://{host}:55178/oh/device.xml", "Linn Majik DSM", [product, volume, transport, info, pins, update])
+    def entry(i):
+        return f"<Entry><Id>{i}</Id><Uri>http://x/{i}.flac</Uri><Metadata></Metadata></Entry>"
+
+    def insert(AfterId, Uri, Metadata):
+        new = max(state["queue"] + [0]) + 1
+        state["queue"].insert(state["queue"].index(AfterId) + 1 if AfterId in state["queue"] else 0, new)
+        state["inserted"].append((AfterId, Uri))
+        return {"NewId": new}
+
+    playlist = oh("Playlist", 1, {
+        "IdArray": lambda: {"Token": len(state["queue"]), "Array": base64.b64encode(b"".join(i.to_bytes(4, "big") for i in state["queue"])).decode()},
+        "ReadList": lambda IdList: {"TrackList": "<TrackList>" + "".join(entry(int(i)) for i in IdList.split()) + "</TrackList>"},
+        "TransportState": {"Value": "Playing"}, "Id": {"Value": 5},
+        "Repeat": lambda: {"Value": state["repeat"]}, "Shuffle": lambda: {"Value": state["shuffle"]},
+        "SetRepeat": lambda Value: state.update(repeat=Value in ("1", "true")) or {},
+        "SetShuffle": lambda Value: state.update(shuffle=Value in ("1", "true")) or {},
+        "Insert": insert,
+        "DeleteAll": lambda: state["queue"].clear() or {},
+        "SeekId": lambda Value: state["seeked"].append(Value) or {},
+        "DeleteId": lambda Value: state["queue"].remove(Value) or {},
+        "Play": {}, "Pause": {}, "Stop": {}, "Next": {}, "Previous": {}, "SeekSecondAbsolute": {},
+    })
+    time = oh("Time", 1, {"Time": {"TrackCount": 1, "Duration": 180, "Seconds": 42}})
+    openhome = FakeDevice(f"uuid:{host}-oh", f"http://{host}:55178/oh/device.xml", "Linn Majik DSM", [product, volume, transport, info, pins, update, playlist, time])
     avt = FakeService("urn:upnp-org:serviceId:AVTransport", "urn:schemas-upnp-org:service:AVTransport:1", {
         "Play": {}, "Pause": {}, "Stop": {}, "Next": {}, "Previous": {},
         "GetPositionInfo": {"RelTime": "0:00:10", "TrackDuration": "0:03:00"},

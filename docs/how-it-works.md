@@ -2,7 +2,7 @@
 
 ## Architecture
 
-- **Backend** (`app/main.py`): a FastAPI app served locally by Uvicorn. It
+- **Backend** (the `app/` package, see [Development](development.md#backend-files)): a FastAPI app served locally by Uvicorn. It
   discovers UPnP devices over SSDP, talks to the media server's
   ContentDirectory service (browsing and scanning) and controls the output
   device (AVTransport, and the OpenHome Volume, Playlist, Time, Product, Pins
