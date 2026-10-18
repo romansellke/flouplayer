@@ -148,7 +148,7 @@ document.addEventListener('keydown',e=>{
   if(e.metaKey||e.ctrlKey||e.altKey) return;
   const t=e.target;
   if(t && (t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.tagName==='SELECT'||t.isContentEditable)) return;
-  if(!$('#metaModal').classList.contains('hidden')||!$('#aboutModal').classList.contains('hidden')) return;
+  if(!$('#metaModal').classList.contains('hidden')||!$('#aboutModal').classList.contains('hidden')||!$('#keysModal').classList.contains('hidden')) return;
   const col=facetCurrent||facetHover;
   if(!col || col.offsetParent===null) return;
   if(e.key==='Escape'){ clearTypeHit(); return }

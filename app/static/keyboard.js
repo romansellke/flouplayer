@@ -36,7 +36,7 @@ document.addEventListener('keydown',e=>{
   if(e.defaultPrevented) return;
   const t=e.target;
   if(t&&(/^(input|textarea|select)$/i.test(t.tagName)||t.isContentEditable||t.closest?.('.picker'))) return;
-  if(['diagModal','metaModal','aboutModal'].some(id=>!$('#'+id).classList.contains('hidden'))||!$('#lightbox').classList.contains('hidden')) return;
+  if(['diagModal','metaModal','aboutModal','keysModal'].some(id=>!$('#'+id).classList.contains('hidden'))||!$('#lightbox').classList.contains('hidden')) return;
   const mod=e.ctrlKey||e.metaKey, k=e.key;
   let act=null;
   if(k===' '&&!mod&&!e.shiftKey&&!e.altKey){ if(t&&t.tagName==='BUTTON') return; act=togglePlayPause }   // Space on a focused button presses it
@@ -47,4 +47,45 @@ document.addEventListener('keydown',e=>{
   else if(mod&&!e.altKey&&!e.shiftKey&&k==='.') act=()=>btnFor('stop').click();
   if(!act) return;
   e.preventDefault(); act();
+});
+
+// ---------- Shortcut overview (Ctrl/⌘+/ or F1) ----------
+// One list drives the overview; keep it in step with the handlers above and docs/user-guide.md.
+// "A / B" means alternatives, "+" joins the keys of one combination.
+const SHORTCUTS=[
+  ['Playback',[
+    ['Space','Play / pause'],
+    ['Shift+← / Shift+→','Seek 10 seconds back / forward'],
+    ['Ctrl/⌘+← / Ctrl/⌘+→','Previous / next track'],
+    ['Ctrl/⌘+↑ / Ctrl/⌘+↓','Volume up / down (add Shift for 5 steps)'],
+    ['Ctrl/⌘+M','Mute / unmute'],
+    ['Ctrl/⌘+.','Stop'],
+  ]],
+  ['Library',[
+    ['Ctrl/⌘+F','Focus the search field'],
+    ['Ctrl/⌘+L','Jump to the playing track'],
+    ['Ctrl/⌘+B','Show / hide the column browser'],
+    ['Ctrl/⌘+Q','Switch between Library and Queue'],
+    ['Backspace / Alt+←','One folder up (Live mode)'],
+    ['A-Z in a column','Type-ahead in the column browser (Enter selects, Esc clears)'],
+  ]],
+  ['General',[
+    ['Ctrl/⌘+/ / F1','Show this overview'],
+    ['Esc','Close a dialog or the full-size cover'],
+  ]],
+];
+const keysHtml=combo=>combo.split(' / ').map(alt=>alt.split('+').map(k=>`<kbd>${esc(k)}</kbd>`).join('+')).join('<span class="alt">or</span>');
+function drawShortcuts(){
+  $('#keysBody').innerHTML=SHORTCUTS.map(([title,rows])=>`<h4>${esc(title)}</h4><table>${rows.map(([keys,what])=>`<tr><td>${keysHtml(keys)}</td><td>${esc(what)}</td></tr>`).join('')}</table>`).join('');
+}
+function toggleShortcuts(open=$('#keysModal').classList.contains('hidden')){
+  if(open) drawShortcuts();
+  $('#keysModal').classList.toggle('hidden',!open);
+}
+$('#keysBtn').onclick=()=>toggleShortcuts();
+$('#keysClose').onclick=()=>toggleShortcuts(false);
+$('#keysModal').addEventListener('click',e=>{ if(e.target===$('#keysModal')) toggleShortcuts(false) });
+document.addEventListener('keydown',e=>{
+  if(e.key==='F1'||((e.ctrlKey||e.metaKey)&&!e.altKey&&e.key==='/')){ e.preventDefault(); toggleShortcuts() }
+  else if(e.key==='Escape') toggleShortcuts(false);
 });
