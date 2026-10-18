@@ -440,7 +440,10 @@ button.busy{cursor:progress;pointer-events:none}
 .devtools.hidden,.devtools .hidden{display:none}
 /* In the toolbar, next to the output device they belong to (.toolbar styles buttons/selects as filled controls) */
 .toolbar #sourceSel{flex:0 1 140px;min-width:100px}
-.toolbar .pinpicker>button{padding:8px 11px}
+.toolbar .pinpicker>button,.toolbar #powerBtn{padding:8px 11px}
+.toolbar #powerBtn{color:var(--highlight)}
+.toolbar #powerBtn.standby{color:var(--muted)}
+.transport button.nocap{opacity:.35;pointer-events:none}
 .toolbar .pin{border:0;background:none;padding:4px 6px;font-weight:400}
 .toolbar .pin:hover{background:var(--hover);border-color:transparent}
 .pinpicker{position:relative}

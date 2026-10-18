@@ -6,6 +6,16 @@ All notable changes to Flou Player are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-10-18
+
+### Added
+- **Standby / wake** button next to the Source dropdown (OpenHome devices); it
+  shows and follows the device's state.
+- The transport buttons **grey out what the active source can't do** (pause
+  and skip on live radio), based on the device's capabilities.
+- **Firmware status** (installed version, update available or not) in the
+  Diagnostics *Device info* and in the copied report. Read-only.
+
 ## [0.8.0] - 2026-10-18
 
 ### Changed
@@ -121,7 +131,8 @@ the OpenHome queue tab; a position/seek bar and a live dB volume readout; a
 Diagnostics log and About dialog; 17 colour themes; installable Linux app
 packaging; and the GPL-3.0-or-later license.
 
-[Unreleased]: https://github.com/romansellke/flouplayer/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/romansellke/flouplayer/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/romansellke/flouplayer/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/romansellke/flouplayer/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/romansellke/flouplayer/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/romansellke/flouplayer/compare/v0.5.1...v0.6.0
