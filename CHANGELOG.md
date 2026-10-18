@@ -6,7 +6,15 @@ All notable changes to Flou Player are documented here. The format follows
 
 ## [Unreleased]
 
-## [0.5.2] - 2026-10-18
+## [0.6.0] - 2026-10-18
+
+### Changed
+- The **Now Playing panel is gone**: it mostly repeated the title display. The
+  library now uses the full window width. The title display in the header
+  shows a small cover (click for full size) next to title, artist and album,
+  with the stream quality as a third line; the Diagnostics button (with its
+  error badge) moved next to the About button.
+- The status text ("Now playing", "Not connected") was dropped.
 
 ### Fixed
 - Play, pause, stop, next and previous failed with "701 Transition not
@@ -90,8 +98,8 @@ the OpenHome queue tab; a position/seek bar and a live dB volume readout; a
 Diagnostics log and About dialog; 17 colour themes; installable Linux app
 packaging; and the GPL-3.0-or-later license.
 
-[Unreleased]: https://github.com/romansellke/flouplayer/compare/v0.5.2...HEAD
-[0.5.2]: https://github.com/romansellke/flouplayer/compare/v0.5.1...v0.5.2
+[Unreleased]: https://github.com/romansellke/flouplayer/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/romansellke/flouplayer/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/romansellke/flouplayer/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/romansellke/flouplayer/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/romansellke/flouplayer/releases/tag/v0.4.0

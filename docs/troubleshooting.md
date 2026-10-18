@@ -6,8 +6,8 @@
   (same subnet/VLAN) -- SSDP discovery does not cross routers.
 - With a firewall (`ufw`/`firewalld`), allow incoming UDP traffic from your
   local network (SSDP uses port 1900), otherwise the answers never arrive.
-- Click **Search devices** again; the Diagnostics dialog (button at the
-  bottom of the Now Playing panel) logs what was found.
+- Click **Search devices** again; the Diagnostics dialog (list button in
+  the header) logs what was found.
 
 ## `run.command` or the build fails on `venv`
 
