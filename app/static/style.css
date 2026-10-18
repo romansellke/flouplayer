@@ -216,7 +216,8 @@ input[type=range]:hover::-webkit-slider-thumb{transform:scale(1.25)}
 }
 #search::placeholder{color:var(--muted)}
 #search:focus{border-color:var(--highlight)}
-.toolbar-status{margin-left:auto;color:var(--muted);font-size:12px;white-space:nowrap;padding-left:6px}
+.statusbar{flex:0 0 auto;padding:0 12px;color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.statusbar span{display:block;overflow:hidden;text-overflow:ellipsis}
 
 /* ---------- Workspace ---------- */
 /* Height chain for ONE scrollable area (#content): every level needs
