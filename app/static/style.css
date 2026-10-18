@@ -179,7 +179,7 @@ input[type=range]:hover::-webkit-slider-thumb{transform:scale(1.25)}
 }
 .toolbar select:hover{border-color:var(--muted)}
 
-/* Device pickers (custom dropdowns with device icons, see app.js).
+/* Device pickers (custom dropdowns with device icons, see devices.js).
    The real <select> stays in the DOM as the value holder, hidden. */
 .picker-source{display:none}
 .picker{position:relative;flex:1 1 200px;min-width:140px;display:flex}

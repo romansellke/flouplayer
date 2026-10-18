@@ -6,6 +6,13 @@ All notable changes to Flou Player are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.12.2] - 2026-10-18
+
+### Changed
+- Internal: the 1450-line `app.js` is split into ten files by topic (`core.js`,
+  `devices.js`, `library.js`, `playback.js`, `live.js`, ...); no change in
+  behaviour. See [docs/development.md](docs/development.md#frontend-files).
+
 ## [0.12.1] - 2026-10-18
 
 ### Added
@@ -192,7 +199,8 @@ the OpenHome queue tab; a position/seek bar and a live dB volume readout; a
 Diagnostics log and About dialog; 17 colour themes; installable Linux app
 packaging; and the GPL-3.0-or-later license.
 
-[Unreleased]: https://github.com/romansellke/flouplayer/compare/v0.12.1...HEAD
+[Unreleased]: https://github.com/romansellke/flouplayer/compare/v0.12.2...HEAD
+[0.12.2]: https://github.com/romansellke/flouplayer/compare/v0.12.1...v0.12.2
 [0.12.1]: https://github.com/romansellke/flouplayer/compare/v0.12.0...v0.12.1
 [0.12.0]: https://github.com/romansellke/flouplayer/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/romansellke/flouplayer/compare/v0.10.2...v0.11.0

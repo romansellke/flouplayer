@@ -21,7 +21,7 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 @app.middleware("http")
 async def no_cache_ui(request,call_next):
     """The app window keeps a persistent web profile; without this it can
-    serve an old index.html/style.css/app.js after an update."""
+    serve old index.html/style.css/script files after an update."""
     resp=await call_next(request)
     if request.url.path=="/" or request.url.path.startswith("/static/"):
         resp.headers["Cache-Control"]="no-cache"
