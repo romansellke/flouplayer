@@ -368,3 +368,39 @@ def test_a_device_without_db_values_shows_a_percentage(page, api):
     select_renderer(page)
     page.wait_for_function("document.querySelector('#volumeLabel').textContent.includes('33')")
     assert page.inner_text("#volumeLabel") == "33%" and page.query_selector("#volumeLabel .voldb") is None
+
+
+# ---------- shortcut overview ----------
+
+def test_the_shortcut_overview_opens_and_closes(page, api):
+    api.routes["control"] = {"ok": True}
+    open_app(page)
+    select_renderer(page)
+    api.actions()
+    assert not page.is_visible("#keysModal")
+    page.keyboard.press("Control+/")
+    assert page.is_visible("#keysModal")
+    text = page.inner_text("#keysBody")
+    assert "Play / pause" in text and "Jump to the playing track" in text and "Show this overview" in text
+    page.keyboard.press("Space"); page.wait_for_timeout(200)
+    assert api.actions() == []                                              # playback keys are off while it is open
+    page.keyboard.press("Escape")
+    assert not page.is_visible("#keysModal")
+    page.keyboard.press("F1")
+    assert page.is_visible("#keysModal")
+    page.keyboard.press("F1")                                               # toggles
+    assert not page.is_visible("#keysModal")
+    page.click("#keysBtn")
+    assert page.is_visible("#keysModal")
+    page.click("#keysModal", position={"x": 5, "y": 5})                     # a click on the backdrop closes it
+    assert not page.is_visible("#keysModal")
+
+
+def test_the_overview_lists_what_the_user_guide_documents(page, api):
+    """The overview and docs/user-guide.md must not drift apart."""
+    import pathlib
+    open_app(page)
+    shortcuts = page.evaluate("SHORTCUTS.flatMap(([, rows]) => rows)")
+    guide = (pathlib.Path(__file__).resolve().parent.parent / "docs" / "user-guide.md").read_text(encoding="utf-8")
+    missing = [keys for keys, _ in shortcuts if f"| {keys} |" not in guide]
+    assert not missing, f"shortcuts in the overview but not in docs/user-guide.md: {missing}"

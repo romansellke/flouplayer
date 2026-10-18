@@ -6,6 +6,13 @@ All notable changes to Flou Player are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-10-18
+
+### Added
+- **Keyboard shortcut overview**: press Ctrl/⌘+/ or F1 (or click the keyboard
+  button in the header) for an overlay listing all shortcuts; Esc closes it.
+  While it is open the playback keys are ignored.
+
 ## [0.14.2] - 2026-10-18
 
 ### Changed
@@ -247,7 +254,8 @@ the OpenHome queue tab; a position/seek bar and a live dB volume readout; a
 Diagnostics log and About dialog; 17 colour themes; installable Linux app
 packaging; and the GPL-3.0-or-later license.
 
-[Unreleased]: https://github.com/romansellke/flouplayer/compare/v0.14.2...HEAD
+[Unreleased]: https://github.com/romansellke/flouplayer/compare/v0.15.0...HEAD
+[0.15.0]: https://github.com/romansellke/flouplayer/compare/v0.14.2...v0.15.0
 [0.14.2]: https://github.com/romansellke/flouplayer/compare/v0.14.1...v0.14.2
 [0.14.1]: https://github.com/romansellke/flouplayer/compare/v0.14.0...v0.14.1
 [0.14.0]: https://github.com/romansellke/flouplayer/compare/v0.13.0...v0.14.0

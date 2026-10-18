@@ -42,7 +42,7 @@ Linux).
   **local speakers** (AAC/ALAC are converted to FLAC on the fly)
 - Device controls for Linn/OpenHome: mute, source selection, pins and the
   stream quality the device reports
-- Keyboard control (Space, arrows, volume, mute)
+- Keyboard control (Space, arrows, volume, mute) with a built-in shortcut overview (Ctrl/⌘+/ or F1)
 - Album covers, selectable track columns, 17 colour themes, Diagnostics and
   About dialogs
 

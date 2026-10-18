@@ -226,6 +226,9 @@ Nord, Catppuccin Mocha, Tokyo Night, ...). The choice is remembered.
 
 ## Keyboard shortcuts
 
+Press **Ctrl/⌘+/** or **F1** (or click the keyboard button in the header) for
+an overview of all shortcuts inside the app; **Esc** closes it.
+
 **Playback** -- these work anywhere in the window, except while you are typing
 in a field, while a dialog is open, or while the focus is on a button or slider
 (which keep their own keys):
@@ -242,15 +245,16 @@ in a field, while a dialog is open, or while the focus is on a button or slider
 The plain arrow keys stay free for scrolling the album list, and plain letters
 for the column type-ahead.
 
-**Navigation and library**
+**Navigation, library and general**
 
 | Shortcut | Action |
 | --- | --- |
 | Ctrl/⌘+F | Focus the search field |
 | Ctrl/⌘+L | Jump to the playing track |
-| Ctrl/⌘+B | Show/hide the column browser (cached library) |
+| Ctrl/⌘+B | Show / hide the column browser |
 | Ctrl/⌘+Q | Switch between Library and Queue |
 | Backspace / Alt+← | One folder up (Live mode) |
 | Esc | Close a dialog or the full-size cover |
-| Type letters in a column | Type-ahead in the column browser |
+| A-Z in a column | Type-ahead in the column browser (Enter selects, Esc clears) |
+| Ctrl/⌘+/ / F1 | Show the shortcut overview |
 | Mouse wheel on the volume slider | One volume step (Shift = 5) |
