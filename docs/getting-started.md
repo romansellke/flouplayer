@@ -75,4 +75,10 @@ Everything above works the same; a few differences to Ubuntu/Mint:
    scan the whole server once.
 4. Double-click a track to play it.
 
+Flou Player remembers your media server and output device. The next time you
+start it, it reconnects to them by itself and selects them again -- no new
+search needed. If they don't answer (for example you changed network), it
+searches once automatically. **Search devices** is still there to refresh the
+list or to pick other devices.
+
 Continue with the [User guide](user-guide.md).

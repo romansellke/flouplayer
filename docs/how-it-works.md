@@ -21,9 +21,10 @@
 | What | Where |
 | --- | --- |
 | Library cache (Cached mode) | `~/.cache/flou_player/library.json` |
+| Known media servers and players (for reconnecting at startup) | `~/.cache/flou_player/devices.json` |
 | Crash log | `~/.cache/flou_player/crash.log` |
 | Installed app | `~/.local/share/flou-player` |
-| Window settings (theme, visible columns, cover size, Live/Cached choice, collapsed browser) | the app window's web profile under `~/.local/share/flou-player/webview` |
+| Window settings (theme, visible columns, cover size, Live/Cached choice, collapsed browser, chosen media server and output device) | the app window's web profile under `~/.local/share/flou-player/webview` |
 
 ## Library scan (Cached mode)
 

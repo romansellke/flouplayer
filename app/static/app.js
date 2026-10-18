@@ -241,6 +241,7 @@ $('#discover').onclick=async()=>{
     state.devices=x.devices;
     populateServerSelect(x.devices.filter(d=>d.server));
     populateRendererSelect(x.devices.filter(d=>d.renderer));
+    applySavedDevices();
     log(`Found ${x.devices.length} device(s): `+x.devices.map(d=>d.name+(d.server?' [server]':'')+(d.renderer?' [output]':'')).join(', '));
     updateReadyState();
   }catch(e){logErr(e.message)}
@@ -1374,3 +1375,35 @@ setInterval(pollStream,4000);
 setInterval(pollStandby,6000);
 setInterval(pollCaps,3000);
 refreshDeviceExtras();
+
+// ---------- Remember the chosen media server and output device ----------
+// The choice is saved when you pick; at startup the app reconnects to the devices it knew
+// (backend: /api/devices/restore, no network search) and selects them again.
+const savedDev=k=>{ try{ return localStorage.getItem('flou_'+k)||'' }catch(e){ return '' } };
+const saveDev=(k,v)=>{ try{ localStorage.setItem('flou_'+k,v) }catch(e){} };
+$('#server').addEventListener('change',()=>saveDev('server',$('#server').value));
+$('#renderer').addEventListener('change',()=>saveDev('renderer',$('#renderer').value));
+function applySavedDevices(){
+  for(const [id,key] of [['#server','server'],['#renderer','renderer']]){
+    const sel=$(id), want=savedDev(key);
+    if(!want||sel.value===want||![...sel.options].some(o=>o.value===want)) continue;
+    sel.value=want;
+    sel.dispatchEvent(new Event('change'));   // refreshes the picker and loads what depends on it
+  }
+}
+(async function restoreDevices(){
+  try{
+    const x=await api('/api/devices/restore',{method:'POST'});
+    if(x.devices.length){
+      state.devices=x.devices;
+      populateServerSelect(x.devices.filter(d=>d.server));
+      populateRendererSelect(x.devices.filter(d=>d.renderer));
+      log(`Reconnected to ${x.devices.length} saved device(s)`);
+    }
+  }catch(e){/* nothing saved yet, or the backend can't restore -- use Search devices */}
+  applySavedDevices();
+  updateReadyState();
+  // Saved devices exist but none answered (e.g. you changed network): search once instead of waiting for a click.
+  const hadChoice=savedDev('server')||(savedDev('renderer')&&savedDev('renderer')!==LOCAL_RENDERER_ID);
+  if(hadChoice&&!state.devices.length) $('#discover').click();
+})();

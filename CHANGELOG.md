@@ -6,6 +6,15 @@ All notable changes to Flou Player are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-10-18
+
+### Added
+- The chosen **media server and output device are remembered**. At startup the
+  app reconnects to the devices it knew by their description URL (no network
+  search) and selects them again; in Live mode the server's top level opens
+  right away. If none of them answers, it falls back to one automatic search.
+  *Search devices* still refreshes the list.
+
 ### Changed
 - README: new screenshots of the Live and the Cached mode.
 
@@ -134,7 +143,8 @@ the OpenHome queue tab; a position/seek bar and a live dB volume readout; a
 Diagnostics log and About dialog; 17 colour themes; installable Linux app
 packaging; and the GPL-3.0-or-later license.
 
-[Unreleased]: https://github.com/romansellke/flouplayer/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/romansellke/flouplayer/compare/v0.10.0...HEAD
+[0.10.0]: https://github.com/romansellke/flouplayer/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/romansellke/flouplayer/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/romansellke/flouplayer/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/romansellke/flouplayer/compare/v0.6.0...v0.7.0
