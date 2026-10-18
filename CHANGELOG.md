@@ -6,6 +6,26 @@ All notable changes to Flou Player are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-10-18
+
+### Changed
+- The Source dropdown and the pins moved from the Now Playing panel into the
+  header, next to the volume slider; pins are a star button with a menu.
+
+### Fixed
+- **Mute** failed on every click with "'bool' object has no attribute 'lower'":
+  the UPnP client wants boolean arguments as strings.
+- Switching **source** or playing a **pin** did nothing while the device was in
+  standby; the device is now woken first.
+- The Source dropdown could snap back to the old source right after a change,
+  before the device had switched. Switching a source or playing a pin now also
+  shows a short confirmation.
+- Device search sometimes missed the media server: the SSDP replies are UDP and
+  get lost now and then, so the search now runs two passes at once and merges
+  the results.
+- The About dialog and the Diagnostics report showed no dependency versions in
+  the installed app; the build now bundles the package metadata.
+
 ## [0.5.0] - 2026-10-18
 
 ### Added
@@ -61,6 +81,7 @@ the OpenHome queue tab; a position/seek bar and a live dB volume readout; a
 Diagnostics log and About dialog; 17 colour themes; installable Linux app
 packaging; and the GPL-3.0-or-later license.
 
-[Unreleased]: https://github.com/romansellke/flouplayer/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/romansellke/flouplayer/compare/v0.5.1...HEAD
+[0.5.1]: https://github.com/romansellke/flouplayer/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/romansellke/flouplayer/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/romansellke/flouplayer/releases/tag/v0.4.0

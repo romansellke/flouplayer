@@ -1227,8 +1227,8 @@ $('#muteBtn').onclick=async()=>{
 const dev2=()=>(!$('#renderer').value||isLocal())?null:$('#renderer').value;
 let sourceCount=0;
 async function loadSources(){
-  const d=dev2(); const box=$('#sourceBox');
-  if(!d){ box.classList.add('hidden'); return }
+  const d=dev2(); const box=$('#sourceSel');
+  if(!d){ box.classList.add('hidden'); updateDevTools(); return }
   try{
     const r=await api(`/api/devices/${encodeURIComponent(d)}/sources`);
     $('#sourceSel').innerHTML=r.sources.map(s=>`<option value="${s.index}">${esc(s.name)}${s.type&&s.type!==s.name?' ('+esc(s.type)+')':''}</option>`).join('');
@@ -1236,36 +1236,48 @@ async function loadSources(){
     sourceCount=r.sources.length;
     box.classList.toggle('hidden',!sourceCount);
   }catch(e){ box.classList.add('hidden') }  // no Product service: no source switching
+  updateDevTools();
 }
+let sourceChangedAt=0;   // the device takes a moment to switch; don't let the poll snap the dropdown back meanwhile
 $('#sourceSel').onchange=async e=>{
   const d=dev2(); if(!d) return;
+  sourceChangedAt=Date.now();
   try{
     await api('/api/control',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({device_id:d,action:'set_source',value:+e.target.value})});
-    log(`Source: ${e.target.selectedOptions[0].textContent}`);
+    showToast(`Source: ${e.target.selectedOptions[0].textContent}`); log(`Source: ${e.target.selectedOptions[0].textContent}`);
+    setTimeout(pollSource,3000);
     if(typeof pollQueue==='function') pollQueue(true);
   }catch(x){ notify(x.message); loadSources() }
 };
 async function pollSource(){   // follow changes made from other controllers
-  const d=dev2(); if(!d||!sourceCount||document.activeElement===$('#sourceSel')) return;
+  const d=dev2(); if(!d||!sourceCount||document.activeElement===$('#sourceSel')||Date.now()-sourceChangedAt<2500) return;
   try{ const r=await api(`/api/devices/${encodeURIComponent(d)}/sources?light=true`); $('#sourceSel').value=String(r.current) }catch(e){}
 }
 
 async function loadPins(){
   const d=dev2(); const box=$('#pinsBox');
-  if(!d){ box.classList.add('hidden'); return }
+  if(!d){ box.classList.add('hidden'); updateDevTools(); return }
   try{
     const r=await api(`/api/devices/${encodeURIComponent(d)}/pins`);
     const art=u=>/^https?:/i.test(u||'')?` style="background-image:url('${esc(u)}')"`:'';
     $('#pinList').innerHTML=r.pins.map(p=>`<button type="button" class="pin" data-slot="${p.slot}" title="${esc(p.title)}"><span class="pinart"${art(p.artwork)}></span><span class="pintitle">${esc(p.title)}</span></button>`).join('');
     box.classList.toggle('hidden',!(r.supported&&r.pins.length));
   }catch(e){ box.classList.add('hidden') }
+  updateDevTools();
 }
+// The header group (source dropdown + pins button) shows only when one of them has something to offer.
+function updateDevTools(){ $('#devTools').classList.toggle('hidden',$('#sourceSel').classList.contains('hidden')&&$('#pinsBox').classList.contains('hidden')) }
+function setPinMenu(open){ $('#pinList').classList.toggle('hidden',!open); $('#pinsBtn').setAttribute('aria-expanded',String(open)) }
+$('#pinsBtn').onclick=e=>{ e.stopPropagation(); setPinMenu($('#pinList').classList.contains('hidden')) };
+document.addEventListener('click',e=>{ if(!e.target.closest('.pinpicker')) setPinMenu(false) });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') setPinMenu(false) });
 $('#pinList').addEventListener('click',async e=>{
   const b=e.target.closest('.pin'); const d=dev2(); if(!b||!d) return;
+  setPinMenu(false);
   try{
     await api('/api/control',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({device_id:d,action:'invoke_pin',value:+b.dataset.slot})});
-    log(`Pin: ${b.title}`);
-    setTimeout(()=>{pollSource(); if(typeof pollQueue==='function') pollQueue(true)},800);
+    showToast(`Playing pin: ${b.title}`); log(`Pin: ${b.title}`);
+    setTimeout(()=>{pollSource(); if(typeof pollQueue==='function') pollQueue(true)},1500);
   }catch(x){ notify(x.message) }
 });
 
