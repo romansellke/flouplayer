@@ -16,6 +16,9 @@
   dropdown and **Pins** button of the output device (OpenHome devices),
   **Load library**
   and the search field.
+- **Status line** (very bottom of the window): what is loaded -- in Cached mode
+  the number of tracks and when the library was scanned, in Live mode the
+  media server being browsed.
 - **Main area:** the library (column browser plus album list) or the queue,
   using the full window width. On very narrow windows the header wraps and
   the columns stack.

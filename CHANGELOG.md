@@ -6,6 +6,13 @@ All notable changes to Flou Player are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-10-18
+
+### Changed
+- The status text (for example "13064 tracks (cached, ...)" or the live
+  server's name) moved from the toolbar to a status line at the very bottom of
+  the window. The search field now uses the freed space in the toolbar.
+
 ## [0.11.0] - 2026-10-18
 
 ### Added
@@ -172,7 +179,8 @@ the OpenHome queue tab; a position/seek bar and a live dB volume readout; a
 Diagnostics log and About dialog; 17 colour themes; installable Linux app
 packaging; and the GPL-3.0-or-later license.
 
-[Unreleased]: https://github.com/romansellke/flouplayer/compare/v0.11.0...HEAD
+[Unreleased]: https://github.com/romansellke/flouplayer/compare/v0.12.0...HEAD
+[0.12.0]: https://github.com/romansellke/flouplayer/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/romansellke/flouplayer/compare/v0.10.2...v0.11.0
 [0.10.2]: https://github.com/romansellke/flouplayer/compare/v0.10.1...v0.10.2
 [0.10.1]: https://github.com/romansellke/flouplayer/compare/v0.10.0...v0.10.1
