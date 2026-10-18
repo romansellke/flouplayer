@@ -151,7 +151,7 @@ function createDevicePicker(select,fallbackIcon){
   function close(){menu.classList.add('hidden');btn.setAttribute('aria-expanded','false')}
   function choose(i){
     close(); btn.focus();
-    if(i===select.selectedIndex) return;
+    if(i===select.selectedIndex){ refresh(); return }   // already selected: just make sure the button shows it
     select.selectedIndex=i; refresh();
     select.dispatchEvent(new Event('change'));
   }
