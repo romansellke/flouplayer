@@ -447,12 +447,14 @@ button.busy{cursor:progress;pointer-events:none}
 #muteBtn[aria-pressed=true] .waves{display:none}
 #muteBtn.hidden{display:none}
 .npquality{margin:6px 20px 0;font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
-.now>.sidebox{text-align:left;padding:2px 20px;margin-top:10px}
-.sidebox label{display:block;font-size:10.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
-#sourceSel{width:100%;padding:6px 8px;border:1px solid var(--line);border-radius:var(--radius);background:var(--card);color:var(--text);font:inherit;font-size:12.5px}
-.pinlist{display:flex;flex-direction:column;gap:2px;max-height:150px;overflow-y:auto}
+.devtools{display:flex;align-items:center;gap:6px;flex:0 0 auto}
+.devtools.hidden,.devtools .hidden{display:none}
+#sourceSel{max-width:150px;padding:6px 8px;border:1px solid var(--line);border-radius:var(--radius);background:var(--card);color:var(--text);font:inherit;font-size:12.5px;cursor:pointer}
+.pinpicker{position:relative}
+.pinmenu{position:absolute;left:0;top:calc(100% + 6px);min-width:240px;max-height:60vh;overflow-y:auto;background:var(--bg);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:6px;z-index:20;display:flex;flex-direction:column;gap:2px}
+.pinmenu.hidden{display:none}
 .pin{display:flex;align-items:center;gap:8px;width:100%;padding:4px 6px;border:0;border-radius:var(--radius);background:none;color:var(--text);font:inherit;font-size:12.5px;text-align:left;cursor:pointer}
 .pin:hover{background:var(--hover)}
-.now .pin span{margin:0}
+.pin span{margin:0}
 .pin .pinart{flex:0 0 26px;width:26px;height:26px;border-radius:4px;background:var(--card) center/cover no-repeat}
 .pin .pintitle{flex:1;text-align:left;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

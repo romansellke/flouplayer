@@ -8,6 +8,10 @@ All notable changes to Flou Player are documented here. The format follows
 
 ## [0.5.1] - 2026-10-18
 
+### Changed
+- The Source dropdown and the pins moved from the Now Playing panel into the
+  header, next to the volume slider; pins are a star button with a menu.
+
 ### Fixed
 - **Mute** failed on every click with "'bool' object has no attribute 'lower'":
   the UPnP client wants boolean arguments as strings.

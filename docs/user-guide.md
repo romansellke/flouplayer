@@ -3,7 +3,8 @@
 ## The window
 
 - **Header:** transport buttons (previous, play, pause, stop, next), volume
-  slider with live dB readout and mute button, the LCD-style display of the current track,
+  slider with live dB readout and mute button, the Source dropdown and Pins
+  button (OpenHome devices), the LCD-style display of the current track,
   the About button and the theme picker. Under it, the **position bar**:
   elapsed time at the left, remaining time at the right, a thick seek bar
   with a time grid in between (a tick every minute, every 5/10 minutes for
@@ -14,8 +15,7 @@
   and the search field.
 - **Main area:** the library (column browser plus album list) or the queue.
 - **Now Playing panel** (right): big cover, title and artist, the stream
-  quality, status, source and pins (OpenHome devices), and the Diagnostics
-  button. It hides on narrow windows; sidebars and columns
+  quality, status, and the Diagnostics button. It hides on narrow windows; sidebars and columns
   also stack on very narrow windows.
 
 ## Live or cached library
@@ -148,13 +148,14 @@ offers them (not for the local speakers or plain UPnP renderers).
 
 - **Mute:** the speaker button next to the volume slider. It shows the
   device's real mute state, also when it was changed from another controller.
-- **Source:** the *Source* dropdown in the Now Playing panel lists the
-  device's inputs (for example Playlist, Radio, Analog, Songcast, HDMI) and
+- **Source:** the *Source* dropdown in the header, right of the volume
+  slider, lists the device's inputs (for example Playlist, Radio, Analog, Songcast, HDMI) and
   switches to the one you pick. It follows changes made from other
   controllers. Choosing *Playlist* returns to the queue.
-- **Pins:** the *Pins* list in the Now Playing panel shows the pins you set up
-  on the device (favourite radio stations, playlists, inputs). Click one to
-  play it. The list refreshes about once a minute and whenever you select the
+- **Pins:** the star button next to the Source dropdown opens the list of pins
+  you set up on the device (favourite radio stations, playlists, inputs).
+  Click one to play it; the list closes again (Esc or a click elsewhere also
+  closes it). The list refreshes about once a minute and whenever you select the
   device.
 - **Stream quality:** under the title, codec, sample rate, bit depth and bit
   rate as the *device* reports them (for example
