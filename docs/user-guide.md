@@ -162,7 +162,7 @@ offers them (not for the local speakers or plain UPnP renderers).
   slider, lists the device's inputs (for example Playlist, Radio, Analog, Songcast, HDMI) and
   switches to the one you pick. It follows changes made from other
   controllers. Choosing *Playlist* returns to the queue.
-- **Pins:** the star button next to the Source dropdown opens the list of pins
+- **Pins:** the pushpin button next to the Source dropdown opens the list of pins
   you set up on the device (favourite radio stations, playlists, inputs).
   Click one to play it; the list closes again (Esc or a click elsewhere also
   closes it). The list refreshes about once a minute and whenever you select the
