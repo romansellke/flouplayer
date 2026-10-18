@@ -6,6 +6,17 @@ All notable changes to Flou Player are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.10.2] - 2026-10-18
+
+### Fixed
+- The remembered media server and output device still weren't shown in the
+  dropdowns: the actual fix announced for 0.10.1 (redrawing the dropdown after
+  the remembered device is applied) had been left out of that release by
+  mistake. It is in now.
+- If a remembered device doesn't come back at startup (slow, or you changed
+  network), the app now searches once automatically, and the Diagnostics log
+  says which remembered device was or wasn't found.
+
 ## [0.10.1] - 2026-10-18
 
 ### Fixed
@@ -152,7 +163,8 @@ the OpenHome queue tab; a position/seek bar and a live dB volume readout; a
 Diagnostics log and About dialog; 17 colour themes; installable Linux app
 packaging; and the GPL-3.0-or-later license.
 
-[Unreleased]: https://github.com/romansellke/flouplayer/compare/v0.10.1...HEAD
+[Unreleased]: https://github.com/romansellke/flouplayer/compare/v0.10.2...HEAD
+[0.10.2]: https://github.com/romansellke/flouplayer/compare/v0.10.1...v0.10.2
 [0.10.1]: https://github.com/romansellke/flouplayer/compare/v0.10.0...v0.10.1
 [0.10.0]: https://github.com/romansellke/flouplayer/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/romansellke/flouplayer/compare/v0.8.0...v0.9.0
