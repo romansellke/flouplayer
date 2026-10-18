@@ -72,6 +72,14 @@ iTunes-style column browser and instant searching across everything.
 - **Collapse the browser** with the **Browser** button (Ctrl/⌘+B) to give
   the album list the full height. The current selection keeps filtering
   while hidden; the state is remembered.
+- **Quality filter:** the dropdown above the album list shows only tracks of
+  one audio quality -- *Hi-Res* (lossless above 16 bit or 48 kHz), *CD quality*
+  (lossless up to 16 bit and 48 kHz), *Lossless* (both) or *Lossy* (MP3, AAC,
+  Ogg, ...). It works in the cached library (the columns and counts follow it)
+  and in Live mode (within the open folder), together with the search. The
+  quality comes from the file's format and the sample rate / bit depth the
+  server reports; tracks where it can't be told appear only under *All
+  qualities*.
 - **Album order:** albums are sorted by Album Artist (the name shown next to
   the cover; for albums without that tag the artist, if all tracks share one),
   then by album title. Albums with no artist information at all come last.

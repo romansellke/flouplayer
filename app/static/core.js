@@ -122,8 +122,29 @@ function enrichTracks(tracks){
     t.album=(t.album||'').trim();
     t.genre=(t.genre||'').trim();
     t.album_artist=(t.album_artist||'').trim();
+    t.quality=qualityClass(t);
   });
   return tracks;
+}
+
+// Audio quality of a track's first (= original) resource, for the quality filter:
+//   'lossy'  MP3, AAC, Ogg/Opus, WMA ...      'cd'  lossless, up to 16 bit and 48 kHz
+//   'hires'  lossless above 16 bit or 48 kHz  ''    can't tell (shown only under "All qualities")
+const LOSSY_MIME=/^audio\/(mpeg|mp3|x-mp3|mpeg3|aac|x-aac|ogg|x-ogg|opus|vorbis|x-vorbis|x-ms-wma)\b/;
+function qualityClass(t){
+  const res=t.resources?.[0]; if(!res) return '';
+  const mime=((res.protocol||'').split(':')[2]||'').trim().toLowerCase();
+  const rate=parseInt(res.sample_rate)||0, bits=parseInt(res.bits_per_sample)||0;
+  if(LOSSY_MIME.test(mime)) return 'lossy';
+  if(/^audio\/(mp4|x-m4a|m4a)\b/.test(mime)&&!bits) return 'lossy';   // AAC; ALAC states its bit depth
+  if(bits>16||rate>48000) return 'hires';
+  if(bits||rate||/^audio\/(x-)?(flac|wav|wave|aiff|dsf|dff)/.test(mime)) return 'cd';
+  return '';
+}
+// Does the track pass the quality dropdown? ('lossless' = cd + hires)
+function qualityMatch(t){
+  const f=$('#qualityFilter').value;
+  return !f||(f==='lossless'?t.quality==='cd'||t.quality==='hires':t.quality===f);
 }
 
 // Guidance messages need to be impossible to miss -- the Diagnostics dialog

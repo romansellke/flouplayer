@@ -71,7 +71,7 @@ document.addEventListener('click',()=>$('#colMenu').classList.add('hidden'));
 // can show its own possible values (with a correct count) without
 // restricting itself.
 function tracksExcluding(exceptKey){
-  return state.tracks.filter(t=>FACET_ORDER.every(k=>{
+  return state.tracks.filter(qualityMatch).filter(t=>FACET_ORDER.every(k=>{
     const v=state.filters[k];
     if(!v || k===exceptKey) return true;
     return (t[k]||'')===v;
@@ -188,7 +188,8 @@ const SEARCH_FIELDS=['title','artist','album_artist','album','genre','year'];
 function currentlyFiltered(){
   const q=$('#search').value.trim().toLowerCase();
   return state.tracks.filter(t=>FACET_ORDER.every(k=>!state.filters[k]||(t[k]||'')===state.filters[k]))
-                      .filter(t=>!q||SEARCH_FIELDS.some(k=>(t[k]||'').toLowerCase().includes(q)));
+                      .filter(t=>!q||SEARCH_FIELDS.some(k=>(t[k]||'').toLowerCase().includes(q)))
+                      .filter(qualityMatch);
 }
 
 function trackRowCells(t,i){
@@ -329,6 +330,7 @@ $('#content').addEventListener('contextmenu',e=>{
 });
 
 $('#search').oninput=renderAlbums;
+$('#qualityFilter').onchange=()=>{ isLive()?renderAlbums():render() };
 
 // ---------- Restore the last scanned library from disk on startup ----------
 updateReadyState();

@@ -247,6 +247,7 @@ main{gap:8px;flex:1 1 600px;min-width:320px;min-height:0;display:flex;flex-direc
 
 .colpicker{position:relative}
 .btn-link{background:none;border:1px solid var(--line);border-radius:var(--radius);padding:4px 12px;font-size:12px;cursor:pointer;color:var(--text);transition:background .15s,border-color .15s}
+select.btn-link{background:var(--bg);color:var(--text);font-family:inherit}
 .btn-link:hover{background:var(--hover)}
 .btn-link:disabled{opacity:.4;cursor:default;background:none}
 /* brief highlight after jumping to the now-playing track */
