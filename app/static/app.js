@@ -577,9 +577,9 @@ function albumHtml([key,ts]){
           <div class="albumqueue"><button type="button" data-qplay-album="${esc(key)}" title="Play album (replaces the queue)">▶</button><button type="button" data-qadd-album="${esc(key)}" title="Add album to queue">+ Queue</button></div>
         </div>
       </div>
-      <table class="tracks"><tbody>
+      <div class="trackscroll"><table class="tracks"><tbody>
         ${ts.map((t,i)=>trackRowCells(t,i)).join('')}
-      </tbody></table>
+      </tbody></table></div>
     </div>`;
 }
 

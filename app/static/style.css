@@ -253,7 +253,7 @@ main{gap:8px;flex:1 1 600px;min-width:320px;min-height:0;display:flex;flex-direc
 .colmenu label{display:block;padding:4px 2px;cursor:pointer;font-size:12.5px}
 .colmenu input{margin-right:8px;accent-color:var(--accent)}
 
-.album{display:flex;flex-wrap:wrap;padding:6px 20px;border-bottom:1px solid var(--line)}
+.album{display:flex;flex-wrap:nowrap;padding:6px 20px;border-bottom:1px solid var(--line)}
 /* Skip layout/paint for albums outside the visible area -- keeps long
    lists (the whole library, or a far jump to the playing track) fast.
    The intrinsic size is only an estimate until an album is rendered. */
@@ -271,6 +271,10 @@ main{gap:8px;flex:1 1 600px;min-width:320px;min-height:0;display:flex;flex-direc
 .albumtitle{font-weight:600;font-size:13px;line-height:1.35}
 .meta{color:var(--muted);margin-top:4px;line-height:1.5;font-size:12px}
 
+/* Long titles scroll sideways inside the track list instead of pushing it
+   under the cover. */
+.trackscroll{flex:1 1 0;min-width:0;overflow-x:auto;align-self:flex-start}
+.trackscroll .tracks{min-width:max-content;margin:8px 0}
 .tracks{flex:1 1 400px;min-width:260px;border-collapse:separate;border-spacing:0 1px;width:100%;align-self:flex-start;margin:8px 0}
 .tracks td{padding:6px 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tracks td:first-child{border-radius:6px 0 0 6px}
@@ -384,11 +388,11 @@ main{gap:8px;flex:1 1 600px;min-width:320px;min-height:0;display:flex;flex-direc
 #diagList .empty{color:var(--muted);padding:8px 0}
 
 /* ---------- Tabs + Queue view ---------- */
-.tabs{display:flex;gap:4px;flex:0 0 auto}
-.tab{border:0;background:none;color:var(--muted);cursor:pointer;font:inherit;font-size:13px;padding:6px 14px;border-radius:var(--radius);border-bottom:2px solid transparent}
-.tab:hover:not(:disabled){background:var(--hover);color:var(--text)}
-.tab.active{color:var(--text);font-weight:600;border-bottom-color:var(--accent)}
-.tab:disabled{opacity:.4;cursor:default}
+.tabs{display:flex;gap:4px;flex:0 0 auto;margin-right:8px;padding-right:12px;border-right:1px solid var(--line)}
+.toolbar .tab{border:0;background:none;color:var(--muted);cursor:pointer;font:inherit;font-size:13px;padding:6px 14px;border-radius:var(--radius);border-bottom:2px solid transparent}
+.toolbar .tab:hover:not(:disabled){background:var(--hover);color:var(--text)}
+.toolbar .tab.active{color:var(--text);font-weight:600;border-bottom-color:var(--accent)}
+.toolbar .tab:disabled{opacity:.4;cursor:default}
 main[data-tab=queue]>.facets,main[data-tab=queue]>.albums:not(#queueView){display:none}
 main:not([data-tab=queue])>#queueView{display:none}
 #queueBody{flex:1 1 auto;min-height:0;overflow:auto;padding:0 20px 12px}
