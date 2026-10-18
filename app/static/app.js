@@ -1152,8 +1152,8 @@ async function liveOpen(stack){
 }
 async function liveMore(seq=live.seq){
   const server=$('#server').value, id=live.stack[live.stack.length-1].id;
-  if(live.loading) return;
-  live.loading=true;
+  if(live.loading===seq) return;   // this very load is already running (a newer navigation may start its own)
+  live.loading=seq;
   try{
     const r=await api('/api/browse',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({device_id:server,object_id:id,start:live.loaded,count:LIVE_PAGE})});
     if(seq!==live.seq) return; // navigated away meanwhile
@@ -1167,7 +1167,7 @@ async function liveMore(seq=live.seq){
   }catch(e){
     if(seq===live.seq){ logErr(e.message); $('#content').innerHTML=`<div class="empty">Failed to load: ${esc(e.message)}</div>`; }
     return;
-  }finally{ live.loading=false }
+  }finally{ if(live.loading===seq) live.loading=false }
   if(seq===live.seq) renderLive();
 }
 function liveCrumbs(){

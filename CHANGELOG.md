@@ -6,6 +6,19 @@ All notable changes to Flou Player are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.12.1] - 2026-10-18
+
+### Added
+- **Automated tests** (`pytest`): the backend endpoints against fake UPnP
+  devices, and the page in headless Chromium with a mocked API, plus a GitHub
+  Actions workflow that runs them on every pull request. See
+  [docs/development.md](docs/development.md).
+
+### Fixed
+- In Live mode, going back (Backspace or the path bar) or opening another
+  folder while a folder was still loading left the view stuck on "Loading ..."
+  (found by the new tests).
+
 ## [0.12.0] - 2026-10-18
 
 ### Changed
@@ -179,7 +192,8 @@ the OpenHome queue tab; a position/seek bar and a live dB volume readout; a
 Diagnostics log and About dialog; 17 colour themes; installable Linux app
 packaging; and the GPL-3.0-or-later license.
 
-[Unreleased]: https://github.com/romansellke/flouplayer/compare/v0.12.0...HEAD
+[Unreleased]: https://github.com/romansellke/flouplayer/compare/v0.12.1...HEAD
+[0.12.1]: https://github.com/romansellke/flouplayer/compare/v0.12.0...v0.12.1
 [0.12.0]: https://github.com/romansellke/flouplayer/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/romansellke/flouplayer/compare/v0.10.2...v0.11.0
 [0.10.2]: https://github.com/romansellke/flouplayer/compare/v0.10.1...v0.10.2
