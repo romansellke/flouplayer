@@ -137,6 +137,8 @@ include that file when reporting the problem.
 - **Type-ahead in the column browser**: click a column and type letters to jump to the first entry starting with them; Enter selects it, Escape clears the highlight.
 - **Smooth volume control**: changes are ramped in small steps (no sudden jumps on clicks or fast drags), the mouse wheel moves one step at a time (Shift = 5), and the slider no longer snaps back while dragging. Prefers the OpenHome Volume service (typical for Linn devices) with a real dB readout; falls back to the standard UPnP 0-100% range if unavailable. **Not verified against real hardware -- the dB scaling may need adjusting.**
 - **Persistent library cache**: the scanned library is saved to disk (`~/.cache/flou_player/library.json`) and reloaded automatically on startup -- no need to rescan every time you open the app. Click "Load library" whenever you want to refresh it (e.g. after adding new music).
+- **Live browsing or cached library**: the `Live`/`Cached` switch in the toolbar picks how the library is shown (remembered between runs). **Live** (default) browses the media server folder by folder -- Artists, Albums, Genres, Folders, whatever the server offers -- like the Linn app: click a folder card to open it, use the path bar above (or Backspace / Alt+←) to go back, the search box filters the current folder. Nothing is scanned or stored, so it's always current and starts instantly. Playing, the queue and Play all / + Queue all work as usual on what's shown. **Cached** is the full-library scan with the Album Artist/Artist/Album/Year columns described above.
+- **Themes**: a palette button in the header switches between 17 colour themes (Dracula, Nord, Catppuccin Mocha, Tokyo Night, ...); the choice is remembered.
 - Clearly distinguishable controls: filled blue buttons, white dropdowns with an arrow, text fields with a search icon
 - **Local playback**: the output device dropdown always includes "This computer (local speakers)" -- picking it plays audio directly through the laptop's own sound output (via the app window's built-in HTML5 audio, no UPnP renderer needed). Useful for testing or listening without the Majik DSM4. FLAC (incl. hi-res), WAV, MP3 and Ogg play directly. Formats the built-in web engine (Qt WebEngine) can't decode itself -- AAC/ALAC (`.m4a`), and others ffmpeg can read -- are converted to FLAC on the fly by the app (via PyAV/ffmpeg; lossless for ALAC, hi-res stays hi-res). Seeking isn't possible within such converted tracks. Raw PCM streams (`audio/L16`) can't be played locally. If the server offers several variants of a track, the app picks one it can play directly; auto-advance skips tracks it can't play at all.
 - **Selectable track-list columns**: a "Columns" button above the track list lets you toggle Quality/Time/Artist/Album Artist/Genre/Year on or off; the choice is remembered between launches (stored in the app window's web profile under `~/.local/share/flou-player/webview`).
@@ -146,21 +148,19 @@ include that file when reporting the problem.
 - Search within the loaded library
 - Play, pause, stop, next, previous and volume via standard UPnP services
 - Albums are grouped by album name **and** album artist, so same-named albums by different artists stay separate
-- Hand a track to the output device and play it
-- Diagnostics view of the services found on each device
 
 ## How to use it
 
 1. Start the app (`./run.command`) -- it opens in its own window.
 2. Click **"Search devices"**, then pick your media server and output device from the two dropdowns.
-3. Click **"Load library"** -- this recursively scans the whole media server library (can take a moment for very large collections).
+3. In **Live** mode (default) the server's top level appears right away and you click your way through the folders; skip to step 5. In **Cached** mode click **"Load library"** -- this recursively scans the whole media server library (can take a moment for very large collections).
 4. Narrow down by Album Artist/Artist/Album/Year at the top left -- each column only shows the values that still match, and clicking "All ..." resets that column.
 5. Matching albums appear below with cover art; double-click a track to play it on the selected output device.
 
 ## Known limitations
 
 - A full library scan makes many network requests and can still take a while on very large/deeply nested libraries, even though it's now parallelised. The app keeps showing the number of tracks found so far during the scan.
-- OpenHome playlist/queue isn't fully implemented yet; playback uses AVTransport.
+- The OpenHome queue (Queue tab) is implemented but not verified against real hardware; for non-OpenHome UPnP renderers playback uses AVTransport.
 - There is no source switcher (MinimServer/TIDAL) anymore -- only one media server is loaded at a time via "Load library".
 - Album grouping depends on the server's DIDL-Lite metadata.
 - No code from proprietary apps such as mconnect was used.
@@ -178,6 +178,8 @@ desktop window uses.
 - Uvicorn, BSD-3-Clause
 - upnpclient, MIT
 - pywebview, BSD-3-Clause
+- PyAV (`av`), BSD-3-Clause -- bundles ffmpeg libraries (LGPL)
 - PyQt5 / PyQtWebEngine, GPL v3 (or commercial license from Riverbank Computing)
+- QtPy, MIT
 
 Dependencies are installed from PyPI on first local setup.
