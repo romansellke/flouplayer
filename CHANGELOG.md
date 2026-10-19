@@ -6,6 +6,13 @@ All notable changes to Flou Player are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.16.1] - 2026-10-19
+
+### Changed
+- The Health view is opened from a pulse icon in the header icon bar instead of
+  a third tab next to Library and Queue; the icon is highlighted while it is
+  open and toggles back to the library.
+
 ## [0.16.0] - 2026-10-19
 
 ### Added
@@ -278,7 +285,8 @@ the OpenHome queue tab; a position/seek bar and a live dB volume readout; a
 Diagnostics log and About dialog; 17 colour themes; installable Linux app
 packaging; and the GPL-3.0-or-later license.
 
-[Unreleased]: https://github.com/romansellke/flouplayer/compare/v0.16.0...HEAD
+[Unreleased]: https://github.com/romansellke/flouplayer/compare/v0.16.1...HEAD
+[0.16.1]: https://github.com/romansellke/flouplayer/compare/v0.16.0...v0.16.1
 [0.16.0]: https://github.com/romansellke/flouplayer/compare/v0.15.1...v0.16.0
 [0.15.1]: https://github.com/romansellke/flouplayer/compare/v0.15.0...v0.15.1
 [0.15.0]: https://github.com/romansellke/flouplayer/compare/v0.14.2...v0.15.0

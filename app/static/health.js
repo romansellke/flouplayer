@@ -1,6 +1,6 @@
 // Library health: checks on the scanned (cached) library for incomplete or inconsistent tags --
 // Album Artist without Artist (or the other way round), missing covers, years, track numbers, ...
-// analyzeLibrary() is a pure function over the track list; the rest draws the Health tab.
+// analyzeLibrary() is a pure function over the track list; the rest draws the Health view (opened with the header icon).
 
 // Compare names ignoring case, accents, a leading "The" and punctuation: "The Beatles" ~ "beatles".
 const nameKey=s=>(s||'').toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g,'').replace(/^the\s+/,'').replace(/[^\p{L}\p{N}]+/gu,'');
@@ -85,7 +85,7 @@ function analyzeLibrary(tracks){
     checks:HEALTH_CHECKS.map(([id,title,severity,help])=>({id,title,severity,help,items:sortItems(found[id])}))};
 }
 
-// ---------- The Health tab ----------
+// ---------- The Health view ----------
 let health=null, healthSel='aa_no_artist';
 function healthText(check){
   return [`${check.title} (${check.items.length})`,...check.items.map(i=>[i.albumArtist,i.artist,i.album,i.note].join('\t'))].join('\n');

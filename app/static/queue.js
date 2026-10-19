@@ -54,11 +54,12 @@ const currentTab=()=>document.querySelector('main').dataset.tab;
 function showTab(name){
   if(name==='queue' && $('#tabQueue').disabled) return;
   document.querySelector('main').dataset.tab=name;
-  for(const t of ['Library','Queue','Health']){
+  for(const t of ['Library','Queue']){
     const on=t.toLowerCase()===name;
     $('#tab'+t).classList.toggle('active',on); $('#tab'+t).setAttribute('aria-selected',String(on));
   }
   if(name==='queue'){ renderQueue(); pollQueue(true); scrollToCurrentQueue(false) }
+  $('#healthBtn').classList.toggle('active',name==='health'); $('#healthBtn').setAttribute('aria-pressed',String(name==='health'));
   if(name==='health') renderHealth();
 }
 function scrollToCurrentQueue(smooth=true){
@@ -67,7 +68,8 @@ function scrollToCurrentQueue(smooth=true){
 }
 $('#tabLibrary').onclick=()=>showTab('library');
 $('#tabQueue').onclick=()=>showTab('queue');
-$('#tabHealth').onclick=()=>showTab('health');
+// The Health view is opened from the icon in the header (a toggle: click again to go back to the library).
+$('#healthBtn').onclick=()=>showTab(currentTab()==='health'?'library':'health');
 $('#qCurrent').onclick=()=>scrollToCurrentQueue();
 document.addEventListener('keydown',e=>{ if((e.metaKey||e.ctrlKey)&&e.key==='q'){ e.preventDefault(); showTab(currentTab()==='queue'?'library':'queue') } });
 $('#queueList').addEventListener('click',async e=>{

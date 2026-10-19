@@ -43,7 +43,7 @@ Linux).
 - Device controls for Linn/OpenHome: mute, source selection, pins and the
   stream quality the device reports
 - Keyboard control (Space, arrows, volume, mute) with a built-in shortcut overview (Ctrl/⌘+/ or F1)
-- A **Health** tab that checks the library for tag problems (missing Artist or
+- A **Health** view (header icon) that checks the library for tag problems (missing Artist or
   Album Artist, missing covers, track numbers, ...)
 - Album covers, selectable track columns, 17 colour themes, Diagnostics and
   About dialogs

@@ -371,6 +371,7 @@ button.crumb:hover{background:var(--hover);color:var(--text)}
 /* ---------- About ---------- */
 .iconbtn{display:grid;place-items:center;width:34px;height:34px;padding:0;border:0;border-radius:var(--radius);background:none;color:var(--muted);cursor:pointer;flex:0 0 auto}
 .iconbtn:hover{background:var(--hover);color:var(--text)}
+.iconbtn.active{background:var(--hover);color:var(--text)}
 .iconbtn svg{width:16px;height:16px}
 .modal-content.about{min-width:320px;max-width:460px}
 .about h3{margin:0 0 2px}
