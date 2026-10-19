@@ -408,7 +408,9 @@ button.crumb:hover{background:var(--hover);color:var(--text)}
 .toolbar .tab.active{color:var(--text);font-weight:600;border-bottom-color:var(--accent)}
 .toolbar .tab:disabled{opacity:.4;cursor:default}
 main[data-tab=queue]>.facets,main[data-tab=queue]>.albums:not(#queueView){display:none}
+main[data-tab=health]>.facets,main[data-tab=health]>.albums:not(#healthView){display:none}
 main:not([data-tab=queue])>#queueView{display:none}
+main:not([data-tab=health])>#healthView{display:none}
 #queueBody{flex:1 1 auto;min-height:0;overflow:auto;padding:0 20px 12px}
 .qtable{margin:0}
 .qtable .n{width:38px}
@@ -469,3 +471,25 @@ button.busy{cursor:progress;pointer-events:none}
 .keys td:last-child{color:var(--muted)}
 kbd{display:inline-block;min-width:20px;padding:1px 6px;border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;background:var(--card);color:var(--text);font:inherit;font-size:11.5px;text-align:center}
 .keys .alt{color:var(--muted);margin:0 6px}
+
+/* ---------- Library health ---------- */
+#healthView .hidden{display:none}
+#healthEmpty{padding:40px 20px;line-height:2}
+.healthgrid{display:grid;grid-template-columns:320px 1fr;flex:1 1 auto;min-height:0;border-top:1px solid var(--line)}
+#healthChecks{overflow-y:auto;padding:8px;border-right:1px solid var(--line)}
+.hcheck{display:flex;align-items:center;gap:8px;width:100%;padding:7px 8px;border:0;border-radius:var(--radius);background:none;color:var(--text);font:inherit;font-size:12.5px;text-align:left;cursor:pointer}
+.hcheck:hover{background:var(--hover)}
+.hcheck.active{background:var(--track);font-weight:600}
+.hdot{flex:0 0 8px;width:8px;height:8px;border-radius:50%;background:var(--muted)}
+.hdot.warn{background:#e0a030}.hdot.info{background:var(--highlight)}.hdot.ok{background:#4caf72}
+.hname{flex:1;min-width:0}
+.hcount{color:var(--muted);font-variant-numeric:tabular-nums}
+#healthDetail{overflow:auto;padding:4px 20px 16px}
+#healthDetail h4{margin:12px 0 2px;font-size:14px}
+.hhelp{margin:0 0 10px;color:var(--muted);font-size:12px}
+.hok{color:var(--muted)}
+.htable{border-collapse:collapse;width:100%;font-size:12.5px}
+.htable th{position:sticky;top:0;background:var(--panel);text-align:left;padding:6px 10px 6px 0;font-size:10.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.htable td{padding:5px 10px 5px 0;border-top:1px solid var(--line);vertical-align:top}
+.htable tr.clickable:hover td{background:var(--hover)}
+.htable td.num{text-align:right;font-variant-numeric:tabular-nums}
