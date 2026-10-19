@@ -529,13 +529,13 @@ def test_health_finds_split_albums_and_spelling_variants(page, api):
     assert any("Beatles" in n and "The Beatles" in n for n in names)
 
 
-def test_the_health_tab_lists_the_findings_and_jumps_to_the_album(page, api):
+def test_the_health_view_lists_the_findings_and_jumps_to_the_album(page, api):
     tracks = [htrack(1, album="Needs love", album_artist="AA", artist="", art=""), htrack(2, album="Fine", album_artist="X", artist="X")]
     api.routes["library/cached"] = {"tracks": tracks, "count": 2, "scan_root": "root", "scanned_at": 1}
     page.add_init_script("localStorage.setItem('flou_libmode','cached')")
     open_app(page)
     page.wait_for_selector(".album")
-    page.click("#tabHealth")
+    page.click("#healthBtn")
     assert page.is_visible("#healthView") and not page.is_visible(".facets")
     assert "2 albums" in page.inner_text("#healthInfo") and "with findings" in page.inner_text("#healthInfo")
     counts = page.eval_on_selector_all(".hcheck", "bs => Object.fromEntries(bs.map(b => [b.dataset.check, b.querySelector('.hcount').textContent]))")
@@ -549,8 +549,21 @@ def test_the_health_tab_lists_the_findings_and_jumps_to_the_album(page, api):
     assert page.eval_on_selector_all(".albumtitle", "ts => ts.map(t => t.textContent)") == ["Needs love (1)"]
 
 
-def test_the_health_tab_explains_when_there_is_no_scanned_library(page, api):
+def test_the_health_view_explains_when_there_is_no_scanned_library(page, api):
     page.add_init_script("localStorage.setItem('flou_libmode','cached')")
     open_app(page)
-    page.click("#tabHealth")
+    page.click("#healthBtn")
     assert page.is_visible("#healthEmpty") and not page.is_visible("#healthBody")
+
+
+def test_the_health_icon_toggles_the_view_and_is_highlighted_while_open(page, api):
+    open_app(page)
+    assert page.query_selector("#tabHealth") is None                          # it is an icon in the header, not a tab
+    page.click("#healthBtn")
+    assert page.evaluate("document.querySelector('main').dataset.tab") == "health"
+    assert "active" in page.get_attribute("#healthBtn", "class") and page.get_attribute("#healthBtn", "aria-pressed") == "true"
+    page.click("#healthBtn")                                                   # again: back to the library
+    assert page.evaluate("document.querySelector('main').dataset.tab") == "library"
+    assert "active" not in page.get_attribute("#healthBtn", "class")
+    page.click("#healthBtn"); page.click("#tabLibrary")                        # the Library tab also leaves it
+    assert page.evaluate("document.querySelector('main').dataset.tab") == "library" and not page.is_visible("#healthView")

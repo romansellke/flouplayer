@@ -21,7 +21,7 @@ file. Keep that order in mind when you move code between files.
 | `library.js` | The cached library: scan, columns, column browser, type-ahead, album list, search |
 | `playback.js` | Local audio, playing a track, jump to the playing track, transport buttons, volume, position bar, position polling |
 | `queue.js` | The device queue (OpenHome Playlist) |
-| `health.js` | Library health: the checks (`analyzeLibrary`, a pure function) and the Health tab |
+| `health.js` | Library health: the checks (`analyzeLibrary`, a pure function) and the Health view |
 | `live.js` | Live browsing and the Live/Cached switch |
 | `openhome.js` | OpenHome device controls: mute, standby, source, pins, stream quality, capabilities, firmware |
 | `remember.js` | Remembering the chosen devices and reconnecting at startup |

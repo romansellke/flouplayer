@@ -156,8 +156,9 @@ HTML5 audio. No UPnP renderer is needed, which is handy for testing.
 
 ## Library health
 
-The **Health** tab checks the scanned library (Cached mode; load it first) for
-incomplete or inconsistent tags. The list on the left shows each check with the
+The **Health** view (the pulse icon in the header; click it again to go back)
+checks the scanned library (Cached mode; load it first) for incomplete or
+inconsistent tags. The list on the left shows each check with the
 number of albums it found (a ✓ means nothing found; orange = probably wrong,
 blue = good to know). Click a check to see the albums, and click a row to jump
 to that album in the library. **Re-check** runs the checks again, **Copy list**
