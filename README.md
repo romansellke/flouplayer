@@ -68,6 +68,15 @@ media server and an output device, and double-click a track.
 - [Development and tests](docs/development.md)
 - [Versioning and releases](docs/releasing.md) and the [changelog](CHANGELOG.md)
 
+## How this was built
+
+Flou Player was developed with AI assistance: almost all code was written by
+Claude Code (Anthropic) under the direction of the author, who tests it on a
+Linn Majik DSM with MinimServer. It has an automated test suite (against
+simulated devices), but many device features follow the OpenHome
+specifications and have not been verified on other hardware. Use at your own
+risk; bug reports are welcome.
+
 ## License
 
 Flou Player is free software, licensed under the GNU General Public License,
