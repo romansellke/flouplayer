@@ -1,5 +1,14 @@
 # How it works
 
+## How this was built
+
+Flou Player was developed with AI assistance: almost all code was written by
+Claude Code (Anthropic) under the direction of the author, who tests it on a
+Linn Majik DSM with MinimServer. The automated tests
+([Development](development.md#tests)) run against simulated devices; many
+device features follow the OpenHome specifications and have not been verified
+on other hardware.
+
 ## Architecture
 
 - **Backend** (the `app/` package, see [Development](development.md#backend-files)): a FastAPI app served locally by Uvicorn. It

@@ -381,6 +381,7 @@ button.crumb:hover{background:var(--hover);color:var(--text)}
 .about td:first-child{padding-right:16px;white-space:nowrap}
 .about td:last-child{color:var(--text);word-break:break-all}
 .about a{color:var(--highlight)}
+.about .aboutai{font-size:12px;color:var(--muted)}
 
 /* ---------- Diagnostics ---------- */
 #diagBtn{position:relative}

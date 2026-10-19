@@ -271,6 +271,7 @@ def test_about_dialog_shows_version_and_source(page, api):
     page.click("#aboutBtn")
     page.wait_for_function("document.querySelector('#aboutVersion').textContent.includes('1.2.3')")
     assert "v1.2.3-4-gabc" in page.inner_text("#aboutTable")
+    assert "developed with ai assistance" in page.inner_text("#aboutModal").lower()
 
 
 # ---------- album order ----------
