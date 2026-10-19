@@ -567,3 +567,43 @@ def test_the_health_icon_toggles_the_view_and_is_highlighted_while_open(page, ap
     assert "active" not in page.get_attribute("#healthBtn", "class")
     page.click("#healthBtn"); page.click("#tabLibrary")                        # the Library tab also leaves it
     assert page.evaluate("document.querySelector('main').dataset.tab") == "library" and not page.is_visible("#healthView")
+
+
+# ---------- interface zoom ----------
+
+def test_zoom_keys_scale_the_interface_and_the_level_is_remembered(page, api):
+    open_app(page)
+    zoom = lambda: page.evaluate("uiZoom")
+    assert zoom() == 1
+    page.keyboard.press("Control+="); assert zoom() == 1.1
+    page.keyboard.press("Control+Equal"); page.keyboard.press("Control+Equal")
+    assert zoom() == 1.5
+    assert page.evaluate("document.documentElement.style.zoom") == "1.5"
+    assert "150%" in page.inner_text("#toast")
+    page.reload()
+    assert page.evaluate("uiZoom") == 1.5                                       # remembered
+    page.keyboard.press("Control+-"); assert zoom() == 1.25
+    page.keyboard.press("Control+0"); assert zoom() == 1
+    assert page.evaluate("document.documentElement.style.zoom") == ""
+
+
+def test_the_layout_still_fits_when_zoomed(page, api):
+    open_app(page)
+    for z in (0.75, 1.5, 2, 3):
+        page.set_viewport_size({"width": int(1100 * z), "height": int(650 * z)})   # a screen that is 1100x650 at this zoom
+        page.evaluate("z => setZoom(z)", z)
+        page.wait_for_timeout(50)
+        fits = page.evaluate("""() => { const f = document.querySelector('.statusbar').getBoundingClientRect();
+            return [document.documentElement.scrollHeight <= innerHeight + 1, f.bottom <= innerHeight + 1, f.top > 0] }""")
+        assert fits == [True, True, True], f"zoom {z}: {fits}"
+        page.click("#aboutBtn")
+        box = page.evaluate("(() => { const r = document.querySelector('#aboutModal .modal-content').getBoundingClientRect(); return [r.left >= 0, r.top >= 0, r.right <= innerWidth + 1, r.bottom <= innerHeight + 1] })()")
+        assert box == [True, True, True, True], f"zoom {z}: about dialog {box}"
+        page.keyboard.press("Escape")
+
+
+def test_the_overview_lists_the_zoom_shortcuts(page, api):
+    open_app(page)
+    page.keyboard.press("F1")
+    text = page.inner_text("#keysBody")
+    assert "Zoom the interface" in text and "Reset the zoom" in text

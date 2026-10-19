@@ -53,6 +53,13 @@ if os.environ.get("FLOU_GPU") != "1":
     if "--disable-gpu" not in _flags.split():
         os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = (_flags + " --disable-gpu").strip()
 
+# High-DPI screens: let Qt pick up the desktop's scaling (GNOME sets it via Xft.dpi / GDK_SCALE), otherwise
+# everything looks tiny. FLOU_SCALE=1.5 forces a factor if the automatic one is wrong. Must be set before
+# the Qt application is created.
+os.environ.setdefault("QT_AUTO_SCREEN_SCALE_FACTOR", "1")
+if os.environ.get("FLOU_SCALE"):
+    os.environ["QT_SCALE_FACTOR"] = os.environ["FLOU_SCALE"]
+
 import uvicorn  # noqa: E402
 import webview  # noqa: E402
 

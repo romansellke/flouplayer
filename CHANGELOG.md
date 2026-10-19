@@ -6,6 +6,19 @@ All notable changes to Flou Player are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.17.0] - 2026-10-19
+
+### Added
+- **Interface zoom**: Ctrl/⌘+Plus, Ctrl/⌘+Minus and Ctrl/⌘+0 scale the whole
+  window from 75 % to 300 % (remembered), for screens where everything looks
+  tiny.
+- `FLOU_SCALE=1.5` forces a Qt scale factor for the app window.
+
+### Fixed
+- On HiDPI screens under GNOME the app window came up far too small: Qt's
+  automatic screen scaling is now switched on (unless you set it yourself).
+  This could not be tried on a GNOME desktop here, so the zoom is the fallback.
+
 ## [0.16.1] - 2026-10-19
 
 ### Changed
@@ -285,7 +298,8 @@ the OpenHome queue tab; a position/seek bar and a live dB volume readout; a
 Diagnostics log and About dialog; 17 colour themes; installable Linux app
 packaging; and the GPL-3.0-or-later license.
 
-[Unreleased]: https://github.com/romansellke/flouplayer/compare/v0.16.1...HEAD
+[Unreleased]: https://github.com/romansellke/flouplayer/compare/v0.17.0...HEAD
+[0.17.0]: https://github.com/romansellke/flouplayer/compare/v0.16.1...v0.17.0
 [0.16.1]: https://github.com/romansellke/flouplayer/compare/v0.16.0...v0.16.1
 [0.16.0]: https://github.com/romansellke/flouplayer/compare/v0.15.1...v0.16.0
 [0.15.1]: https://github.com/romansellke/flouplayer/compare/v0.15.0...v0.15.1

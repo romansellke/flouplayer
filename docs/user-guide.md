@@ -287,5 +287,7 @@ for the column type-ahead.
 | Backspace / Alt+← | One folder up (Live mode) |
 | Esc | Close a dialog or the full-size cover |
 | A-Z in a column | Type-ahead in the column browser (Enter selects, Esc clears) |
+| Ctrl/⌘+Plus / Ctrl/⌘+Minus | Zoom the interface in / out (for tiny or huge screens) |
+| Ctrl/⌘+0 | Reset the zoom |
 | Ctrl/⌘+/ / F1 | Show the shortcut overview |
 | Mouse wheel on the volume slider | One volume step (Shift = 5) |
