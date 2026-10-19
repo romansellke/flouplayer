@@ -48,6 +48,15 @@ document.addEventListener('keydown',e=>{
   if(!act) return;
   e.preventDefault(); act();
 });
+// Interface zoom: works whatever the focus is (also in dialogs and text fields).
+document.addEventListener('keydown',e=>{
+  if(!(e.ctrlKey||e.metaKey)||e.altKey) return;
+  if(e.key==='+'||e.key==='=') stepZoom(1);
+  else if(e.key==='-'||e.key==='_') stepZoom(-1);
+  else if(e.key==='0') stepZoom(0);
+  else return;
+  e.preventDefault();
+});
 
 // ---------- Shortcut overview (Ctrl/⌘+/ or F1) ----------
 // One list drives the overview; keep it in step with the handlers above and docs/user-guide.md.
@@ -70,11 +79,14 @@ const SHORTCUTS=[
     ['A-Z in a column','Type-ahead in the column browser (Enter selects, Esc clears)'],
   ]],
   ['General',[
+    ['Ctrl/⌘+Plus / Ctrl/⌘+Minus','Zoom the interface in / out (for tiny or huge screens)'],
+    ['Ctrl/⌘+0','Reset the zoom'],
     ['Ctrl/⌘+/ / F1','Show this overview'],
     ['Esc','Close a dialog or the full-size cover'],
   ]],
 ];
-const keysHtml=combo=>combo.split(' / ').map(alt=>alt.split('+').map(k=>`<kbd>${esc(k)}</kbd>`).join('+')).join('<span class="alt">or</span>');
+const KEY_LABEL={Plus:'+',Minus:'−'};
+const keysHtml=combo=>combo.split(' / ').map(alt=>alt.split('+').map(k=>`<kbd>${esc(KEY_LABEL[k]||k)}</kbd>`).join('+')).join('<span class="alt">or</span>');
 function drawShortcuts(){
   $('#keysBody').innerHTML=SHORTCUTS.map(([title,rows])=>`<h4>${esc(title)}</h4><table>${rows.map(([keys,what])=>`<tr><td>${keysHtml(keys)}</td><td>${esc(what)}</td></tr>`).join('')}</table>`).join('');
 }

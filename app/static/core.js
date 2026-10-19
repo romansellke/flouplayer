@@ -188,3 +188,23 @@ function albumKey(t){return (t.album||'Unknown Album')+'\u0001'+(t.album_artist|
 
 function esc(v=''){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function cover(uri){return uri?`style="background-image:url('${esc(uri)}')"`:''}
+
+// ---------- Interface zoom ----------
+// The whole page can be scaled (Ctrl/⌘ + / - / 0, remembered), for screens where the desktop's own scaling
+// doesn't reach the app window and everything looks tiny (for example HiDPI under GNOME).
+// html{zoom} scales the layout; the CSS compensates viewport units with var(--z).
+const ZOOM_STEPS=[0.75,0.9,1,1.1,1.25,1.5,1.75,2,2.5,3];
+function loadZoom(){ try{ const z=parseFloat(localStorage.getItem('flou_zoom')); return ZOOM_STEPS.includes(z)?z:1 }catch(e){ return 1 } }
+let uiZoom=1;
+function setZoom(z,{save=true,toast=false}={}){
+  uiZoom=z;
+  document.documentElement.style.setProperty('--z',z);
+  document.documentElement.style.zoom=z===1?'':z;
+  if(save) try{ localStorage.setItem('flou_zoom',z) }catch(e){}
+  if(toast) showToast(`Zoom ${Math.round(z*100)}%`);
+}
+function stepZoom(dir){   // dir: +1 / -1; 0 resets
+  const i=ZOOM_STEPS.indexOf(uiZoom);
+  setZoom(dir===0?1:ZOOM_STEPS[Math.max(0,Math.min(ZOOM_STEPS.length-1,i+dir))],{toast:true});
+}
+setZoom(loadZoom(),{save:false});

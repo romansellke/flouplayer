@@ -32,6 +32,23 @@ sudo apt install python3-gi gir1.2-gtk-3.0 gir1.2-webkit2-4.1
 remove the PyQt5/PyQtWebEngine lines from `requirements.txt` and start with
 `PYWEBVIEW_GUI=gtk ./run.command`.
 
+## Everything looks tiny (GNOME, HiDPI screens)
+
+Flou Player takes the desktop's screen scaling from Qt. Two things help if the
+window comes up too small:
+
+- **Zoom the interface:** **Ctrl/⌘+Plus** and **Ctrl/⌘+Minus** scale the
+  whole window (75 % to 300 %), **Ctrl/⌘+0** resets it. The level is
+  remembered.
+- **Force a scale factor** for the window, e.g. `FLOU_SCALE=2 ./run.command`
+  (or `FLOU_SCALE=2 flou-player` for the installed app). Qt's automatic
+  scaling is switched on by default; if you set `QT_SCALE_FACTOR` or
+  `QT_AUTO_SCREEN_SCALE_FACTOR` yourself, yours wins -- except that
+  `FLOU_SCALE` overrides `QT_SCALE_FACTOR`.
+
+If the window is too small *and* blurry, the desktop is probably scaling an
+unscaled X11 window; `FLOU_SCALE` with the factor of your screen fixes that.
+
 ## The window is blank or renders oddly
 
 Try the other backend: `PYWEBVIEW_GUI=gtk ./run.command` (default: `qt`).

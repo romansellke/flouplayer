@@ -117,7 +117,7 @@ button,input,select{font:inherit;color:inherit}
 ::-webkit-scrollbar-thumb:hover{background:var(--muted)}
 
 /* The window itself never scrolls -- only #content does (see Workspace). */
-.app{display:flex;flex-direction:column;gap:8px;height:100vh;padding:8px;overflow:hidden;background:var(--bg)}
+.app{display:flex;flex-direction:column;gap:8px;height:calc(100vh / var(--z,1));padding:8px;overflow:hidden;background:var(--bg)}
 
 /* ---------- Header: transport + display ---------- */
 header{display:flex;flex-wrap:wrap;gap:20px;align-items:center;padding:10px 16px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius)}
@@ -232,7 +232,7 @@ input[type=range]:hover::-webkit-slider-thumb{transform:scale(1.25)}
 
 main{gap:8px;flex:1 1 600px;min-width:320px;min-height:0;display:flex;flex-direction:column}
 .facets{display:flex;flex-wrap:wrap;flex:0 0 auto;background:var(--track);border:1px solid var(--faint);border-radius:var(--radius);overflow:hidden}
-.facets>div{position:relative;flex:1 1 200px;min-width:150px;max-height:min(240px,30vh);overflow:auto;border-right:1px solid var(--faint)}
+.facets>div{position:relative;flex:1 1 200px;min-width:150px;max-height:min(240px,calc(30vh / var(--z,1)));overflow:auto;border-right:1px solid var(--faint)}
 .facets>div:last-child{border-right:0}
 .facets b{display:block;padding:12px 14px 6px;background:var(--track);position:sticky;top:0;font-size:10.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .facets ul{list-style:none;padding:0 6px 6px;margin:0}
@@ -293,7 +293,7 @@ button.crumb:hover{background:var(--hover);color:var(--text)}
 #coverSize{width:80px}
 .lightbox{position:fixed;inset:0;background:rgba(0,0,0,.85);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;z-index:110;cursor:zoom-out}
 .lightbox.hidden{display:none}
-.lightbox img{max-width:92vw;max-height:84vh;border-radius:var(--radius);box-shadow:0 10px 40px rgba(0,0,0,.6)}
+.lightbox img{max-width:calc(92vw / var(--z,1));max-height:calc(84vh / var(--z,1));border-radius:var(--radius);box-shadow:0 10px 40px rgba(0,0,0,.6)}
 .lightbox span{color:#ddd;font-size:13px}
 .albumtitle{font-weight:600;font-size:13px;line-height:1.35}
 .meta{color:var(--muted);margin-top:4px;line-height:1.5;font-size:12px}
@@ -336,12 +336,12 @@ button.crumb:hover{background:var(--hover);color:var(--text)}
   .albuminfo{flex-basis:100%;width:100%}
 }
 
-.toast{border:1px solid var(--line);position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--accent);color:var(--on-accent);padding:10px 18px;border-radius:var(--radius);font-size:13px;box-shadow:var(--shadow);z-index:50;transition:opacity .2s;max-width:80vw;text-align:center}
+.toast{border:1px solid var(--line);position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--accent);color:var(--on-accent);padding:10px 18px;border-radius:var(--radius);font-size:13px;box-shadow:var(--shadow);z-index:50;transition:opacity .2s;max-width:calc(80vw / var(--z,1));text-align:center}
 .toast.hidden{opacity:0;pointer-events:none}
 
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:100}
 .modal.hidden{display:none}
-.modal-content{background:var(--bg);border:1px solid var(--line);border-radius:var(--radius);max-width:78vw;max-height:78vh;overflow:auto;padding:24px;position:relative;box-shadow:var(--shadow)}
+.modal-content{background:var(--bg);border:1px solid var(--line);border-radius:var(--radius);max-width:calc(78vw / var(--z,1));max-height:calc(78vh / var(--z,1));overflow:auto;padding:24px;position:relative;box-shadow:var(--shadow)}
 .modal-close{position:absolute;top:10px;right:12px;background:none;border:none;font-size:22px;line-height:1;cursor:pointer;color:var(--muted);padding:4px 8px}
 .modal-close:hover{color:var(--text)}
 #metaTitle{margin:0 0 14px;font-size:14px;padding-right:24px}
@@ -352,7 +352,7 @@ button.crumb:hover{background:var(--hover);color:var(--text)}
 #themeToggle{display:grid;place-items:center;width:34px;height:34px;padding:0;border:0;background:none;color:var(--muted);cursor:pointer;border-radius:var(--radius);transition:background .15s,color .15s}
 #themeToggle:hover{background:var(--card);color:var(--text)}
 #themeToggle svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
-#themeMenu{position:absolute;right:0;top:calc(100% + 6px);z-index:30;min-width:230px;white-space:nowrap;max-height:70vh;overflow-y:auto;margin:0;padding:6px;list-style:none;background:var(--panel);border:1px solid var(--line-strong);border-radius:var(--radius);box-shadow:var(--shadow)}
+#themeMenu{position:absolute;right:0;top:calc(100% + 6px);z-index:30;min-width:230px;white-space:nowrap;max-height:calc(70vh / var(--z,1));overflow-y:auto;margin:0;padding:6px;list-style:none;background:var(--panel);border:1px solid var(--line-strong);border-radius:var(--radius);box-shadow:var(--shadow)}
 #themeMenu.hidden{display:none}
 #themeMenu li{display:flex;align-items:center;gap:10px;padding:6px 10px;border-radius:6px;cursor:pointer;text-transform:capitalize}
 #themeMenu li:hover{background:var(--card)}
@@ -389,11 +389,11 @@ button.crumb:hover{background:var(--hover);color:var(--text)}
 #diagBtn .badge{position:absolute;top:-2px;right:-2px;min-width:14px;line-height:14px;padding:0 4px;font-size:9px}
 .badge{display:inline-block;min-width:16px;padding:0 5px;border-radius:8px;background:var(--highlight);color:var(--bg);font-size:10px;line-height:16px;text-align:center}
 .badge.hidden{display:none}
-.modal-content.diag{width:min(760px,88vw)}
+.modal-content.diag{width:min(760px,calc(88vw / var(--z,1)))}
 .diag h3{margin:0 0 10px}
 .diagbar{display:flex;gap:14px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
 .diagbar input{margin-right:4px;accent-color:var(--accent)}
-#diagList{list-style:none;margin:0;padding:0;max-height:58vh;overflow:auto;font:11.5px ui-monospace,SFMono-Regular,Menlo,monospace}
+#diagList{list-style:none;margin:0;padding:0;max-height:calc(58vh / var(--z,1));overflow:auto;font:11.5px ui-monospace,SFMono-Regular,Menlo,monospace}
 #diagList li{display:flex;gap:10px;padding:3px 0;border-bottom:1px solid var(--line)}
 #diagList time{flex:0 0 62px;color:var(--muted)}
 #diagList .lv{flex:0 0 40px;font-weight:600;color:var(--muted)}
@@ -454,7 +454,7 @@ button.busy{cursor:progress;pointer-events:none}
 .toolbar .pin{border:0;background:none;padding:4px 6px;font-weight:400}
 .toolbar .pin:hover{background:var(--hover);border-color:transparent}
 .pinpicker{position:relative}
-.pinmenu{position:absolute;right:0;top:calc(100% + 6px);min-width:240px;max-height:60vh;overflow-y:auto;background:var(--bg);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:6px;z-index:20;display:flex;flex-direction:column;gap:2px}
+.pinmenu{position:absolute;right:0;top:calc(100% + 6px);min-width:240px;max-height:calc(60vh / var(--z,1));overflow-y:auto;background:var(--bg);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:6px;z-index:20;display:flex;flex-direction:column;gap:2px}
 .pinmenu.hidden{display:none}
 .pin{display:flex;align-items:center;gap:8px;width:100%;padding:4px 6px;border:0;border-radius:var(--radius);background:none;color:var(--text);font:inherit;font-size:12.5px;text-align:left;cursor:pointer}
 .pin:hover{background:var(--hover)}
@@ -463,7 +463,7 @@ button.busy{cursor:progress;pointer-events:none}
 .pin .pintitle{flex:1;text-align:left;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 /* ---------- Keyboard shortcut overview ---------- */
-.modal-content.keys{width:min(640px,90vw)}
+.modal-content.keys{width:min(640px,calc(90vw / var(--z,1)))}
 .keys h3{margin:0 0 10px}
 .keys h4{margin:16px 0 6px;font-size:10.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .keys table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:13px}
