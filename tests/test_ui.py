@@ -457,3 +457,100 @@ def test_ctrl_arrows_step_through_the_open_folder_in_live_mode(page, api):
     page.keyboard.press("Control+ArrowLeft"); page.wait_for_timeout(200)
     page.keyboard.press("Control+ArrowLeft"); page.wait_for_timeout(200)
     assert [p["uri"] for p in api.posts if p.get("action") == "set_uri"] == ["u2", "u3", "u2", "u1"]
+
+
+# ---------- library health ----------
+
+def htrack(i, album="A", album_artist="", artist="", art="x.jpg", year="2001", genre="Rock", number=None, title=None, quality_mime="audio/flac", rate="44100", bits="16"):
+    return {"type": "item", "id": f"h{i}", "title": title or f"Song {i}", "artist": artist, "album": album, "album_artist": album_artist, "album_art": art,
+            "date": year, "genre": genre, "track_number": str(number if number is not None else i), "class": "object.item.audioItem.musicTrack",
+            "resources": [{"uri": f"u{i}", "protocol": f"http-get:*:{quality_mime}:*", "duration": "0:03:00", "sample_rate": rate, "bits_per_sample": bits}]}
+
+
+def analyze(page, tracks):
+    return page.evaluate("""ts => { enrichTracks(ts); const r = analyzeLibrary(ts);
+        return Object.fromEntries(r.checks.map(c => [c.id, c.items.map(i => [i.albumArtist, i.artist, i.album, i.note])])) }""", tracks)
+
+
+def test_health_finds_artist_tag_problems(page, api):
+    open_app(page)
+    r = analyze(page, [
+        htrack(1, album="Only AA", album_artist="AA", artist=""),                  # Album Artist but no Artist
+        htrack(2, album="Only Artist", album_artist="", artist="Solo"),            # Artist but no Album Artist
+        htrack(3, album="Nobody", album_artist="", artist=""),                     # neither
+        htrack(4, album="Fine", album_artist="AA", artist="AA"),
+    ])
+    assert [x[2] for x in r["aa_no_artist"]] == ["Only AA"] and "1 of 1 track" in r["aa_no_artist"][0][3]
+    assert [x[2] for x in r["artist_no_aa"]] == ["Only Artist"]
+    assert [x[2] for x in r["no_artist"]] == ["Nobody"]
+
+
+def test_health_finds_missing_cover_year_genre_and_title(page, api):
+    open_app(page)
+    r = analyze(page, [
+        htrack(1, album="No cover", album_artist="B", artist="B", art=""),
+        htrack(2, album="Part cover", album_artist="B", artist="B", art=""), htrack(3, album="Part cover", album_artist="B", artist="B"),
+        htrack(4, album="Bare", album_artist="B", artist="B", year="", genre=""),
+        htrack(5, album="", album_artist="B", artist="B"),
+    ])
+    assert [x[2] for x in r["no_cover"]] == ["No cover"]
+    assert [x[2] for x in r["partial_cover"]] == ["Part cover"]
+    assert [x[2] for x in r["no_year"]] == ["Bare"] and [x[2] for x in r["no_genre"]] == ["Bare"]
+    assert len(r["no_album"]) == 1
+
+
+def test_health_checks_track_numbers_duplicates_and_mixed_quality(page, api):
+    open_app(page)
+    r = analyze(page, [
+        htrack(1, album="Gaps", album_artist="C", artist="C", number=1), htrack(2, album="Gaps", album_artist="C", artist="C", number=3),
+        htrack(3, album="Repeat", album_artist="C", artist="C", number=1), htrack(4, album="Repeat", album_artist="C", artist="C", number=1),
+        htrack(5, album="Nums", album_artist="C", artist="C", number=0), htrack(6, album="Nums", album_artist="C", artist="C", number=1),
+        htrack(7, album="Dup", album_artist="C", artist="C", title="Same"), htrack(8, album="Dup", album_artist="C", artist="C", title="same!"),
+        htrack(9, album="Mixed", album_artist="C", artist="C", number=1), htrack(10, album="Mixed", album_artist="C", artist="C", number=2, quality_mime="audio/mpeg", rate="", bits=""),
+        htrack(11, album="Single", album_artist="C", artist="C"),
+    ])
+    notes = {x[2]: x[3] for x in r["track_numbers"]}
+    assert "missing: 2" in notes["Gaps"] and "repeated: 1" in notes["Repeat"] and "1 without number" in notes["Nums"]
+    assert [x[2] for x in r["dup_titles"]] == ["Dup"]
+    assert [x[2] for x in r["mixed_quality"]] == ["Mixed"]
+    assert [x[2] for x in r["single_track"]] == ["Single"]
+    assert "Song 11" not in str(r["track_numbers"])                                  # a one-track album has no numbering to check
+
+
+def test_health_finds_split_albums_and_spelling_variants(page, api):
+    open_app(page)
+    r = analyze(page, [
+        htrack(1, album="Hits", album_artist="The Band", artist="The Band"), htrack(2, album="Hits", album_artist="", artist="The Band"),
+        htrack(3, album="Other", album_artist="Beatles", artist="Beatles"), htrack(4, album="Other 2", album_artist="The Beatles", artist="The Beatles"),
+        htrack(5, album="Third", album_artist="beatles", artist="Beatles"),
+    ])
+    assert [(x[2], x[3]) for x in r["split_aa"]] == [("Hits", 'also exists with Album Artist "The Band"')]
+    names = [x[0] or x[1] for x in r["variant_names"]]
+    assert any("Beatles" in n and "The Beatles" in n for n in names)
+
+
+def test_the_health_tab_lists_the_findings_and_jumps_to_the_album(page, api):
+    tracks = [htrack(1, album="Needs love", album_artist="AA", artist="", art=""), htrack(2, album="Fine", album_artist="X", artist="X")]
+    api.routes["library/cached"] = {"tracks": tracks, "count": 2, "scan_root": "root", "scanned_at": 1}
+    page.add_init_script("localStorage.setItem('flou_libmode','cached')")
+    open_app(page)
+    page.wait_for_selector(".album")
+    page.click("#tabHealth")
+    assert page.is_visible("#healthView") and not page.is_visible(".facets")
+    assert "2 albums" in page.inner_text("#healthInfo") and "with findings" in page.inner_text("#healthInfo")
+    counts = page.eval_on_selector_all(".hcheck", "bs => Object.fromEntries(bs.map(b => [b.dataset.check, b.querySelector('.hcount').textContent]))")
+    assert counts["aa_no_artist"] == "1" and counts["no_cover"] == "1" and counts["no_artist"] == "✓"
+    assert "Needs love" in page.inner_text("#healthDetail")                    # the first check is selected
+    page.click(".hcheck[data-check=no_cover]")
+    assert "Needs love" in page.inner_text("#healthDetail")
+    page.click("#healthDetail tr[data-row='0']")                               # jump to the album in the library
+    assert page.evaluate("document.querySelector('main').dataset.tab") == "library"
+    assert page.input_value("#search") == "Needs love"
+    assert page.eval_on_selector_all(".albumtitle", "ts => ts.map(t => t.textContent)") == ["Needs love (1)"]
+
+
+def test_the_health_tab_explains_when_there_is_no_scanned_library(page, api):
+    page.add_init_script("localStorage.setItem('flou_libmode','cached')")
+    open_app(page)
+    page.click("#tabHealth")
+    assert page.is_visible("#healthEmpty") and not page.is_visible("#healthBody")

@@ -154,6 +154,36 @@ HTML5 audio. No UPnP renderer is needed, which is handy for testing.
 - If the server offers several variants of a track, the app picks one it can
   play directly. Auto-advance skips tracks it can't play at all.
 
+## Library health
+
+The **Health** tab checks the scanned library (Cached mode; load it first) for
+incomplete or inconsistent tags. The list on the left shows each check with the
+number of albums it found (a ✓ means nothing found; orange = probably wrong,
+blue = good to know). Click a check to see the albums, and click a row to jump
+to that album in the library. **Re-check** runs the checks again, **Copy list**
+copies the selected check as tab-separated text (for a spreadsheet).
+
+| Check | Finds |
+| --- | --- |
+| Album Artist, but Artist missing | tracks with an Album Artist tag but no Artist |
+| Artist, but Album Artist missing | albums with Artists but no Album Artist tag at all |
+| Neither Artist nor Album Artist | albums without any artist information |
+| Album title missing | tracks without an album title |
+| No cover art / Cover art on some tracks only | albums without cover, or with cover on some tracks |
+| Track numbers missing, duplicated or with gaps | albums with incomplete or repeated numbering |
+| Same title twice in one album | possible duplicate files |
+| Same album with and without Album Artist | the album exists twice because only some tracks have the tag |
+| Names that differ only by spelling | "The Beatles" / "Beatles", capitalisation, punctuation |
+| Lossless and lossy tracks mixed | albums mixing both |
+| Year missing / Different years within one album | years not set, or inconsistent |
+| Genre missing | albums without a genre |
+| Only one track | singles or incomplete albums |
+| No format information | tracks without sample rate and bit depth |
+
+Albums are told apart by title *and* Album Artist, as everywhere in the app.
+The checks only read the tags the media server delivers; nothing is changed.
+Fix the tags at the source (for example with a tag editor), then rescan.
+
 ## The queue (OpenHome playlist)
 
 On Linn/OpenHome devices the device's own playlist has its own **Queue** tab
