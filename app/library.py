@@ -8,8 +8,8 @@ import time
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from app.didl import browse_all, parse_didl, pick_scan_root
-from app.state import CACHE_DIR, CACHE_FILE, SCAN_WORKERS, devices, scan_lock, scan_state
+from app.didl import browse_all, is_audio, parse_didl, pick_scan_root, track_key
+from app.state import CACHE_DIR, CACHE_FILE, SCAN_MAX_DEPTH, SCAN_STALL_CONTAINERS, SCAN_WORKERS, devices, scan_lock, scan_state
 from app.upnp import service
 
 router=APIRouter()
@@ -66,6 +66,13 @@ def scan_progress():
     with scan_lock:
         return dict(scan_state)
 
+@router.post("/api/scan/cancel")
+def scan_cancel():
+    """Stops a running scan; nothing of it is kept or cached."""
+    with scan_lock:
+        if scan_state["running"]: scan_state["cancel"]=True
+        return {"ok":True,"was_running":scan_state["running"]}
+
 @router.post("/api/scan")
 def scan(req: ScanReq):
     """Scans the ContentDirectory from object_id (preferring a single
@@ -83,36 +90,51 @@ def scan(req: ScanReq):
     # Only one scan at a time -- they'd share scan_state and the cache file.
     with scan_lock:
         if scan_state["running"]: raise HTTPException(409,"A library scan is already running")
-        scan_state.update(running=True,count=0,containers=0)
+        scan_state.update(running=True,cancel=False,count=0,containers=0)
 
+    cancelled=stalled=False
     try:
         scan_root,scan_root_name=pick_scan_root(s,req.object_id)
-        tracks=[]; visited={scan_root}; seen_uris=set()
+        tracks=[]; visited={scan_root}; seen_uris=set(); seen_keys=set(); idle=0
         with cf.ThreadPoolExecutor(max_workers=SCAN_WORKERS) as executor:
-            pending={executor.submit(browse_all,s,scan_root)}
+            # each pending folder carries the titles leading to it, to spot a tree that loops
+            pending={executor.submit(browse_all,s,scan_root):(scan_root_name or "",)}
             while pending:
-                done,pending=cf.wait(pending,return_when=cf.FIRST_COMPLETED)
+                done,_=cf.wait(pending,return_when=cf.FIRST_COMPLETED)
                 for fut in done:
+                    path=pending.pop(fut)
                     try:
                         items=fut.result()
                     except Exception:
                         continue  # skip a single failed folder rather than aborting the whole scan
                     with scan_lock: scan_state["containers"]+=1
+                    idle+=1
                     for i in items:
                         if i["type"]=="container":
-                            if i["id"] not in visited:
-                                visited.add(i["id"])
-                                pending.add(executor.submit(browse_all,s,i["id"]))
-                        elif i["type"]=="item" and i["resources"]:
+                            title=i["title"].strip().lower()
+                            if i["id"] in visited or len(path)>=SCAN_MAX_DEPTH or [p.lower() for p in path].count(title)>=2: continue
+                            visited.add(i["id"])
+                            pending[executor.submit(browse_all,s,i["id"])]=path+(i["title"],)
+                        elif i["type"]=="item" and i["resources"] and is_audio(i):
                             uri=i["resources"][0]["uri"]
-                            if uri in seen_uris: continue
+                            key=track_key(i)
+                            if uri in seen_uris or (key and key in seen_keys): continue
                             seen_uris.add(uri)
-                            tracks.append(i)
+                            if key: seen_keys.add(key)
+                            tracks.append(i); idle=0
                             with scan_lock: scan_state["count"]=len(tracks)
+                with scan_lock: cancelled=scan_state["cancel"]
+                stalled=idle>=SCAN_STALL_CONTAINERS
+                if cancelled or stalled:
+                    for fut in pending: fut.cancel()
+                    break
     finally:
-        with scan_lock: scan_state["running"]=False
+        with scan_lock: scan_state.update(running=False,cancel=False)
+
+    if cancelled: raise HTTPException(409,"The scan was cancelled")
 
     result={"tracks":tracks,"count":len(tracks),"scan_root":scan_root_name or "all views (Artist/Album/Genre/...)","scanned_at":time.time()}
+    if stalled: result["warning"]="The scan stopped early: the server kept listing folders without new tracks (a loop in its tree?)."
     save_cached_library(result)
     return result
 

@@ -549,6 +549,19 @@ def test_the_health_view_lists_the_findings_and_jumps_to_the_album(page, api):
     assert page.eval_on_selector_all(".albumtitle", "ts => ts.map(t => t.textContent)") == ["Needs love (1)"]
 
 
+def test_clear_library_empties_the_list_and_deletes_the_cache(page, api):
+    tracks = [htrack(1, album="Needs love", album_artist="AA", artist="X")]
+    api.routes["library/cached"] = {"tracks": tracks, "count": 1, "scan_root": "root", "scanned_at": 1}
+    page.add_init_script("localStorage.setItem('flou_libmode','cached')")
+    open_app(page)
+    page.wait_for_selector(".album")
+    page.on("dialog", lambda d: d.accept())
+    page.click("#clearLibrary")
+    page.wait_for_function("!document.querySelector('.album')")
+    assert "cleared" in page.inner_text("#breadcrumb").lower()
+    assert "DELETE library/cached" in api.requests
+
+
 def test_the_health_view_explains_when_there_is_no_scanned_library(page, api):
     page.add_init_script("localStorage.setItem('flou_libmode','cached')")
     open_app(page)

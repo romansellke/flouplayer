@@ -1,11 +1,30 @@
 // The cached library: scanning, column prefs, column browser, type-ahead, album list rendering, search.
 // (Classic script: shares one global scope with the other files, loaded in the order given in index.html.)
 
+let cancelled=false;
+$('#cancelScan').onclick=async()=>{
+  cancelled=true;
+  try{ await api('/api/scan/cancel',{method:'POST'}) }catch(e){ logErr(e.message) }
+};
+
+$('#clearLibrary').onclick=async()=>{
+  if($('#loadLibrary').classList.contains('busy')) return notify('A scan is running -- cancel it first.');
+  if(!confirm('Delete the saved library? The music on the server is not touched; load the library again to rebuild it.')) return;
+  try{
+    await api('/api/library/cached',{method:'DELETE'});
+    state.tracks=[]; state.filters={album_artist:'',artist:'',album:'',year:''};
+    $('#breadcrumb').textContent='Library cleared';
+    render();
+    showToast('Library cleared');
+  }catch(e){ logErr(e.message); notify('Could not clear the library: '+e.message) }
+};
+
 $('#loadLibrary').onclick=async()=>{
   if(!$('#server').value){notify('Please select a media server first.');return}
   const btn=$('#loadLibrary');
   if(btn.classList.contains('busy')) return;
   setBusy(btn,true,'Loading');
+  $('#cancelScan').classList.remove('hidden');
   $('#content').innerHTML='<div class="empty">Loading library ...</div>';
 
   const poll=setInterval(async()=>{
@@ -24,11 +43,15 @@ $('#loadLibrary').onclick=async()=>{
     state.filters={album_artist:'',artist:'',album:'',year:''};
     $('#breadcrumb').textContent=`${x.count} tracks (${x.scan_root})`;
     render();
+    if(x.warning) notify(x.warning);
   }catch(e){
-    logErr(e.message);
-    $('#content').innerHTML=`<div class="empty">Failed to load: ${esc(e.message)}</div>`;
+    if(state.tracks.length) render();
+    else $('#content').innerHTML=`<div class="empty">${cancelled?'Scan cancelled.':'Failed to load: '+esc(e.message)}</div>`;
+    if(!cancelled) logErr(e.message);
   }finally{
     clearInterval(poll);
+    $('#cancelScan').classList.add('hidden');
+    cancelled=false;
     setBusy(btn,false);
   }
 };

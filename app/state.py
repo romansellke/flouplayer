@@ -5,8 +5,13 @@ from pathlib import Path
 from typing import Any
 
 lock=threading.Lock(); devices:dict[str,Any]={}
-scan_lock=threading.Lock(); scan_state:dict[str,Any]={"running":False,"count":0,"containers":0}
+scan_lock=threading.Lock(); scan_state:dict[str,Any]={"running":False,"cancel":False,"count":0,"containers":0}
 SCAN_WORKERS=6
+# Guards against servers whose tree has no end (a container that lists itself
+# again under a new object id): too deep, a title repeating along the path, or
+# very many folders in a row without a single new track stops the descent.
+SCAN_MAX_DEPTH=12
+SCAN_STALL_CONTAINERS=3000
 
 # Persistent on-disk cache of the last scanned library, so it survives
 # closing and reopening the app -- a rescan is then only needed on request
