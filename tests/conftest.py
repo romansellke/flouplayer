@@ -5,8 +5,13 @@ tests never read or write the real ~/.cache/flou_player (library cache, known
 devices).
 """
 import os
+import sys
 import tempfile
 
+# Playwright looks for its browsers under HOME: keep pointing it at the real
+# download folder, or the UI tests would silently skip.
+os.environ.setdefault("PLAYWRIGHT_BROWSERS_PATH", os.path.expanduser(
+    "~/Library/Caches/ms-playwright" if sys.platform == "darwin" else "~/.cache/ms-playwright"))
 _HOME = tempfile.mkdtemp(prefix="flou-test-home-")
 os.environ["HOME"] = _HOME
 
@@ -41,6 +46,8 @@ def _browser():
         try:
             b = p.chromium.launch(executable_path=exe) if exe else p.chromium.launch()
         except Exception as e:                        # browser not installed
+            if os.environ.get("CI"):                  # in CI a missing browser is an error, not a reason to skip
+                raise
             pytest.skip(f"Chromium not available for the UI tests: {e}")
         yield b
         b.close()
