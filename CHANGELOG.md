@@ -23,6 +23,7 @@ All notable changes to Flou Player are documented here. The format follows
 - The **Queue** tab has a tooltip explaining that the queue lives on the output device (OpenHome Playlist) and what it does.
 
 ### Changed
+- Docs: the device queue and Pause are now marked as tested on a Linn Majik DSM.
 - Double-click on a Linn/OpenHome device plays through the device's own queue:
   the album replaces the queue and plays from the clicked track, gapless and
   on its own even when Flou Player is closed. Other devices play the single

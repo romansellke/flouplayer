@@ -214,7 +214,7 @@ On Linn/OpenHome devices the device's own playlist has its own **Queue** tab
 - While the queue is the active source, the transport buttons control it and
   the device advances by itself.
 
-> The queue has **not been verified against real hardware**.
+> The queue is tested on a Linn Majik DSM.
 
 ## Device controls: mute, source, pins, stream quality
 

@@ -51,8 +51,9 @@ separate; this depends on the server's DIDL-Lite metadata.
 - A full library scan makes many network requests and can still take a while
   on very large or deeply nested libraries, even though it is parallelised.
   The app shows the number of tracks found so far during the scan.
-- The OpenHome queue (Queue tab), the dB volume readout, and mute, source,
-  pins and stream quality are **not verified against real hardware** and may need adjusting. For non-OpenHome UPnP
+- The OpenHome queue (Queue tab and double-click playback) and Pause are
+  tested on a Linn Majik DSM. The dB volume readout, mute, source, pins and
+  stream quality are **not verified against real hardware** yet and may need adjusting. For non-OpenHome UPnP
   renderers, playback uses AVTransport.
 - Only one media server is loaded at a time. The *Source* dropdown switches
   the output device's own inputs, not the media server.
