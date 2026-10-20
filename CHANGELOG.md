@@ -6,6 +6,10 @@ All notable changes to Flou Player are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+- Docs: new screenshots of Live and Library mode, plus Library health,
+  Diagnostics and the theme picker, in the feature list and the user guide.
+
 ## [0.19.0] - 2026-10-20
 
 ### Added

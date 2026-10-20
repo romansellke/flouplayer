@@ -30,6 +30,8 @@ The choice is remembered.
 
 ### Live (default)
 
+![Live mode](screenshot.png)
+
 Browses the media server folder by folder, like the Linn app. Whatever
 structure the server offers -- Artists, Albums, Genres, Folders, ... -- is
 what you see.
@@ -55,6 +57,8 @@ returns to the folder a playing track was started from, as long as you
 browsed it in this session.
 
 ### Library (cached)
+
+![Library mode](screenshot-cached.png)
 
 Scans the whole library once and keeps it on disk, which allows the
 iTunes-style column browser and instant searching across everything.
@@ -178,6 +182,8 @@ HTML5 audio. No UPnP renderer is needed, which is handy for testing.
 
 ## Library health
 
+![Library health](screenshot-health.png)
+
 The **Health** view (the tag icon in the header; click it again to go back)
 checks the scanned library (Cached mode; load it first) for incomplete or
 inconsistent tags. The list on the left shows each check with the
@@ -270,10 +276,14 @@ offers them (not for the local speakers or plain UPnP renderers).
 
 ## Themes
 
+![The theme picker](screenshot-themes.png)
+
 The palette button in the header switches between 17 colour themes (Dracula,
 Nord, Catppuccin Mocha, Tokyo Night, ...). The choice is remembered.
 
 ## Diagnostics and About
+
+![The Diagnostics dialog](screenshot-diagnostics.png)
 
 - **Diagnostics** (pulse icon in the header, with a badge for unseen errors): a timestamped log of the
   last 300 entries with errors in red and a badge for unseen errors; an
