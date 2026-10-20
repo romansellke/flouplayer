@@ -6,6 +6,7 @@ output device (such as a Majik DSM4) -- or on the computer's own speakers.
 
 | Page | What's in it |
 | --- | --- |
+| [Features](features.md) | Everything Flou Player can do, at a glance, and what is tested on real hardware |
 | [Getting started](getting-started.md) | Requirements, installing as an app, running from source, Arch Linux, first start |
 | [User guide](user-guide.md) | Live and cached library, browsing, searching, playback, the queue, local playback, volume, themes, keyboard shortcuts |
 | [Troubleshooting](troubleshooting.md) | Install problems, no devices found, blank window, crashes, bug reports |

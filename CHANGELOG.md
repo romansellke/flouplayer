@@ -7,6 +7,8 @@ All notable changes to Flou Player are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- Docs: a [feature list](docs/features.md) with everything Flou Player can do
+  and what is tested on real hardware.
 - **Server-wide search in Live mode**: Enter in the search field searches the
   whole media server (ContentDirectory Search, e.g. MinimServer) for albums and
   tracks by title, artist or album; the results open like a folder. Typing
