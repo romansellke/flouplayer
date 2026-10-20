@@ -23,12 +23,13 @@ All notable changes to Flou Player are documented here. The format follows
 - The **Queue** tab has a tooltip explaining that the queue lives on the output device (OpenHome Playlist) and what it does.
 
 ### Changed
+- The Live and Library (cached) modes are now tabs next to Queue; the separate Live/Cached switch is gone.
 - Load library, Cancel and Clear library are now one joined button group.
 
 ### Fixed
 - Pause now also reaches the device when it accepts the OpenHome pause but keeps
   playing, and the Pause button is only greyed out for sources that really cannot pause (e.g. radio), not for the device queue or our own list.
-- Active buttons (Live/Cached, Library/Queue tab, Library health, mute, the
+- Active buttons (Live/Library/Queue tab, Library health, mute, the
   selected facet and health check) are now filled with the theme's accent
   colour, so they stand out in every theme. The playing track gets a coloured
   side bar.

@@ -31,13 +31,13 @@ on other hardware.
 
 | What | Where |
 | --- | --- |
-| Library cache (Cached mode) | `~/.cache/flou_player/library.json` |
+| Library cache (Library mode) | `~/.cache/flou_player/library.json` |
 | Known media servers and players (for reconnecting at startup) | `~/.cache/flou_player/devices.json` |
 | Crash log | `~/.cache/flou_player/crash.log` |
 | Installed app | `~/.local/share/flou-player` |
-| Window settings (theme, visible columns, cover size, Live/Cached choice, collapsed browser, chosen media server and output device) | the app window's web profile under `~/.local/share/flou-player/webview` |
+| Window settings (theme, visible columns, cover size, Live/Library choice, collapsed browser, chosen media server and output device) | the app window's web profile under `~/.local/share/flou-player/webview` |
 
-## Library scan (Cached mode)
+## Library scan (Library mode)
 
 The scan prefers a plain by-folder view if the server offers one (each file
 only once), instead of walking all the artist/album/genre views, and runs

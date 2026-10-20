@@ -10,13 +10,13 @@
   elapsed time at the left, remaining time at the right, a thick seek bar
   with a time grid in between (a tick every minute, every 5/10 minutes for
   long tracks).
-- **Toolbar:** the Library/Queue tabs, the Live/Cached switch, **Search
+- **Toolbar:** the Live/Library/Queue tabs, **Search
   devices**, the media server and output device dropdowns (with each
   device's own icon, taken from its UPnP description), the **Source**
   dropdown and **Pins** button of the output device (OpenHome devices),
   **Load library**
   and the search field.
-- **Status line** (very bottom of the window): what is loaded -- in Cached mode
+- **Status line** (very bottom of the window): what is loaded -- in Library mode
   the number of tracks and when the library was scanned, in Live mode the
   media server being browsed.
 - **Main area:** the library (column browser plus album list) or the queue,
@@ -25,7 +25,7 @@
 
 ## Live or cached library
 
-The **Live | Cached** switch in the toolbar chooses how the library is shown.
+The **Live** and **Library** tabs in the toolbar choose how the library is shown (Library = the cached scan).
 The choice is remembered.
 
 ### Live (default)
@@ -48,7 +48,7 @@ Next/Previous step through the folder that is currently open. *Now Playing*
 returns to the folder a playing track was started from, as long as you
 browsed it in this session.
 
-### Cached
+### Library (cached)
 
 Scans the whole library once and keeps it on disk, which allows the
 iTunes-style column browser and instant searching across everything.
