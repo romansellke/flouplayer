@@ -461,6 +461,8 @@ button.busy{cursor:progress;pointer-events:none}
 .toolbar #powerBtn{color:var(--highlight)}
 .toolbar #powerBtn.standby{color:var(--muted)}
 .transport button.nocap{opacity:.35;pointer-events:none}
+/* Pause stays clickable: the device's CanPause flag is not always right, and the click is harmless if it can't pause */
+.transport button[data-action=pause].nocap{pointer-events:auto}
 .toolbar .pin{border:0;background:none;padding:4px 6px;font-weight:400}
 .toolbar .pin:hover{background:var(--hover);border-color:transparent}
 .pinpicker{position:relative}

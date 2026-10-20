@@ -122,7 +122,7 @@ document.querySelectorAll('[data-action]').forEach(b=>b.onclick=async()=>{
   if(!$('#renderer').value) return notify('Select an output device above first.');
   const action=b.dataset.action;
   if(!isLocal() && queue.supported && queue.active){ // the device's own queue is the active source
-    try{await queueApi({action}); pollQueue(true)}catch(x){notify(x.message)}
+    try{await queueApi({action}); if(action==='pause') log('Pause sent to the device queue.'); pollQueue(true)}catch(x){notify(x.message)}
     return;
   }
   if(!deviceOwnsPlayback()){
@@ -138,7 +138,7 @@ document.querySelectorAll('[data-action]').forEach(b=>b.onclick=async()=>{
     return;
   }
   if(action==='stop') userInitiatedStop=true;
-  try{await api('/api/control',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({device_id:$('#renderer').value,action})})}
+  try{ await api('/api/control',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({device_id:$('#renderer').value,action})}); if(action==='pause') log('Pause sent to the device.') }
   catch(e){logErr(e.message)}
 });
 
