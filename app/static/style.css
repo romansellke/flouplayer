@@ -214,6 +214,11 @@ input[type=range]:hover::-webkit-slider-thumb{transform:scale(1.25)}
 .libtools{display:flex;gap:8px;align-items:center;flex:1 1 440px;min-width:0}
 .libtools .hidden{display:none}
 .libtools button{flex:0 0 auto;white-space:nowrap}
+/* Load / Cancel / Clear form one joined button group; hidden members drop out without breaking the rounded ends */
+.libbtns{display:flex;flex:0 0 auto;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+.libtools .libbtns button{border:0;border-radius:0}
+.libtools .libbtns button:not(.hidden)~button:not(.hidden){border-left:1px solid var(--line)}
+.libbtns:not(:has(button:not(.hidden))){display:none}
 #search,.toolbar input[type=text]{
   flex:1 1 160px;min-width:0;border-radius:var(--radius);border:1px solid var(--line);padding:8px 14px 8px 36px;
   background:var(--bg) var(--search) no-repeat 13px center;outline:none;

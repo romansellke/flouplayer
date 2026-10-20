@@ -22,6 +22,9 @@ All notable changes to Flou Player are documented here. The format follows
 
 - The **Queue** tab has a tooltip explaining that the queue lives on the output device (OpenHome Playlist) and what it does.
 
+### Changed
+- Load library, Cancel and Clear library are now one joined button group.
+
 ### Fixed
 - Active buttons (Live/Cached, Library/Queue tab, Library health, mute, the
   selected facet and health check) are now filled with the theme's accent
