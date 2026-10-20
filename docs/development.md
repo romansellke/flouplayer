@@ -22,7 +22,7 @@ file. Keep that order in mind when you move code between files.
 | `playback.js` | Local audio, playing a track, jump to the playing track, transport buttons, volume, position bar, position polling |
 | `queue.js` | The device queue (OpenHome Playlist) |
 | `health.js` | Library health: the checks (`analyzeLibrary`, a pure function) and the Health view |
-| `live.js` | Live browsing and the Live toggle (on = Live, off = Cached) |
+| `live.js` | Live browsing and the Live and Library tabs |
 | `openhome.js` | OpenHome device controls: mute, standby, source, pins, stream quality, capabilities, firmware |
 | `remember.js` | Remembering the chosen devices and reconnecting at startup |
 | `keyboard.js` | Keyboard shortcuts |

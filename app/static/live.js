@@ -1,4 +1,4 @@
-// Live browsing of the media server (folder by folder) and the Live/Cached switch.
+// Live browsing of the media server (folder by folder) and the Live and Library tabs.
 // (Classic script: shares one global scope with the other files, loaded in the order given in index.html.)
 
 // ---------- Live browsing (like the Linn app) ----------
@@ -87,7 +87,7 @@ $('#server').addEventListener('change',()=>{ if(isLive()) liveOpen($('#server').
 
 function setLibMode(mode,save=true){
   document.documentElement.dataset.libmode=mode;
-  $('#libMode').classList.toggle('active',mode==='live'); $('#libMode').setAttribute('aria-pressed',String(mode==='live'));
+  if(typeof drawTabs==='function') drawTabs();
   if(save) try{localStorage.setItem('flou_libmode',mode)}catch(e){}
   $('#search').value='';
   if(mode==='live'){
@@ -99,5 +99,4 @@ function setLibMode(mode,save=true){
     initFromCache().then(()=>{ if(!state.tracks.length){ state.view={entries:[],groups:{},byId:new Map(),rendered:0}; state.currentPlaylist=[]; $('#count').textContent=''; $('#content').innerHTML='<div class="empty">Click "Load library" to scan the media server, or switch to Live to browse it directly.</div>' } });
   }
 }
-$('#libMode').onclick=()=>setLibMode(isLive()?'cached':'live');
 setLibMode(libMode(),false);

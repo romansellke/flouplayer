@@ -266,8 +266,6 @@ select.btn-link{background:var(--bg);color:var(--text);font-family:inherit}
 .colmenu{position:absolute;right:0;top:calc(100% + 6px);background:var(--bg);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:8px 12px;z-index:5;white-space:nowrap;font-weight:400;text-align:left;color:var(--text)}
 .colmenu.hidden{display:none}
 .colmenu label{display:block;padding:4px 2px;cursor:pointer;font-size:12.5px}
-/* Live toggle: on = browse the server live, off = cached library */
-.toolbar #libMode.active{background:var(--accent) !important;color:var(--on-accent);border-color:var(--accent);font-weight:600}
 html[data-libmode=live] #loadLibrary,html[data-libmode=live] .facets,html[data-libmode=live] #facetToggle{display:none}
 
 /* Live browsing */

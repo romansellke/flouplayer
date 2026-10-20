@@ -56,13 +56,17 @@ function renderQueue(){
 const fmtLong=sec=>{const h=Math.floor(sec/3600),m=Math.floor(sec%3600/60);return h?`${h} h ${m} min`:`${m} min`};
 // ---- Tabs: Library <-> Queue
 const currentTab=()=>document.querySelector('main').dataset.tab;
+// Live / Library / Queue are one row: Live and Library are the two ways to browse (live vs. the cached scan).
+function drawTabs(){
+  const name=currentTab(), lib=name==='library', live=typeof isLive==='function'&&isLive();
+  for(const [id,on] of [['Live',lib&&live],['Library',lib&&!live],['Queue',name==='queue']]){
+    $('#tab'+id).classList.toggle('active',on); $('#tab'+id).setAttribute('aria-selected',String(on));
+  }
+}
 function showTab(name){
   if(name==='queue' && $('#tabQueue').disabled) return;
   document.querySelector('main').dataset.tab=name;
-  for(const t of ['Library','Queue']){
-    const on=t.toLowerCase()===name;
-    $('#tab'+t).classList.toggle('active',on); $('#tab'+t).setAttribute('aria-selected',String(on));
-  }
+  drawTabs();
   if(name==='queue'){ renderQueue(); pollQueue(true); scrollToCurrentQueue(false) }
   $('#healthBtn').classList.toggle('active',name==='health'); $('#healthBtn').setAttribute('aria-pressed',String(name==='health'));
   if(name==='health') renderHealth();
@@ -71,7 +75,8 @@ function scrollToCurrentQueue(smooth=true){
   const row=document.querySelector('#queueList tr.playing');
   if(row) row.scrollIntoView({block:'center',behavior:smooth?'smooth':'auto'});
 }
-$('#tabLibrary').onclick=()=>showTab('library');
+$('#tabLive').onclick=()=>{ setLibMode('live'); showTab('library') };
+$('#tabLibrary').onclick=()=>{ setLibMode('cached'); showTab('library') };
 $('#tabQueue').onclick=()=>showTab('queue');
 // The Health view is opened from the icon in the header (a toggle: click again to go back to the library).
 $('#healthBtn').onclick=()=>showTab(currentTab()==='health'?'library':'health');
