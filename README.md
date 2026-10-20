@@ -25,9 +25,9 @@ compatibility.*
 
 *Live mode -- browsing the media server folder by folder.*
 
-![Flou Player in Cached mode: column browser and album list](docs/screenshot-cached.png)
+![Flou Player in Library mode: column browser and album list](docs/screenshot-cached.png)
 
-*Cached mode -- the whole library with the column browser.*
+*Library mode -- the whole scanned library with the column browser.*
 
 Flou Player runs on Linux (tested target: Linux Mint; also works on Arch
 Linux).

@@ -23,6 +23,10 @@ All notable changes to Flou Player are documented here. The format follows
 - The **Queue** tab has a tooltip explaining that the queue lives on the output device (OpenHome Playlist) and what it does.
 
 ### Changed
+- Double-click on a Linn/OpenHome device plays through the device's own queue:
+  the album replaces the queue and plays from the clicked track, gapless and
+  on its own even when Flou Player is closed. Other devices play the single
+  track as before; if the queue fails, Flou Player falls back to that too.
 - Live mode hides Clear library (and Cancel); the Queue tab is set apart from Live/Library by a divider.
 - The Live and Library (cached) modes are now tabs next to Queue; the separate Live/Cached switch is gone.
 - Load library, Cancel and Clear library are now one joined button group.

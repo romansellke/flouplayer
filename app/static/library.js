@@ -348,7 +348,8 @@ function markNowPlaying(prevId,newId){
 $('#content').addEventListener('dblclick',e=>{
   if(e.target.closest('button')) return;
   const tr=e.target.closest('[data-item]');
-  if(tr) playItem(state.view.byId.get(tr.dataset.item));
+  const t=tr&&state.view.byId.get(tr.dataset.item);
+  if(t) useDeviceQueue()?playViaQueue(t):playItem(t);
 });
 $('#content').addEventListener('contextmenu',e=>{
   const tr=e.target.closest('[data-item]');

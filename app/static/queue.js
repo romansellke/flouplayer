@@ -26,6 +26,19 @@ $('#content').addEventListener('click',e=>{
 });
 // Everything currently listed (respects the column selection and search),
 // in the order shown: album by album, tracks in album order.
+// Double-click on a Linn/OpenHome device: the track's album goes into the device's own playlist
+// and plays from that track. The device then plays on by itself -- gapless, and also when Flou
+// Player is closed. Falls back to playing the single track if the queue can't be used.
+const useDeviceQueue=()=>!isLocal()&&queue.supported;
+async function playViaQueue(t){
+  const album=tracksOfAlbum(albumKey(t));
+  const start=album.findIndex(x=>x.id===t.id);
+  if(start<0) return playItem(t);
+  try{
+    await queueApi({action:'replace',items:album.map(queueItem),start});
+    pollQueue(true);
+  }catch(e){ logErr(`Playing through the device queue failed (${e.message}); playing the single track instead.`); playItem(t) }
+}
 const shownTracks=()=>state.currentPlaylist.filter(t=>t.resources?.[0]);
 $('#qAddAll').onclick=()=>queueAdd(shownTracks(),!queue.entries.length||!queue.active);
 $('#qPlayAll').onclick=()=>queueAdd(shownTracks(),true,true);

@@ -106,7 +106,7 @@ def get_queue(device_id:str,token:Optional[int]=None):
 class QueueItem(BaseModel): uri:str; metadata:str=""
 class QueueReq(BaseModel):
     action:str; id:Optional[int]=None; items:list[QueueItem]=[]; play:bool=False
-    value:Optional[bool]=None; seconds:Optional[int]=None
+    value:Optional[bool]=None; seconds:Optional[int]=None; start:int=0
 
 @router.post("/api/devices/{device_id}/queue")
 def queue_action(device_id:str,req:QueueReq):
@@ -125,13 +125,13 @@ def queue_action(device_id:str,req:QueueReq):
                 after=int(_val(pl.Insert(AfterId=after,Uri=it.uri,Metadata=it.metadata),"NewId"))
                 if first is None: first=after
             if req.play and first is not None: pl.SeekId(Value=first)
-        elif a=="replace":  # clear, insert, play from the first
+        elif a=="replace":  # clear, insert, play from the first (or the `start`-th)
             _activate_playlist(d)
-            pl.DeleteAll(); after=0; first=None
+            pl.DeleteAll(); after=0; new=[]
             for it in req.items:
                 after=int(_val(pl.Insert(AfterId=after,Uri=it.uri,Metadata=it.metadata),"NewId"))
-                if first is None: first=after
-            if first is not None: pl.SeekId(Value=first)
+                new.append(after)
+            if new: pl.SeekId(Value=new[min(max(req.start,0),len(new)-1)])   # start: play from that track, the ones before stay for Previous
         elif a=="delete":
             if req.id is None: raise HTTPException(400,"id required")
             pl.DeleteId(Value=req.id)
