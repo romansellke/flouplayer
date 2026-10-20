@@ -49,6 +49,7 @@ pyinstaller --noconfirm --clean \
   --add-data "$ROOT/app/_buildinfo.json:app" \
   --copy-metadata fastapi --copy-metadata uvicorn --copy-metadata upnpclient \
   --copy-metadata av --copy-metadata pywebview --copy-metadata PyQt5 \
+  --copy-metadata dbus-fast --collect-submodules dbus_fast \
   --exclude-module PyQt5.QtQml --exclude-module PyQt5.QtQuick \
   --exclude-module PyQt5.QtQuickWidgets --exclude-module PyQt5.QtPositioning \
   "$ROOT/desktop.py"

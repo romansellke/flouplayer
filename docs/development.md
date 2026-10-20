@@ -26,6 +26,7 @@ file. Keep that order in mind when you move code between files.
 | `openhome.js` | OpenHome device controls: mute, standby, source, pins, stream quality, capabilities, firmware |
 | `remember.js` | Remembering the chosen devices and reconnecting at startup |
 | `keyboard.js` | Keyboard shortcuts |
+| `media.js` | Media keys / panel player controls: reports the current track, carries out commands (see `media.py`) |
 
 ## Backend files
 
@@ -44,6 +45,7 @@ app and includes one router per topic; the rest is split like this:
 | `library.py` | Browsing a folder, scanning the whole library, the on-disk cache |
 | `transcode.py` | Converting formats the built-in player can't decode, for local playback |
 | `playlist.py` | The device queue (OpenHome Playlist) |
+| `media.py` | Media keys: the MPRIS player on the session D-Bus (Linux) and the state/command bridge to the page |
 
 Modules share the device list through `app.state.devices`; change it in place
 (never rebind it), because other modules hold a reference to the same dict.

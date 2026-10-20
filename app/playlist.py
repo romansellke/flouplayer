@@ -17,7 +17,7 @@ router=APIRouter()
 # Tracks are inserted by URI + DIDL metadata, and the device then plays,
 # advances (gaplessly) and remembers the queue by itself.
 # NOTE: written against the public OpenHome Playlist/Time/Product service
-# definitions; not yet verified against real hardware.
+# definitions; tested on a Linn Majik DSM (play, gapless advance, pause).
 def find_playlist_service(d):
     for dev in peer_devices(d):
         for s in dev.services:

@@ -439,3 +439,37 @@ def test_ping_identifies_the_app_and_the_page_is_not_cached():
 
 def test_transcode_only_accepts_http_urls():
     assert client.get("/api/transcode", params={"url": "file:///etc/passwd"}).status_code == 400
+
+
+# ---------- media keys (MPRIS) ----------
+
+from app import media  # noqa: E402
+
+
+def test_media_commands_wait_in_line_for_the_page():
+    assert client.get("/api/media/command?wait=0").json() == {"command": None}
+    assert client.post("/api/media/command/next").json() == {"ok": True}
+    assert client.post("/api/media/command/rm -rf").json() == {"ok": False}     # unknown commands are dropped
+    assert client.get("/api/media/command?wait=0").json() == {"command": "next"}
+    assert client.get("/api/media/command?wait=0").json() == {"command": None}
+
+
+def test_mpris_player_forwards_keys_and_shows_the_current_track():
+    pytest.importorskip("dbus_fast")
+    b = media.Bridge()
+    _, player = media.build_interfaces(b)
+    emitted = []
+    player.emit_properties_changed = lambda props: emitted.append(props)
+    player.PlayPause(); player.Next()
+    assert list(b.commands) == ["play_pause", "next"]
+
+    b.update(media.MediaState(status="Playing", title="Song", artist="Artist", album="Album", length=180, track_id="t/1", can_next=False))
+    assert player.PlaybackStatus == "Playing" and player.CanGoNext is False
+    meta = {k: v.value for k, v in player.Metadata.items()}
+    assert meta == {"mpris:trackid": "/org/flouplayer/track/t_1", "xesam:title": "Song", "xesam:artist": ["Artist"],
+                    "xesam:album": "Album", "mpris:length": 180_000_000}
+    assert set(emitted[-1]) == {"PlaybackStatus", "Metadata", "CanGoNext"}         # the panel is told what changed
+
+    emitted.clear()
+    b.update(media.MediaState(status="Playing", title="Song", artist="Artist", album="Album", length=180, track_id="t/1", can_next=False, position=42))
+    assert emitted == []                                                             # the position alone is polled, not signalled

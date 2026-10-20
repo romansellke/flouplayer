@@ -214,7 +214,7 @@ On Linn/OpenHome devices the device's own playlist has its own **Queue** tab
 - While the queue is the active source, the transport buttons control it and
   the device advances by itself.
 
-> The queue has **not been verified against real hardware**.
+> The queue is tested on a Linn Majik DSM.
 
 ## Device controls: mute, source, pins, stream quality
 
@@ -269,6 +269,18 @@ Nord, Catppuccin Mocha, Tokyo Night, ...). The choice is remembered.
   for bug reports.
 - **About** (info button, top right): version, build, Python/system and
   dependency versions, and the project link.
+
+## Media keys and the panel's player controls
+
+On Linux, Flou Player shows up as a media player in the desktop (MPRIS): the
+**media keys** on the keyboard (play/pause, next, previous, stop), the sound
+menu or player widget in the panel (Linux Mint, GNOME, KDE) and headset
+buttons control it, also while the window is in the background. The panel
+shows the current title, artist, album and cover. This works for every
+output device, including the device queue and "This computer".
+
+It needs a desktop session (D-Bus); without one, Flou Player just runs
+without it.
 
 ## Keyboard shortcuts
 

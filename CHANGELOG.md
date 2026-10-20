@@ -7,6 +7,10 @@ All notable changes to Flou Player are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- **Media keys** and the panel's player controls (MPRIS, Linux): play/pause,
+  next, previous and stop from the keyboard, the sound menu or player widgets,
+  also with the window in the background; the panel shows the current track
+  and cover.
 - **Clear library** button next to "Load library": deletes the saved library
   from disk and empties the list (the music on the server is not touched).
 - **Cancel** button while a library scan is running; a cancelled scan keeps
@@ -23,6 +27,7 @@ All notable changes to Flou Player are documented here. The format follows
 - The **Queue** tab has a tooltip explaining that the queue lives on the output device (OpenHome Playlist) and what it does.
 
 ### Changed
+- Docs: the device queue and Pause are now marked as tested on a Linn Majik DSM.
 - Double-click on a Linn/OpenHome device plays through the device's own queue:
   the album replaces the queue and plays from the clicked track, gapless and
   on its own even when Flou Player is closed. Other devices play the single

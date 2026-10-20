@@ -66,7 +66,7 @@ class MockApi:
         req = route.request
         url = req.url.split("/api/", 1)[1]
         self.requests.append(f"{req.method} {url}")
-        if req.method == "POST" and req.post_data:
+        if req.method == "POST" and req.post_data and not url.startswith("media/"):   # media/state: background reporting, not a user action
             try:
                 self.posts.append(json.loads(req.post_data))
             except ValueError:

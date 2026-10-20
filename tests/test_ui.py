@@ -106,7 +106,7 @@ def test_the_cover_shows_the_album_artist_and_the_artist_column_is_optional(page
     start_live(page, api, tree)
     page.click("[data-cid=a]"); page.click("[data-cid=alb1]")
     page.wait_for_selector("[data-item=t1]")
-    assert page.inner_text(".albuminfo .albumartist") == "The Band"
+    assert page.text_content(".albuminfo .albumartist")   # not inner_text: .album uses content-visibility, so it is empty until first painted == "The Band"
     assert page.query_selector("td.artist") is None                       # hidden by default
     page.click("#colToggle")
     labels = page.eval_on_selector_all("#colMenu label", "ls => ls.map(l => l.textContent.trim() + ':' + l.querySelector('input').checked)")
@@ -119,7 +119,7 @@ def test_an_untagged_album_shows_the_shared_artist_next_to_the_cover(page, api):
     start_live(page, api, TREE)
     page.click("[data-cid=a]"); page.click("[data-cid=alb1]")
     page.wait_for_selector("[data-item=t1]")
-    assert page.inner_text(".albuminfo .albumartist") == "Artist X"
+    assert page.text_content(".albuminfo .albumartist")   # not inner_text: .album uses content-visibility, so it is empty until first painted == "Artist X"
 
 
 def test_now_playing_returns_to_the_folder_of_the_playing_track(page, api):
@@ -461,6 +461,19 @@ def test_if_the_device_queue_fails_double_click_falls_back_to_the_single_track(p
     page.wait_for_function("queue.supported")
     page.dblclick("[data-item=c2]"); page.wait_for_timeout(300)
     assert [p["uri"] for p in api.posts if p.get("action") == "set_uri"] == ["u2"]
+
+
+def test_media_keys_control_playback_and_the_panel_sees_the_track(page, api):
+    reported, keys = [], []
+    api.routes["media/state"] = lambda req: reported.append(__import__("json").loads(req.post_data)) or {"ok": True}
+    api.routes["media/command"] = lambda req: {"command": keys.pop(0) if keys else None}
+    start_cached_with_player(page, api, [dict(track(i, album_artist="Band"), id=f"c{i}") for i in (1, 2)])
+    page.dblclick("[data-item=c1]"); page.wait_for_timeout(200)
+    keys.append("next")                                                                     # media key "next"
+    page.wait_for_function("document.querySelector('tr.playing')?.dataset.item === 'c2'", timeout=8000)   # the "next" key
+    assert [p["uri"] for p in api.posts if p.get("action") == "set_uri"] == ["u1", "u2"]
+    page.wait_for_timeout(1300)
+    assert reported[-1]["title"] == "Track 2" and reported[-1]["artist"] == "Artist X" and reported[-1]["album"] == "Album One"
 
 
 def test_without_a_device_queue_double_click_plays_the_single_track(page, api):
