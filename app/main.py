@@ -3,9 +3,10 @@
 The endpoints live in the other modules of this package:
 devices (search, reconnect, readings), openhome (sources, pins, standby, ...),
 control (transport/volume/... commands), library (browse, scan, cache),
-transcode (local playback) and playlist (the device queue).
+transcode (local playback), playlist (the device queue) and media (media keys / MPRIS).
 """
 from __future__ import annotations
+import contextlib
 import json
 from pathlib import Path
 
@@ -13,12 +14,18 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from app import __version__, control, devices as devices_api, library, openhome, playlist, transcode
+from app import __version__, control, devices as devices_api, library, media, openhome, playlist, transcode
 
 # Resolve static files relative to this module, not the current working
 # directory, so the app also works when started from another folder.
 STATIC_DIR=Path(__file__).resolve().parent/"static"
-app=FastAPI(title="Flou Player", version=__version__)
+@contextlib.asynccontextmanager
+async def lifespan(_app):
+    await media.start_mpris()   # media keys / panel player controls (Linux, if a session D-Bus is there)
+    yield
+    await media.stop_mpris()
+
+app=FastAPI(title="Flou Player", version=__version__, lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 @app.middleware("http")
@@ -68,7 +75,7 @@ SOURCE_INFO=_source_info()
 def about():
     import platform, importlib.metadata as md
     deps={}
-    for name in ["fastapi","uvicorn","upnpclient","av","pywebview","PyQt5"]:
+    for name in ["fastapi","uvicorn","upnpclient","av","pywebview","PyQt5","dbus-fast"]:
         try: deps[name]=md.version(name)
         except Exception: pass
     return {"name":"Flou Player","version":__version__,"build":BUILD_ID,"source":SOURCE_INFO,"license":"GPL-3.0-or-later","python":platform.python_version(),
@@ -80,5 +87,6 @@ def ping():
     on the same port (see desktop.py)."""
     return {"app":APP_ID,"build":BUILD_ID}
 
-for _module in (devices_api, openhome, control, library, transcode, playlist):
+for _module in (devices_api, openhome, control, library, transcode, playlist, media):
     app.include_router(_module.router)
+

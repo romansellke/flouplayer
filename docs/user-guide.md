@@ -270,6 +270,18 @@ Nord, Catppuccin Mocha, Tokyo Night, ...). The choice is remembered.
 - **About** (info button, top right): version, build, Python/system and
   dependency versions, and the project link.
 
+## Media keys and the panel's player controls
+
+On Linux, Flou Player shows up as a media player in the desktop (MPRIS): the
+**media keys** on the keyboard (play/pause, next, previous, stop), the sound
+menu or player widget in the panel (Linux Mint, GNOME, KDE) and headset
+buttons control it, also while the window is in the background. The panel
+shows the current title, artist, album and cover. This works for every
+output device, including the device queue and "This computer".
+
+It needs a desktop session (D-Bus); without one, Flou Player just runs
+without it.
+
 ## Keyboard shortcuts
 
 Press **Ctrl/⌘+/** or **F1** (or click the keyboard button in the header) for

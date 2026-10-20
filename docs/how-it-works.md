@@ -66,6 +66,6 @@ separate; this depends on the server's DIDL-Lite metadata.
 Flou Player is free software under the GNU General Public License, version 3
 or (at your option) any later version. See [LICENSE](../LICENSE). Open-source
 dependencies: FastAPI (MIT), Uvicorn (BSD-3-Clause), upnpclient (MIT),
-pywebview (BSD-3-Clause), PyAV (BSD-3-Clause, bundles LGPL ffmpeg libraries),
+pywebview (BSD-3-Clause), dbus-fast (MIT, Linux media keys), PyAV (BSD-3-Clause, bundles LGPL ffmpeg libraries),
 PyQt5/PyQtWebEngine (GPL v3, or commercial from Riverbank Computing) and QtPy
 (MIT). They are installed from PyPI on first setup.

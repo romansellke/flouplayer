@@ -463,6 +463,19 @@ def test_if_the_device_queue_fails_double_click_falls_back_to_the_single_track(p
     assert [p["uri"] for p in api.posts if p.get("action") == "set_uri"] == ["u2"]
 
 
+def test_media_keys_control_playback_and_the_panel_sees_the_track(page, api):
+    reported, keys = [], []
+    api.routes["media/state"] = lambda req: reported.append(__import__("json").loads(req.post_data)) or {"ok": True}
+    api.routes["media/command"] = lambda req: {"command": keys.pop(0) if keys else None}
+    start_cached_with_player(page, api, [dict(track(i, album_artist="Band"), id=f"c{i}") for i in (1, 2)])
+    page.dblclick("[data-item=c1]"); page.wait_for_timeout(200)
+    keys.append("next")                                                                     # media key "next"
+    page.wait_for_function("document.querySelector('tr.playing')?.dataset.item === 'c2'", timeout=8000)   # the "next" key
+    assert [p["uri"] for p in api.posts if p.get("action") == "set_uri"] == ["u1", "u2"]
+    page.wait_for_timeout(1300)
+    assert reported[-1]["title"] == "Track 2" and reported[-1]["artist"] == "Artist X" and reported[-1]["album"] == "Album One"
+
+
 def test_without_a_device_queue_double_click_plays_the_single_track(page, api):
     start_cached_with_player(page, api, [dict(track(i, album_artist="Band"), id=f"c{i}") for i in (1, 2)])
     page.dblclick("[data-item=c2]"); page.wait_for_timeout(200)

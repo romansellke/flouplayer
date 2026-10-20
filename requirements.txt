@@ -4,6 +4,9 @@ upnpclient==2.0.3
 # Transcodes AAC/ALAC (.m4a) etc. to FLAC for local playback; bundles ffmpeg.
 av>=12
 
+# Media keys and the panel's player controls (MPRIS over D-Bus, Linux only).
+dbus-fast>=2.0; sys_platform == "linux"
+
 # Desktop window (no browser tab needed) -- see desktop.py.
 # pywebview needs a Qt or GTK backend to actually render web content.
 # We pull in PyQt5 here since it installs via pip alone on most systems
