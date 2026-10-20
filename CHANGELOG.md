@@ -6,6 +6,8 @@ All notable changes to Flou Player are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.18.0] - 2026-10-20
+
 ### Added
 - **Media keys** and the panel's player controls (MPRIS, Linux): play/pause,
   next, previous and stop from the keyboard, the sound menu or player widgets,
@@ -15,15 +17,12 @@ All notable changes to Flou Player are documented here. The format follows
   from disk and empties the list (the music on the server is not touched).
 - **Cancel** button while a library scan is running; a cancelled scan keeps
   nothing.
-
 - The Diagnostics log records every library scan: tracks and folders found,
   duration, what was skipped (same URL, same tags, not audio, looping or too
   deep folders), unreadable folders, and cancel/clear actions.
-
 - Getting-started guide: step-by-step instructions for downloading the code from
   GitHub and installing it, and a troubleshooting section for devices that are
   found but do not play (Marantz/HEOS, Sonos) with a table of UPnP error codes.
-
 - The **Queue** tab has a tooltip explaining that the queue lives on the output device (OpenHome Playlist) and what it does.
 
 ### Changed
@@ -371,7 +370,8 @@ the OpenHome queue tab; a position/seek bar and a live dB volume readout; a
 Diagnostics log and About dialog; 17 colour themes; installable Linux app
 packaging; and the GPL-3.0-or-later license.
 
-[Unreleased]: https://github.com/romansellke/flouplayer/compare/v0.17.0...HEAD
+[Unreleased]: https://github.com/romansellke/flouplayer/compare/v0.18.0...HEAD
+[0.18.0]: https://github.com/romansellke/flouplayer/compare/v0.17.0...v0.18.0
 [0.17.0]: https://github.com/romansellke/flouplayer/compare/v0.16.1...v0.17.0
 [0.16.1]: https://github.com/romansellke/flouplayer/compare/v0.16.0...v0.16.1
 [0.16.0]: https://github.com/romansellke/flouplayer/compare/v0.15.1...v0.16.0
