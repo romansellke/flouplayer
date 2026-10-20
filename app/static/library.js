@@ -6,9 +6,13 @@ let cancelled=false;
 function logScan(x){
   const st=x.stats||{};
   log(`Library scan: ${x.count} tracks, ${st.folders??'?'} folders in ${st.seconds??'?'} s (root: ${x.scan_root})`);
+  if(st.root_folders?.length) log(`Scan: the server's top level has ${st.root_folders.length} folders: ${st.root_folders.join(', ')}`);
   const skipped=[['same URL',st.duplicates],['same tags',st.merged_by_tags],['not audio',st.non_audio],['looping folder',st.loops_skipped],['too deep',st.too_deep]].filter(([,n])=>n);
   if(skipped.length) log('Scan skipped: '+skipped.map(([k,n])=>`${n} (${k})`).join(', '));
-  if(st.stalled) log('Scan stopped early: thousands of folders in a row without a new track -- the server tree probably loops.','error');
+  if(st.stalled){
+    if(st.loops_skipped||st.too_deep) log('Scan stopped early: thousands of folders in a row without a new track -- the server tree loops.','error');
+    else log('Scan ended after thousands of folders without a new track: only the same tracks again, in the server\'s other views. The library is probably complete.');
+  }
   (st.failed_folders||[]).forEach(f=>log('Scan: folder could not be read: '+f,'warn'));
 }
 $('#cancelScan').onclick=async()=>{
@@ -54,7 +58,7 @@ $('#loadLibrary').onclick=async()=>{
     $('#breadcrumb').textContent=`${x.count} tracks (${x.scan_root})`;
     render();
     logScan(x);
-    if(x.warning) notify(x.warning);
+    if(x.warning && (x.stats?.loops_skipped||x.stats?.too_deep)) notify(x.warning);   // a plain multi-view server only gets the log line
   }catch(e){
     if(state.tracks.length) render();
     else $('#content').innerHTML=`<div class="empty">${cancelled?'Scan cancelled.':'Failed to load: '+esc(e.message)}</div>`;

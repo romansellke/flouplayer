@@ -1,6 +1,7 @@
 """DIDL-Lite parsing and walking a media server's ContentDirectory."""
 from __future__ import annotations
 import copy
+import re
 import xml.etree.ElementTree as ET
 
 from app.upnp import local_name
@@ -8,7 +9,16 @@ from app.upnp import local_name
 # Common names for a plain "by folder/file" view, which contains each track
 # only ONCE -- unlike the parallel views by artist/album/genre/composer,
 # where the same track shows up multiple times.
-CANONICAL_CONTAINER_NAMES={"folder","folders","by folder","files","ordner","dateien","verzeichnis","musikordner"}
+CANONICAL_CONTAINER_NAMES_RAW={"folder","folders","by folder","files","ordner","dateien","verzeichnis","musikordner"}
+
+# Next best when there is no folder view: one flat list of all songs, or the album
+# view -- both contain each track once, unlike walking Artist, Genre, Composer ... too.
+FLAT_VIEW_NAMES_RAW={"songs","all songs","tracks","all tracks","titel","alle titel","alle songs","alle lieder","lieder"}
+ALBUM_VIEW_NAMES_RAW={"albums","album","all albums","alben","alle alben"}
+
+CANONICAL_CONTAINER_NAMES={re.sub(r"[^\w]+","",n) for n in CANONICAL_CONTAINER_NAMES_RAW}
+FLAT_VIEW_NAMES={re.sub(r"[^\w]+","",n) for n in FLAT_VIEW_NAMES_RAW}
+ALBUM_VIEW_NAMES={re.sub(r"[^\w]+","",n) for n in ALBUM_VIEW_NAMES_RAW}
 
 DIDL_NS="urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/"
 for _prefix,_uri in {"dc":"http://purl.org/dc/elements/1.1/","upnp":"urn:schemas-upnp-org:metadata-1-0/upnp/","dlna":"urn:schemas-dlna-org:metadata-1-0/"}.items():
@@ -69,6 +79,21 @@ def is_audio(item):
     cls=(item.get("class") or "").lower()
     return not (cls.startswith("object.item.videoitem") or cls.startswith("object.item.imageitem"))
 
+def view_name(title):
+    """"[Folders]", "Folders " and "folders" are the same view name."""
+    return re.sub(r"[^\w]+","",(title or "").lower())
+
+def duration_seconds(text):
+    """"0:03:00.000" and "0:03:00" are the same length; None when unreadable."""
+    try:
+        parts=[float(p) for p in (text or "").strip().split(":")]
+    except ValueError:
+        return None
+    if not parts: return None
+    total=0.0
+    for p in parts: total=total*60+p
+    return int(round(total))
+
 def track_key(item):
     """Identity of a track independent of where the server lists it. Servers
     that show the same file under several views (or give each view its own
@@ -79,7 +104,9 @@ def track_key(item):
     artist=(item.get("album_artist") or item.get("artist") or "").strip().lower()
     if not title or not (album or artist): return None
     duration=(item["resources"][0].get("duration") or "") if item.get("resources") else ""
-    return (title,album,artist,(item.get("track_number") or "").strip(),duration)
+    # Not the artist or track number: views of the same server often deliver them differently
+    # (artist vs. album artist, a missing number), which would let every view's copy through.
+    return (title,album,"" if album else artist,duration_seconds(duration))
 
 def browse_all(s, object_id):
     """Fetch all children of a container (with pagination). A blocking
@@ -100,26 +127,27 @@ def browse_all(s, object_id):
     return items
 
 def pick_scan_root(s, root_object_id):
-    """Looks under root_object_id for a plain by-folder view (each file
-    only once) -- directly, or one level down (Jellyfin: Music > Folders).
-    If found, ONLY that is scanned -- on servers like MinimServer (which
-    also organise things in parallel by artist/album/genre/composer) this
-    saves most of the network requests and avoids duplicates from the
-    start, instead of filtering them out afterwards."""
+    """Looks for ONE view that contains each track only once and scans only that, which saves most
+    of the network requests and avoids duplicates from the start instead of filtering them out
+    afterwards (MinimServer, Jellyfin and others also organise everything in parallel by
+    artist/album/genre/composer ...). In order of preference: a plain by-folder view, a flat list of
+    all songs, the album view -- directly under the root or one level down (Jellyfin: Music > Folders).
+    Returns (object id, name or None, titles of the root's folders for the diagnostics log)."""
     try:
         items=browse_all(s, root_object_id)
     except Exception:
-        return root_object_id, None
+        return root_object_id, None, []
     containers=[i for i in items if i["type"]=="container"]
-    for i in containers:
-        if i["title"].strip().lower() in CANONICAL_CONTAINER_NAMES:
-            return i["id"], i["title"]
+    levels=[("",containers)]
     for parent in containers[:10]:
         try:
-            children=browse_all(s, parent["id"])
+            children=[i for i in browse_all(s, parent["id"]) if i["type"]=="container"]
         except Exception:
             continue
-        for i in children:
-            if i["type"]=="container" and i["title"].strip().lower() in CANONICAL_CONTAINER_NAMES:
-                return i["id"], f'{parent["title"]} / {i["title"]}'
-    return root_object_id, None
+        levels.append((parent["title"],children))
+    for names in (CANONICAL_CONTAINER_NAMES,FLAT_VIEW_NAMES,ALBUM_VIEW_NAMES):
+        for parent_title,group in levels:
+            for i in group:
+                if view_name(i["title"]) in names:
+                    return i["id"], f"{parent_title} / {i['title']}" if parent_title else i["title"], [c["title"] for c in containers]
+    return root_object_id, None, [c["title"] for c in containers]

@@ -20,6 +20,8 @@ All notable changes to Flou Player are documented here. The format follows
   GitHub and installing it, and a troubleshooting section for devices that are
   found but do not play (Marantz/HEOS, Sonos) with a table of UPnP error codes.
 
+- The **Queue** tab has a tooltip explaining that the queue lives on the output device (OpenHome Playlist) and what it does.
+
 ### Fixed
 - Playing on Marantz/Denon (HEOS) and Sonos failed with "400 Bad Request ...
   /AVTransport/ctrl": the SOAP requests are now sent as
@@ -41,6 +43,17 @@ All notable changes to Flou Player are documented here. The format follows
 - Tracks were found many times on servers like Jellyfin, which list the same
   file under several views with different object ids and stream URLs. Tracks
   are now also merged by title, album, artist, track number and duration.
+- Without a by-folder view the scan walked every view (Artist, Genre, Composer
+  ...) and still counted a library of 1400 files as 13000 tracks, because the
+  copies differed in artist, track number or duration format. It now prefers a
+  flat "Songs"/"Tracks" view, then the "Albums" view, and merges copies by title,
+  album and duration in seconds. The Diagnostics log lists the server's top-level
+  folders.
+- A server that simply lists every track in several views (Artist, Genre ...)
+  no longer gets a scan "error" when the scan ends after thousands of folders
+  without a new track: that is now a plain log note, and the error and the toast
+  stay for real loops. View names such as "[Folders]" are matched ignoring
+  brackets and spaces.
 - Videos and photos on servers that mix them into the music tree are no longer
   counted as tracks.
 - A "Folders" view one level down (Jellyfin: Music > Folders) is now found and

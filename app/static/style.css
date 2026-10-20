@@ -210,8 +210,12 @@ input[type=range]:hover::-webkit-slider-thumb{transform:scale(1.25)}
 .picker-menu li[aria-selected="true"]{color:var(--text);font-weight:500}
 .picker-menu li.picker-placeholder{color:var(--muted)}
 
+/* Load / Cancel / Clear and the search stay together and wrap as one block (own row when the toolbar is full) */
+.libtools{display:flex;gap:8px;align-items:center;flex:1 1 440px;min-width:0}
+.libtools .hidden{display:none}
+.libtools button{flex:0 0 auto;white-space:nowrap}
 #search,.toolbar input[type=text]{
-  flex:1 1 220px;border-radius:var(--radius);border:1px solid var(--line);padding:8px 14px 8px 36px;
+  flex:1 1 160px;min-width:0;border-radius:var(--radius);border:1px solid var(--line);padding:8px 14px 8px 36px;
   background:var(--bg) var(--search) no-repeat 13px center;outline:none;
   transition:border-color .15s,box-shadow .15s;
 }
