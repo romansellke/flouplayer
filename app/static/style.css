@@ -269,7 +269,7 @@ select.btn-link{background:var(--bg);color:var(--text);font-family:inherit}
 .colmenu{position:absolute;right:0;top:calc(100% + 6px);background:var(--bg);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:8px 12px;z-index:5;white-space:nowrap;font-weight:400;text-align:left;color:var(--text)}
 .colmenu.hidden{display:none}
 .colmenu label{display:block;padding:4px 2px;cursor:pointer;font-size:12.5px}
-html[data-libmode=live] .libbtns,html[data-libmode=live] .facets,html[data-libmode=live] #facetToggle{display:none}
+html[data-libmode=live] .libbtns,html[data-libmode=live] #libChanged,html[data-libmode=live] .facets,html[data-libmode=live] #facetToggle{display:none}
 
 /* Live browsing */
 .crumbs{display:flex;flex-wrap:wrap;align-items:center;gap:4px;padding:10px 20px 2px;font-size:13px;position:sticky;top:0;background:var(--panel);z-index:2}
@@ -507,3 +507,10 @@ kbd{display:inline-block;min-width:20px;padding:1px 6px;border:1px solid var(--l
 .htable td{padding:5px 10px 5px 0;border-top:1px solid var(--line);vertical-align:top}
 .htable tr.clickable:hover td{background:var(--hover)}
 .htable td.num{text-align:right;font-variant-numeric:tabular-nums}
+
+/* ---------- "The library on the server has changed" hint ---------- */
+.libchanged{flex:0 0 auto;display:flex;align-items:center;gap:12px;margin:0 20px 10px;padding:8px 8px 8px 14px;border:1px solid var(--highlight);border-radius:var(--radius);background:var(--card);font-size:12.5px}
+.libchanged span{flex:1;min-width:0}
+.libchanged.hidden{display:none}
+.libchanged-x{border:0;background:none;color:var(--muted);cursor:pointer;font-size:16px;line-height:1;padding:2px 6px;border-radius:6px}
+.libchanged-x:hover{color:var(--text);background:var(--hover)}

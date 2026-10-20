@@ -7,6 +7,10 @@ All notable changes to Flou Player are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- Library mode notices when the music on the media server has changed since
+  the scan (the server's SystemUpdateID, raised e.g. after MinimServer rescans)
+  and offers **Reload library** above the album list; "×" hides the note
+  until the server changes again. Needs one fresh scan with this version.
 - Docs: a [feature list](docs/features.md) with everything Flou Player can do
   and what is tested on real hardware.
 - **Server-wide search in Live mode**: Enter in the search field searches the

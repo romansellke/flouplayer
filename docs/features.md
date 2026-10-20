@@ -24,6 +24,8 @@ explains each point in detail.
   server's views); scans stop on looping folder trees
 - **Load library** (parallel scan with live count), **Cancel**, **Clear library**;
   reloaded automatically on the next start
+- Notices when the music on the server has **changed since the scan** and
+  offers *Reload library*
 
 **In both modes**
 - **Quality filter**: Hi-Res, CD quality, Lossless, Lossy

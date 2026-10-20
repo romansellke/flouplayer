@@ -58,6 +58,29 @@ class ScanReq(BaseModel):
     device_id: str
     object_id: str = "0"
 
+def system_update_id(s):
+    """The server's SystemUpdateID: a counter it raises whenever its content changes
+    (MinimServer: after a rescan of the music folders). None if it doesn't say."""
+    try:
+        v=s.GetSystemUpdateID()
+        v=v.get("Id") if isinstance(v,dict) else v
+        return int(v)
+    except Exception:
+        return None
+
+@router.get("/api/library/changed")
+def library_changed(device_id:str):
+    """Whether the media server's content changed since the saved library was scanned,
+    so the app can offer a fresh scan instead of the user guessing."""
+    cached=load_cached_library()
+    if not cached or cached.get("system_update_id") is None: return {"known":False}
+    if cached.get("device_id") not in (None,device_id): return {"known":False}   # scanned from another server
+    d=devices.get(device_id)
+    s=service(d,["ContentDirectory"]) if d else None
+    now=system_update_id(s) if s else None
+    if now is None: return {"known":False}
+    return {"known":True,"changed":now!=cached["system_update_id"],"update_id":now}
+
 @router.get("/api/scan/progress")
 def scan_progress():
     """Polled by the frontend while /api/scan is running, so it's visible
@@ -86,6 +109,9 @@ def scan(req: ScanReq):
     if not d: raise HTTPException(404,"Media server not found")
     s=service(d,["ContentDirectory"])
     if not s: raise HTTPException(400,"No ContentDirectory service present")
+
+    # Read before scanning: whatever changes during the scan then still counts as "changed" next time.
+    update_id=system_update_id(s)
 
     # Only one scan at a time -- they'd share scan_state and the cache file.
     with scan_lock:
@@ -143,7 +169,8 @@ def scan(req: ScanReq):
     stats.update(seconds=round(time.time()-started,1),stalled=stalled,scan_root=scan_root_name or "")
     if cancelled: raise HTTPException(409,"The scan was cancelled")
 
-    result={"tracks":tracks,"count":len(tracks),"scan_root":scan_root_name or "all views (Artist/Album/Genre/...)","scanned_at":time.time(),"stats":stats}
+    result={"tracks":tracks,"count":len(tracks),"scan_root":scan_root_name or "all views (Artist/Album/Genre/...)","scanned_at":time.time(),"stats":stats,
+            "device_id":req.device_id,"system_update_id":update_id}
     if stalled:
         looped=stats["loops_skipped"] or stats["too_deep"]
         result["warning"]=("The scan stopped early: the server kept listing folders without new tracks (a loop in its tree?)." if looped
