@@ -12,10 +12,46 @@
   subnets/VLANs. It makes no difference whether MinimServer, the output
   device and Flou Player run on three separate machines.
 
+## Get Flou Player onto your computer
+
+Flou Player is not in any package repository: you download the source code
+from GitHub and build it on your own machine. There is no installer to
+download. Everything below happens in a terminal.
+
+1. **Install the tools** (one time). On Ubuntu / Linux Mint:
+
+   ```
+   sudo apt update
+   sudo apt install git python3 python3-venv python3-pip
+   ```
+
+   On Arch Linux: `sudo pacman -S --needed git python` (see [Arch Linux](#arch-linux)).
+
+2. **Download the code.** Either clone it:
+
+   ```
+   git clone https://github.com/romansellke/flouplayer.git
+   cd flouplayer
+   ```
+
+   or, without git, click **Code → Download ZIP** on
+   <https://github.com/romansellke/flouplayer>, unpack it, and open a terminal
+   in the unpacked folder (`cd` into it). With git, later updates are just
+   `git pull`.
+
+3. **Install it** with one of the two ways below -- as an app in your
+   application menu (recommended), or run directly from the folder.
+
+Flou Player only runs on Linux. Windows and macOS are not supported.
+
 ## Install as an app (recommended)
 
-1. Open a terminal in the project folder.
+1. Open a terminal in the project folder (the `flouplayer` folder from the
+   step above).
 2. Run `./packaging/install.sh`
+
+If the file is not executable, run `chmod +x packaging/*.sh run.command`
+first.
 
 This builds Flou Player once into a self-contained app (Python, Qt and all
 dependencies bundled -- needs internet access for the build, takes a few

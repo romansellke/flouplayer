@@ -9,6 +9,40 @@
 - Click **Search devices** again; the Diagnostics dialog (list button in
   the header) logs what was found.
 
+## A device is found but nothing plays (Marantz, Denon/HEOS, Sonos, ...)
+
+Flou Player was written for Linn/OpenHome players. Other renderers (a Marantz
+SR6010 receiver, a Sonos Arc, ...) are controlled through the plain UPnP AV
+standard (AVTransport), and they are much pickier. Flou Player therefore stops
+the renderer first, sends the track, retries without the track's metadata if
+the device refuses it, and retries *Play* a few times while the device loads
+the stream. This could not be tried on such hardware here, so if playback
+still fails, the error message tells what the device objected to. Open
+**Diagnostics** (list button in the header) after a failed attempt; the entry
+reads like `SetAVTransportURI failed: UPnP error 714 (Illegal MIME-type)`:
+
+If the message is instead `400 Client Error: Bad Request for url: .../AVTransport/ctrl`
+(older versions), the device refused the request on the HTTP level, before
+any UPnP error: Marantz/Denon (HEOS) and Sonos want the SOAP request sent as
+`text/xml; charset="utf-8"`, which Flou Player now does, and they dislike
+vendor extras in the track metadata (it now retries with a minimal one).
+
+| Code | Meaning | What to try |
+| --- | --- | --- |
+| 701 | Transition not available | The device is busy with another input (TV/HDMI, AirPlay, Spotify ...). Switch it to network / Sonos-app playback, stop what it plays, and try again. |
+| 714 | Illegal MIME-type | The device does not play that file format (for example FLAC above 96 kHz or DSD). Try an MP3 or a 16-bit FLAC to check. |
+| 716 / 717 | Resource not found / unsupported protocol | The device cannot reach the media server's address. Check that both are on the same network and that no firewall or VLAN is between them. |
+| 712 / 402 | Bad metadata or arguments | Report it with the Diagnostics text. |
+
+When you report a problem, please copy the report (**Copy report** in
+Diagnostics) and press **Device info** first, so the services of the device
+are in it.
+
+Note that **Sonos** speakers are made to be controlled by the Sonos app and
+only accept a limited set of formats (no hi-res above 48 kHz on the Arc).
+Also check that the receiver (Marantz) has network standby / "network control"
+switched on, otherwise it does not answer while it is off.
+
 ## `run.command` or the build fails on `venv`
 
 On Ubuntu/Linux Mint this usually means the `python3-venv` package isn't

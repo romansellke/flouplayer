@@ -63,6 +63,24 @@ def parse_didl(xml):
         out.append({"type":typ,"id":n.attrib.get("id",""),"parent_id":n.attrib.get("parentID",""),"title":child_text(n,"title"),"artist":artist,"album_artist":album_artist,"album":child_text(n,"album"),"genre":child_text(n,"genre"),"date":child_text(n,"date"),"track_number":child_text(n,"originalTrackNumber"),"album_art":child_text(n,"albumArtURI"),"class":child_text(n,"class"),"resources":resources,"metadata":didl_document(n)})
     return out
 
+def is_audio(item):
+    """Servers like Jellyfin put videos and photos into the same tree; only
+    audio belongs in the music library. An item without a class counts as audio."""
+    cls=(item.get("class") or "").lower()
+    return not (cls.startswith("object.item.videoitem") or cls.startswith("object.item.imageitem"))
+
+def track_key(item):
+    """Identity of a track independent of where the server lists it. Servers
+    that show the same file under several views (or give each view its own
+    object id / stream URL) would otherwise deliver every track many times.
+    None when the tags are too thin to tell tracks apart safely."""
+    title=(item.get("title") or "").strip().lower()
+    album=(item.get("album") or "").strip().lower()
+    artist=(item.get("album_artist") or item.get("artist") or "").strip().lower()
+    if not title or not (album or artist): return None
+    duration=(item["resources"][0].get("duration") or "") if item.get("resources") else ""
+    return (title,album,artist,(item.get("track_number") or "").strip(),duration)
+
 def browse_all(s, object_id):
     """Fetch all children of a container (with pagination). A blocking
     network call -- parallelised across a thread pool during a scan."""
@@ -83,16 +101,25 @@ def browse_all(s, object_id):
 
 def pick_scan_root(s, root_object_id):
     """Looks under root_object_id for a plain by-folder view (each file
-    only once). If found, ONLY that is scanned -- on servers like
-    MinimServer (which also organise things in parallel by
-    artist/album/genre/composer) this saves most of the network requests
-    and avoids duplicates from the start, instead of filtering them out
-    afterwards."""
+    only once) -- directly, or one level down (Jellyfin: Music > Folders).
+    If found, ONLY that is scanned -- on servers like MinimServer (which
+    also organise things in parallel by artist/album/genre/composer) this
+    saves most of the network requests and avoids duplicates from the
+    start, instead of filtering them out afterwards."""
     try:
         items=browse_all(s, root_object_id)
     except Exception:
         return root_object_id, None
-    for i in items:
-        if i["type"]=="container" and i["title"].strip().lower() in CANONICAL_CONTAINER_NAMES:
+    containers=[i for i in items if i["type"]=="container"]
+    for i in containers:
+        if i["title"].strip().lower() in CANONICAL_CONTAINER_NAMES:
             return i["id"], i["title"]
+    for parent in containers[:10]:
+        try:
+            children=browse_all(s, parent["id"])
+        except Exception:
+            continue
+        for i in children:
+            if i["type"]=="container" and i["title"].strip().lower() in CANONICAL_CONTAINER_NAMES:
+                return i["id"], f'{parent["title"]} / {i["title"]}'
     return root_object_id, None

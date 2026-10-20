@@ -162,6 +162,81 @@ def test_transport_falls_back_to_avtransport(player, monkeypatch):
     assert av.calls[-1][0] == "Play"
 
 
+# ---------- plain UPnP AV renderers (Marantz/HEOS, Sonos) ----------
+
+def av_only_renderer(actions):
+    from tests.fakes import FakeDevice, FakeService
+    av = FakeService("urn:upnp-org:serviceId:AVTransport", "urn:schemas-upnp-org:service:AVTransport:1", actions)
+    dev = FakeDevice("uuid:sonos", "http://192.168.1.60:1400/xml/device_description.xml", "Sonos Arc", [av])
+    devices_api._publish_devices({dev.udn: dev})
+    return dev, av
+
+
+def play(dev, uri="http://x/t.flac", metadata="<DIDL-Lite/>"):
+    return client.post("/api/control", json={"device_id": dev.udn, "action": "set_uri", "uri": uri, "metadata": metadata})
+
+
+def test_set_uri_retries_without_metadata_when_the_renderer_refuses_it():
+    def set_uri(InstanceID, CurrentURI, CurrentURIMetaData):
+        if CurrentURIMetaData: raise upnpclient.UPNPError(712, "Format of metadata invalid", None)
+        return {}
+    dev, av = av_only_renderer({"Stop": {}, "SetAVTransportURI": set_uri, "Play": {}})
+    assert play(dev).status_code == 200
+    assert [c[0] for c in av.calls] == ["Stop", "SetAVTransportURI", "SetAVTransportURI", "Play"]
+    assert av.calls[2][1]["CurrentURIMetaData"] == ""
+
+
+def test_av_calls_send_a_utf8_charset_content_type():
+    """HEOS/Sonos answer upnpclient's bare text/xml with 400 Bad Request."""
+    dev, av = av_only_renderer({"Stop": {}, "SetAVTransportURI": {}, "Play": {}})
+    assert play(dev).status_code == 200
+    assert av.headers == {"Content-Type": 'text/xml; charset="utf-8"'}
+
+
+def test_set_uri_falls_back_to_a_minimal_didl_before_no_metadata():
+    seen = []
+    def set_uri(InstanceID, CurrentURI, CurrentURIMetaData):
+        seen.append(CurrentURIMetaData)
+        if len(seen) < 2: raise upnpclient.UPNPError(712, "Format of metadata invalid", None)
+        return {}
+    dev, av = av_only_renderer({"SetAVTransportURI": set_uri, "Play": {}})
+    full = ('<DIDL-Lite xmlns="urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/" xmlns:dc="http://purl.org/dc/elements/1.1/" '
+            'xmlns:upnp="urn:schemas-upnp-org:metadata-1-0/upnp/"><item id="9" parentID="3"><dc:title>A &amp; B</dc:title>'
+            '<upnp:class>object.item.audioItem.musicTrack</upnp:class><res protocolInfo="http-get:*:audio/flac:*">http://x/t.flac</res></item></DIDL-Lite>')
+    assert play(dev, metadata=full).status_code == 200
+    assert len(seen) == 2 and seen[0] == full
+    assert 'parentID="-1"' in seen[1] and "A &amp; B" in seen[1] and "http-get:*:audio/flac:*" in seen[1]
+
+
+def test_set_uri_names_the_http_refusal(monkeypatch):
+    import requests
+    monkeypatch.setattr("app.control.time.sleep", lambda s: None)
+    resp = requests.Response(); resp.status_code = 400; resp.reason = "Bad Request"; resp.url = "http://192.168.2.111:8080/AVTransport/ctrl"; resp._content = b"<html>bad</html>"
+    def bad(**kw): raise requests.exceptions.HTTPError("400 Client Error", response=resp)
+    dev, av = av_only_renderer({"SetAVTransportURI": bad, "Play": {}})
+    detail = play(dev).json()["detail"]
+    assert "HTTP 400 Bad Request from http://192.168.2.111:8080/AVTransport/ctrl" in detail and "bad" in detail
+
+
+def test_set_uri_retries_play_while_the_renderer_loads(monkeypatch):
+    monkeypatch.setattr("app.control.time.sleep", lambda s: None)
+    tries = []
+    def pl(InstanceID, Speed):
+        tries.append(1)
+        if len(tries) < 3: raise upnpclient.UPNPError(701, "Transition not available", None)
+        return {}
+    dev, av = av_only_renderer({"SetAVTransportURI": {}, "Play": pl})   # no Stop action: ignored
+    assert play(dev).status_code == 200 and len(tries) == 3
+
+
+def test_set_uri_reports_the_upnp_error_code(monkeypatch):
+    monkeypatch.setattr("app.control.time.sleep", lambda s: None)
+    def bad(**kw): raise upnpclient.UPNPError(714, "Illegal MIME-type", None)
+    dev, av = av_only_renderer({"SetAVTransportURI": bad, "Play": {}})
+    r = play(dev)
+    assert r.status_code == 502 and "SetAVTransportURI failed" in r.json()["detail"] and "714" in r.json()["detail"]
+
+
 # ---------- library ----------
 
 def test_browse_pages_through_a_folder():
@@ -182,6 +257,81 @@ def test_scan_collects_all_tracks_and_caches_them():
     assert r["count"] == 1 and r["tracks"][0]["title"] == "Song"
     assert client.get("/api/library/cached").json()["count"] == 1
     assert client.delete("/api/library/cached").status_code == 200
+    assert client.get("/api/library/cached").status_code == 404
+
+
+def audio(i, title="Song", album="Album", uri=None, cls="object.item.audioItem.musicTrack", duration="0:03:00"):
+    return (f'<item id="{i}" parentID="x"><dc:title>{title}</dc:title><upnp:artist>Artist</upnp:artist><upnp:album>{album}</upnp:album>'
+            f'<upnp:class>{cls}</upnp:class><res protocolInfo="http-get:*:audio/flac:*" duration="{duration}">{uri or "http://x/" + i}</res></item>')
+
+
+def folder(i, title):
+    return f'<container id="{i}" parentID="0"><dc:title>{title}</dc:title><upnp:class>object.container</upnp:class></container>'
+
+
+def scan(srv):
+    devices_api._publish_devices({srv.udn: srv})
+    return client.post("/api/scan", json={"device_id": srv.udn, "object_id": "0"})
+
+
+def test_scan_merges_the_same_track_listed_under_different_ids_and_urls():
+    """Jellyfin-style: every view lists the track again with its own object id and stream URL."""
+    srv = media_server(tree={"0": [folder("a", "Albums"), folder("b", "Artists")],
+                             "a": [audio("t1", uri="http://x/a/1"), audio("t2", title="Other", uri="http://x/a/2")],
+                             "b": [audio("t1b", uri="http://x/b/1"), audio("t2b", title="Other", uri="http://x/b/2")]})
+    r = scan(srv).json()
+    assert r["count"] == 2 and r["stats"]["merged_by_tags"] == 2 and r["stats"]["folders"] == 3
+
+
+def test_scan_keeps_tracks_that_only_differ_in_number_or_album():
+    srv = media_server(tree={"0": [folder("a", "Albums")],
+                             "a": [audio("t1", uri="u1"), audio("t2", album="Other", uri="u2"), audio("t3", duration="0:04:00", uri="u3")]})
+    assert scan(srv).json()["count"] == 3
+
+
+def test_scan_skips_videos():
+    srv = media_server(tree={"0": [folder("a", "Folders")], "a": [audio("v", cls="object.item.videoItem.movie"), audio("t1")]})
+    assert scan(srv).json()["count"] == 1
+
+
+def test_scan_finds_a_folder_view_one_level_down():
+    srv = media_server(tree={"0": [folder("m", "Music"), folder("v", "Movies")],
+                             "m": [folder("ma", "Albums"), folder("mf", "Folders")],
+                             "mf": [audio("t1")], "ma": [audio("t1x", uri="other"), audio("t9", title="Never")]})
+    r = scan(srv).json()
+    assert r["count"] == 1 and r["scan_root"] == "Music / Folders"
+
+
+def test_scan_stops_in_a_tree_that_loops_with_new_ids():
+    """A container that lists itself again under a fresh object id must not run away."""
+    tree = {"0": [folder("n0", "Loop")], "n0": [audio("t1")]}
+    for n in range(60):
+        tree[f"n{n}"] = tree.get(f"n{n}", []) + [folder(f"n{n + 1}", "Loop")]
+    r = scan(media_server(tree=tree)).json()
+    assert r["count"] == 1 and r["stats"]["loops_skipped"] >= 1
+
+
+def test_a_running_scan_can_be_cancelled(monkeypatch):
+    import threading
+    srv = media_server(tree={"0": [folder("a", "Albums")], "a": [audio("t1")]})
+    devices_api._publish_devices({srv.udn: srv})
+    gate = threading.Event()
+    client.delete("/api/library/cached")
+    from app import library
+    orig = library.browse_all
+    def slow(s, oid):
+        if oid == "a": gate.wait(5)
+        return orig(s, oid)
+    monkeypatch.setattr(library, "browse_all", slow)
+    result = {}
+    th = threading.Thread(target=lambda: result.update(r=client.post("/api/scan", json={"device_id": srv.udn, "object_id": "0"})))
+    th.start()
+    for _ in range(100):
+        if app_state.scan_state["running"]: break
+        threading.Event().wait(0.02)
+    assert client.post("/api/scan/cancel").json()["was_running"] is True
+    gate.set(); th.join(10)
+    assert result["r"].status_code == 409 and not app_state.scan_state["running"]
     assert client.get("/api/library/cached").status_code == 404
 
 

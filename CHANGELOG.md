@@ -6,6 +6,46 @@ All notable changes to Flou Player are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- **Clear library** button next to "Load library": deletes the saved library
+  from disk and empties the list (the music on the server is not touched).
+- **Cancel** button while a library scan is running; a cancelled scan keeps
+  nothing.
+
+- The Diagnostics log records every library scan: tracks and folders found,
+  duration, what was skipped (same URL, same tags, not audio, looping or too
+  deep folders), unreadable folders, and cancel/clear actions.
+
+- Getting-started guide: step-by-step instructions for downloading the code from
+  GitHub and installing it, and a troubleshooting section for devices that are
+  found but do not play (Marantz/HEOS, Sonos) with a table of UPnP error codes.
+
+### Fixed
+- Playing on Marantz/Denon (HEOS) and Sonos failed with "400 Bad Request ...
+  /AVTransport/ctrl": the SOAP requests are now sent as
+  `text/xml; charset="utf-8"` (upnpclient omits the charset), and the track
+  metadata falls back to a minimal rebuilt DIDL before being dropped. HTTP-level
+  refusals now name the status, URL and the device's answer in the error. Not
+  tried on real hardware.
+- Playing on plain UPnP AV renderers (Marantz, Sonos): the player is stopped
+  first, a refused DIDL metadata is retried without it, *Play* is retried a few
+  times when the device answers "701 Transition not available" while it loads,
+  and errors show the UPnP code and description (for example
+  `SetAVTransportURI failed: UPnP error 714 (Illegal MIME-type)`) instead of a
+  bare tuple. Not tried on real hardware.
+- A scan could run away on servers whose folder tree loops (a folder listing
+  itself again under a new object id) and report tens of thousands of tracks
+  for a library of a thousand. The scan now stops descending when a folder
+  title repeats along the path, when the tree gets too deep, or when thousands
+  of folders in a row bring no new track (the result then carries a warning).
+- Tracks were found many times on servers like Jellyfin, which list the same
+  file under several views with different object ids and stream URLs. Tracks
+  are now also merged by title, album, artist, track number and duration.
+- Videos and photos on servers that mix them into the music tree are no longer
+  counted as tracks.
+- A "Folders" view one level down (Jellyfin: Music > Folders) is now found and
+  scanned alone instead of walking every view.
+
 ## [0.17.0] - 2026-10-19
 
 ### Added

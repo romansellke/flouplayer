@@ -10,6 +10,22 @@ def service(device, needles):
         if any(n.lower() in probe for n in needles): return s
     return None
 
+class StrictSoap:
+    """Wraps a UPnP service so every action goes out with `Content-Type: text/xml; charset="utf-8"`.
+    upnpclient sends a bare `text/xml`, which Marantz/Denon (HEOS) and Sonos answer with
+    "400 Bad Request" before looking at the action at all."""
+    HEADERS={"Content-Type":'text/xml; charset="utf-8"'}
+    def __init__(self,svc): self._svc=svc
+    def __getattr__(self,name):
+        attr=getattr(self._svc,name)
+        if name[:1].isupper() and callable(attr): return lambda **kw: attr(http_headers=self.HEADERS,**kw)
+        return attr
+
+def av_transport(d):
+    """The AVTransport service of a device or its siblings, or None."""
+    svc=peer_service(d,["AVTransport"])
+    return StrictSoap(svc) if svc else None
+
 def _host(d):
     return urlparse(getattr(d,"location","") or "").hostname
 

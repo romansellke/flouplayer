@@ -16,8 +16,9 @@ class FakeService:
         if name.startswith("_") or name not in self.actions:
             raise AttributeError(name)
 
-        def call(**kwargs):
+        def call(http_headers=None, **kwargs):   # like upnpclient, every action takes optional headers
             self.calls.append((name, kwargs))
+            self.headers = http_headers
             result = self.actions[name]
             return result(**kwargs) if callable(result) else result
 

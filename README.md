@@ -51,6 +51,9 @@ Linux).
 ## Quick start
 
 ```
+sudo apt install git python3 python3-venv python3-pip      # Ubuntu / Linux Mint, one time
+git clone https://github.com/romansellke/flouplayer.git
+cd flouplayer
 ./packaging/install.sh     # builds and adds "Flou Player" to the application menu
 ```
 
@@ -60,7 +63,7 @@ media server and an output device, and double-click a track.
 
 ## Documentation
 
-- [Getting started](docs/getting-started.md) -- requirements, installing,
+- [Getting started](docs/getting-started.md) -- requirements, downloading and installing,
   running from source, Arch Linux, first start
 - [User guide](docs/user-guide.md) -- live and cached library, playback, the
   queue, local playback, themes, keyboard shortcuts

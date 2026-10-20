@@ -8,7 +8,7 @@ import upnpclient
 from fastapi import APIRouter, HTTPException
 
 from app.state import CACHE_DIR, KNOWN_DEVICES_FILE, _merged_primary, devices, lock
-from app.upnp import _has_openhome_product, _host, device_json, find_volume_service, peer_devices, peer_service
+from app.upnp import _has_openhome_product, _host, device_json, av_transport, find_volume_service, peer_devices
 
 router=APIRouter()
 
@@ -128,7 +128,7 @@ def get_transport(device_id:str):
     for automatically advancing to the next track once one has finished)."""
     d=devices.get(device_id)
     if not d: raise HTTPException(404,"Device not found")
-    av=peer_service(d,["AVTransport"])
+    av=av_transport(d)
     if not av: raise HTTPException(400,"No AVTransport service on this device")
     try:
         pos=av.GetPositionInfo(InstanceID=0)

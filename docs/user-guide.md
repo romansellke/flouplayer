@@ -58,6 +58,9 @@ iTunes-style column browser and instant searching across everything.
 2. The result is saved to `~/.cache/flou_player/library.json` and reloaded
    automatically on the next start. Click **Load library** again whenever
    you want to refresh it, for example after adding new music.
+3. **Cancel** (shown while the scan runs) stops it and discards the result.
+   **Clear library** deletes the saved library and empties the list -- use it
+   when a scan went wrong, then load the library again.
 
 ## Browsing the cached library
 
