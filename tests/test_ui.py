@@ -106,7 +106,7 @@ def test_the_cover_shows_the_album_artist_and_the_artist_column_is_optional(page
     start_live(page, api, tree)
     page.click("[data-cid=a]"); page.click("[data-cid=alb1]")
     page.wait_for_selector("[data-item=t1]")
-    assert page.inner_text(".albuminfo .albumartist") == "The Band"
+    assert page.text_content(".albuminfo .albumartist")   # not inner_text: .album uses content-visibility, so it is empty until first painted == "The Band"
     assert page.query_selector("td.artist") is None                       # hidden by default
     page.click("#colToggle")
     labels = page.eval_on_selector_all("#colMenu label", "ls => ls.map(l => l.textContent.trim() + ':' + l.querySelector('input').checked)")
@@ -119,7 +119,7 @@ def test_an_untagged_album_shows_the_shared_artist_next_to_the_cover(page, api):
     start_live(page, api, TREE)
     page.click("[data-cid=a]"); page.click("[data-cid=alb1]")
     page.wait_for_selector("[data-item=t1]")
-    assert page.inner_text(".albuminfo .albumartist") == "Artist X"
+    assert page.text_content(".albuminfo .albumartist")   # not inner_text: .album uses content-visibility, so it is empty until first painted == "Artist X"
 
 
 def test_now_playing_returns_to_the_folder_of_the_playing_track(page, api):
