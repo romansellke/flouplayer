@@ -144,7 +144,10 @@ def scan(req: ScanReq):
     if cancelled: raise HTTPException(409,"The scan was cancelled")
 
     result={"tracks":tracks,"count":len(tracks),"scan_root":scan_root_name or "all views (Artist/Album/Genre/...)","scanned_at":time.time(),"stats":stats}
-    if stalled: result["warning"]="The scan stopped early: the server kept listing folders without new tracks (a loop in its tree?)."
+    if stalled:
+        looped=stats["loops_skipped"] or stats["too_deep"]
+        result["warning"]=("The scan stopped early: the server kept listing folders without new tracks (a loop in its tree?)." if looped
+                           else "The scan ended after thousands of folders without a new track: the server lists the tracks again in its other views (Artist, Genre ...).")
     save_cached_library(result)
     return result
 

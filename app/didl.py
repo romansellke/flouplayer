@@ -1,6 +1,7 @@
 """DIDL-Lite parsing and walking a media server's ContentDirectory."""
 from __future__ import annotations
 import copy
+import re
 import xml.etree.ElementTree as ET
 
 from app.upnp import local_name
@@ -8,12 +9,16 @@ from app.upnp import local_name
 # Common names for a plain "by folder/file" view, which contains each track
 # only ONCE -- unlike the parallel views by artist/album/genre/composer,
 # where the same track shows up multiple times.
-CANONICAL_CONTAINER_NAMES={"folder","folders","by folder","files","ordner","dateien","verzeichnis","musikordner"}
+CANONICAL_CONTAINER_NAMES_RAW={"folder","folders","by folder","files","ordner","dateien","verzeichnis","musikordner"}
 
 # Next best when there is no folder view: one flat list of all songs, or the album
 # view -- both contain each track once, unlike walking Artist, Genre, Composer ... too.
-FLAT_VIEW_NAMES={"songs","all songs","tracks","all tracks","titel","alle titel","alle songs","alle lieder","lieder"}
-ALBUM_VIEW_NAMES={"albums","album","all albums","alben","alle alben"}
+FLAT_VIEW_NAMES_RAW={"songs","all songs","tracks","all tracks","titel","alle titel","alle songs","alle lieder","lieder"}
+ALBUM_VIEW_NAMES_RAW={"albums","album","all albums","alben","alle alben"}
+
+CANONICAL_CONTAINER_NAMES={re.sub(r"[^\w]+","",n) for n in CANONICAL_CONTAINER_NAMES_RAW}
+FLAT_VIEW_NAMES={re.sub(r"[^\w]+","",n) for n in FLAT_VIEW_NAMES_RAW}
+ALBUM_VIEW_NAMES={re.sub(r"[^\w]+","",n) for n in ALBUM_VIEW_NAMES_RAW}
 
 DIDL_NS="urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/"
 for _prefix,_uri in {"dc":"http://purl.org/dc/elements/1.1/","upnp":"urn:schemas-upnp-org:metadata-1-0/upnp/","dlna":"urn:schemas-dlna-org:metadata-1-0/"}.items():
@@ -73,6 +78,10 @@ def is_audio(item):
     audio belongs in the music library. An item without a class counts as audio."""
     cls=(item.get("class") or "").lower()
     return not (cls.startswith("object.item.videoitem") or cls.startswith("object.item.imageitem"))
+
+def view_name(title):
+    """"[Folders]", "Folders " and "folders" are the same view name."""
+    return re.sub(r"[^\w]+","",(title or "").lower())
 
 def duration_seconds(text):
     """"0:03:00.000" and "0:03:00" are the same length; None when unreadable."""
@@ -139,6 +148,6 @@ def pick_scan_root(s, root_object_id):
     for names in (CANONICAL_CONTAINER_NAMES,FLAT_VIEW_NAMES,ALBUM_VIEW_NAMES):
         for parent_title,group in levels:
             for i in group:
-                if i["title"].strip().lower() in names:
+                if view_name(i["title"]) in names:
                     return i["id"], f"{parent_title} / {i['title']}" if parent_title else i["title"], [c["title"] for c in containers]
     return root_object_id, None, [c["title"] for c in containers]

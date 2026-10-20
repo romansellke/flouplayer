@@ -49,6 +49,11 @@ All notable changes to Flou Player are documented here. The format follows
   flat "Songs"/"Tracks" view, then the "Albums" view, and merges copies by title,
   album and duration in seconds. The Diagnostics log lists the server's top-level
   folders.
+- A server that simply lists every track in several views (Artist, Genre ...)
+  no longer gets a scan "error" when the scan ends after thousands of folders
+  without a new track: that is now a plain log note, and the error and the toast
+  stay for real loops. View names such as "[Folders]" are matched ignoring
+  brackets and spaces.
 - Videos and photos on servers that mix them into the music tree are no longer
   counted as tracks.
 - A "Folders" view one level down (Jellyfin: Music > Folders) is now found and

@@ -309,6 +309,12 @@ def test_scan_keeps_tracks_that_only_differ_in_number_or_album():
     assert scan(srv).json()["count"] == 3
 
 
+def test_scan_recognises_a_bracketed_folder_view_name():
+    srv = media_server(tree={"0": [folder("a", "[Folders]"), folder("g", "Genres")], "a": [audio("t1")], "g": [audio("g1", title="Genre only", uri="g")]})
+    r = scan(srv).json()
+    assert r["count"] == 1 and r["scan_root"] == "[Folders]"
+
+
 def test_scan_skips_videos():
     srv = media_server(tree={"0": [folder("a", "Folders")], "a": [audio("v", cls="object.item.videoItem.movie"), audio("t1")]})
     assert scan(srv).json()["count"] == 1
