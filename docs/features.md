@@ -5,6 +5,10 @@ explains each point in detail.
 
 ## Browsing the music
 
+![Live mode: the media server's albums as cards, folder by folder](screenshot.png)
+
+*Live mode -- the server's own folders, here its album list.*
+
 **Live mode** -- the media server as it is, folder by folder (like the Linn app)
 - Whatever structure the server offers: Artists, Albums, Genres, Folders, ...
 - Path bar to jump back; Backspace / Alt+← goes one folder up
@@ -14,6 +18,10 @@ explains each point in detail.
   matching albums and tracks, shown as a folder of their own; **×** / Esc
   returns to where you were
 - Nothing is scanned or stored: always current, starts instantly
+
+![Library mode: an album with cover, track table and the playing track highlighted](screenshot-cached.png)
+
+*Library mode -- the scanned library; the playing track is marked.*
 
 **Library mode** -- a one-time scan of the whole library, kept on disk
 - iTunes-style **column browser**: Album Artist, Artist, Album, Year, with
@@ -82,7 +90,12 @@ explains each point in detail.
 - **Interface zoom** (Ctrl/⌘+Plus / Minus / 0) and `FLOU_SCALE` for HiDPI screens
 - **17 colour themes** (Dracula, Nord, Catppuccin, Tokyo Night, ...)
 
+![The theme picker with the 17 colour themes](screenshot-themes.png)
+
 ## Library health
+
+![Library health: the checks with their counts on the left, the findings on the right](screenshot-health.png)
+
 
 A check of the scanned library for tag problems, each with the affected albums
 and a jump to them: missing Artist / Album Artist / album title / year / genre /
@@ -92,6 +105,9 @@ split by a partial Album Artist tag, spelling variants ("The Beatles" /
 information. Lists can be copied for a spreadsheet. Nothing is changed.
 
 ## Diagnostics and About
+
+![The Diagnostics log with a library scan](screenshot-diagnostics.png)
+
 
 - Log of the last 300 events (errors highlighted, badge for unseen errors,
   errors-only filter), including every library scan
