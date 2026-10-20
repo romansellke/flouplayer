@@ -27,8 +27,7 @@ All notable changes to Flou Player are documented here. The format follows
 
 ### Fixed
 - Pause now also reaches the device when it accepts the OpenHome pause but keeps
-  playing, and the Pause button is no longer greyed out for tracks played from
-  our own list.
+  playing, and the Pause button is only greyed out for sources that really cannot pause (e.g. radio), not for the device queue or our own list.
 - Active buttons (Live/Cached, Library/Queue tab, Library health, mute, the
   selected facet and health check) are now filled with the theme's accent
   colour, so they stand out in every theme. The playing track gets a coloured
