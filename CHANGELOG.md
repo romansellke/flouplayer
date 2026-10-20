@@ -20,6 +20,8 @@ All notable changes to Flou Player are documented here. The format follows
   GitHub and installing it, and a troubleshooting section for devices that are
   found but do not play (Marantz/HEOS, Sonos) with a table of UPnP error codes.
 
+- The **Queue** tab has a tooltip explaining that the queue lives on the output device (OpenHome Playlist) and what it does.
+
 ### Fixed
 - Playing on Marantz/Denon (HEOS) and Sonos failed with "400 Bad Request ...
   /AVTransport/ctrl": the SOAP requests are now sent as

@@ -190,6 +190,12 @@ Fix the tags at the source (for example with a tag editor), then rescan.
 
 ## The queue (OpenHome playlist)
 
+Hover over the **Queue** tab for a short explanation. The queue is not kept
+by Flou Player: it is the playlist stored **on the output device**, so it
+exists only on Linn/OpenHome devices (not on Marantz, Sonos or "This
+computer"), keeps playing when the app is closed, and is shared with other
+control apps.
+
 On Linn/OpenHome devices the device's own playlist has its own **Queue** tab
 (Ctrl/⌘+Q toggles it).
 

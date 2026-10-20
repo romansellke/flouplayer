@@ -30,10 +30,15 @@ const shownTracks=()=>state.currentPlaylist.filter(t=>t.resources?.[0]);
 $('#qAddAll').onclick=()=>queueAdd(shownTracks(),!queue.entries.length||!queue.active);
 $('#qPlayAll').onclick=()=>queueAdd(shownTracks(),true,true);
 const fmtDurClock=d=>{const n=parseClock(d||''); return n?fmtClock(n):''};
+// The queue is the output device's own playlist, not a list kept by this app.
+const QUEUE_HELP='The queue is the playlist stored on the output device itself (OpenHome Playlist), '
+  +'so it only exists on Linn/OpenHome devices. The device plays it by itself: tracks keep playing in order '
+  +'even if Flou Player is closed, and other control apps (e.g. Linn app) see and change the same queue. '
+  +'Add tracks with + or + Queue, reorder, remove, shuffle and repeat here.';
 function renderQueue(){
   const usable=queue.supported&&!isLocal();
   $('#tabQueue').disabled=!usable;
-  $('#tabQueue').title=usable?'':'Select a Linn/OpenHome output device to use the queue';
+  $('#tabQueue').title=QUEUE_HELP+(usable?'':'\n\nNot available now: select a Linn/OpenHome output device (not "This computer") to use it.');
   if(!usable && currentTab()==='queue') showTab('library');
   const n=queue.entries.length;
   $('#queueCount').textContent=n; $('#queueCount').classList.toggle('hidden',!n);
