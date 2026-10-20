@@ -12,6 +12,10 @@ All notable changes to Flou Player are documented here. The format follows
 - **Cancel** button while a library scan is running; a cancelled scan keeps
   nothing.
 
+- The Diagnostics log records every library scan: tracks and folders found,
+  duration, what was skipped (same URL, same tags, not audio, looping or too
+  deep folders), unreadable folders, and cancel/clear actions.
+
 ### Fixed
 - A scan could run away on servers whose folder tree loops (a folder listing
   itself again under a new object id) and report tens of thousands of tracks

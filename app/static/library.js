@@ -2,8 +2,17 @@
 // (Classic script: shares one global scope with the other files, loaded in the order given in index.html.)
 
 let cancelled=false;
+// Writes what a scan did into the diagnostics log, so a wrong count can be traced (loops, duplicates, failed folders).
+function logScan(x){
+  const st=x.stats||{};
+  log(`Library scan: ${x.count} tracks, ${st.folders??'?'} folders in ${st.seconds??'?'} s (root: ${x.scan_root})`);
+  const skipped=[['same URL',st.duplicates],['same tags',st.merged_by_tags],['not audio',st.non_audio],['looping folder',st.loops_skipped],['too deep',st.too_deep]].filter(([,n])=>n);
+  if(skipped.length) log('Scan skipped: '+skipped.map(([k,n])=>`${n} (${k})`).join(', '));
+  if(st.stalled) log('Scan stopped early: thousands of folders in a row without a new track -- the server tree probably loops.','error');
+  (st.failed_folders||[]).forEach(f=>log('Scan: folder could not be read: '+f,'warn'));
+}
 $('#cancelScan').onclick=async()=>{
-  cancelled=true;
+  cancelled=true; log('Library scan cancelled by the user');
   try{ await api('/api/scan/cancel',{method:'POST'}) }catch(e){ logErr(e.message) }
 };
 
@@ -12,6 +21,7 @@ $('#clearLibrary').onclick=async()=>{
   if(!confirm('Delete the saved library? The music on the server is not touched; load the library again to rebuild it.')) return;
   try{
     await api('/api/library/cached',{method:'DELETE'});
+    log('Saved library deleted (Clear library)');
     state.tracks=[]; state.filters={album_artist:'',artist:'',album:'',year:''};
     $('#breadcrumb').textContent='Library cleared';
     render();
@@ -43,6 +53,7 @@ $('#loadLibrary').onclick=async()=>{
     state.filters={album_artist:'',artist:'',album:'',year:''};
     $('#breadcrumb').textContent=`${x.count} tracks (${x.scan_root})`;
     render();
+    logScan(x);
     if(x.warning) notify(x.warning);
   }catch(e){
     if(state.tracks.length) render();

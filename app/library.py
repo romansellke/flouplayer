@@ -93,6 +93,8 @@ def scan(req: ScanReq):
         scan_state.update(running=True,cancel=False,count=0,containers=0)
 
     cancelled=stalled=False
+    stats={"folders":0,"failed_folders":[],"duplicates":0,"merged_by_tags":0,"non_audio":0,"loops_skipped":0,"too_deep":0}
+    started=time.time()
     try:
         scan_root,scan_root_name=pick_scan_root(s,req.object_id)
         tracks=[]; visited={scan_root}; seen_uris=set(); seen_keys=set(); idle=0
@@ -105,20 +107,26 @@ def scan(req: ScanReq):
                     path=pending.pop(fut)
                     try:
                         items=fut.result()
-                    except Exception:
+                    except Exception as e:
+                        if len(stats["failed_folders"])<20: stats["failed_folders"].append(f'{"/".join(path) or "root"}: {e}')
                         continue  # skip a single failed folder rather than aborting the whole scan
                     with scan_lock: scan_state["containers"]+=1
-                    idle+=1
+                    idle+=1; stats["folders"]+=1
                     for i in items:
                         if i["type"]=="container":
                             title=i["title"].strip().lower()
-                            if i["id"] in visited or len(path)>=SCAN_MAX_DEPTH or [p.lower() for p in path].count(title)>=2: continue
+                            if i["id"] in visited: continue
+                            if len(path)>=SCAN_MAX_DEPTH: stats["too_deep"]+=1; continue
+                            if [p.lower() for p in path].count(title)>=2: stats["loops_skipped"]+=1; continue
                             visited.add(i["id"])
                             pending[executor.submit(browse_all,s,i["id"])]=path+(i["title"],)
-                        elif i["type"]=="item" and i["resources"] and is_audio(i):
+                        elif i["type"]=="item" and i["resources"] and not is_audio(i):
+                            stats["non_audio"]+=1
+                        elif i["type"]=="item" and i["resources"]:
                             uri=i["resources"][0]["uri"]
                             key=track_key(i)
-                            if uri in seen_uris or (key and key in seen_keys): continue
+                            if uri in seen_uris: stats["duplicates"]+=1; continue
+                            if key and key in seen_keys: stats["merged_by_tags"]+=1; continue
                             seen_uris.add(uri)
                             if key: seen_keys.add(key)
                             tracks.append(i); idle=0
@@ -131,9 +139,10 @@ def scan(req: ScanReq):
     finally:
         with scan_lock: scan_state.update(running=False,cancel=False)
 
+    stats.update(seconds=round(time.time()-started,1),stalled=stalled,scan_root=scan_root_name or "")
     if cancelled: raise HTTPException(409,"The scan was cancelled")
 
-    result={"tracks":tracks,"count":len(tracks),"scan_root":scan_root_name or "all views (Artist/Album/Genre/...)","scanned_at":time.time()}
+    result={"tracks":tracks,"count":len(tracks),"scan_root":scan_root_name or "all views (Artist/Album/Genre/...)","scanned_at":time.time(),"stats":stats}
     if stalled: result["warning"]="The scan stopped early: the server kept listing folders without new tracks (a loop in its tree?)."
     save_cached_library(result)
     return result

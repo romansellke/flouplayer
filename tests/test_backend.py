@@ -204,7 +204,8 @@ def test_scan_merges_the_same_track_listed_under_different_ids_and_urls():
     srv = media_server(tree={"0": [folder("a", "Albums"), folder("b", "Artists")],
                              "a": [audio("t1", uri="http://x/a/1"), audio("t2", title="Other", uri="http://x/a/2")],
                              "b": [audio("t1b", uri="http://x/b/1"), audio("t2b", title="Other", uri="http://x/b/2")]})
-    assert scan(srv).json()["count"] == 2
+    r = scan(srv).json()
+    assert r["count"] == 2 and r["stats"]["merged_by_tags"] == 2 and r["stats"]["folders"] == 3
 
 
 def test_scan_keeps_tracks_that_only_differ_in_number_or_album():
@@ -232,7 +233,7 @@ def test_scan_stops_in_a_tree_that_loops_with_new_ids():
     for n in range(60):
         tree[f"n{n}"] = tree.get(f"n{n}", []) + [folder(f"n{n + 1}", "Loop")]
     r = scan(media_server(tree=tree)).json()
-    assert r["count"] == 1
+    assert r["count"] == 1 and r["stats"]["loops_skipped"] >= 1
 
 
 def test_a_running_scan_can_be_cancelled(monkeypatch):
