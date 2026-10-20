@@ -23,6 +23,10 @@ All notable changes to Flou Player are documented here. The format follows
 - The **Queue** tab has a tooltip explaining that the queue lives on the output device (OpenHome Playlist) and what it does.
 
 ### Fixed
+- Active buttons (Live/Cached, Library/Queue tab, Library health, mute, the
+  selected facet and health check) are now filled with the theme's accent
+  colour, so they stand out in every theme. The playing track gets a coloured
+  side bar.
 - Playing on Marantz/Denon (HEOS) and Sonos failed with "400 Bad Request ...
   /AVTransport/ctrl": the SOAP requests are now sent as
   `text/xml; charset="utf-8"` (upnpclient omits the charset), and the track
