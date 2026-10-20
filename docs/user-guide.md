@@ -39,7 +39,12 @@ what you see.
   **Alt+←** to go one folder up.
 - A folder that contains tracks is shown as an album block with cover and
   track table.
-- The search field filters the current folder only.
+- Typing in the search field filters the current folder. Press **Enter** to
+  search the **whole media server** instead (its own search, e.g. MinimServer):
+  the results -- matching albums and tracks, by title, artist or album --
+  show up as a folder of their own (*Home › Search "..."*). Albums open as
+  usual and the path bar leads back to the results. Servers without a search
+  function say so.
 - Large folders load in steps of 300 entries; use **Load more** at the end.
 - Nothing is scanned or stored: the view is always current and starts
   instantly.

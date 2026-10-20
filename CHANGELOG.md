@@ -6,6 +6,12 @@ All notable changes to Flou Player are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- **Server-wide search in Live mode**: Enter in the search field searches the
+  whole media server (ContentDirectory Search, e.g. MinimServer) for albums and
+  tracks by title, artist or album; the results open like a folder. Typing
+  still filters the open folder.
+
 ### Changed
 - Header icons: Library health now has a tag icon, Diagnostics the pulse icon.
 

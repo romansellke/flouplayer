@@ -101,6 +101,30 @@ def test_live_browsing_navigation(page, api):
     page.wait_for_selector("[data-cid=a]")
 
 
+def test_enter_searches_the_whole_server_and_results_open_like_folders(page, api):
+    import json
+    queries = []
+    def search(req):
+        queries.append(json.loads(req.post_data)["query"])
+        items = [{"type": "container", "id": "alb1", "title": "Album One"}, track(7, album="Elsewhere")]
+        return {"items": items, "number_returned": 1, "total_matches": 1}
+    api.routes["search"] = search
+    start_live(page, api, TREE)
+    page.fill("#search", "Trac")                                   # typing alone only filters the open folder
+    page.wait_for_timeout(200)
+    assert queries == []
+    page.press("#search", "Enter")
+    page.wait_for_selector("[data-item=t7]")
+    assert queries == ["Trac"] and page.input_value("#search") == ""
+    assert page.inner_text(".crumbs").replace("\n", "") == "Home›Search “Trac”"
+    page.click("[data-cid=alb1]")                                   # an album found by the search opens like a folder
+    page.wait_for_selector("[data-item=t1]")
+    assert page.inner_text(".crumbs").replace("\n", "") == "Home›Search “Trac”›Album One"
+    page.click(".crumb[data-depth='1']")                            # and back to the results
+    page.wait_for_selector("[data-item=t7]")
+    assert queries == ["Trac", "Trac"]
+
+
 def test_the_cover_shows_the_album_artist_and_the_artist_column_is_optional(page, api):
     tree = dict(TREE, alb1=[track(1, album_artist="The Band"), track(2, album_artist="The Band")])
     start_live(page, api, tree)

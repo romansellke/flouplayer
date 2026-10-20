@@ -151,6 +151,42 @@ def scan(req: ScanReq):
     save_cached_library(result)
     return result
 
+class SearchReq(BaseModel): device_id:str; query:str; start:int=0; count:int=200
+
+SEARCH_FIELDS=("dc:title","upnp:artist","upnp:album","dc:creator")
+
+def _quote(q):
+    return '"'+q.replace("\\","\\\\").replace('"','\\"')+'"'
+
+@router.post("/api/search")
+def search(req:SearchReq):
+    """Search the whole media server (ContentDirectory Search), for Live mode.
+    Returns matching albums (first page only) followed by matching tracks; the
+    counts refer to the tracks, so "Load more" pages through them."""
+    d=devices.get(req.device_id)
+    if not d: raise HTTPException(404,"Media server not found")
+    s=service(d,["ContentDirectory"])
+    if not s: raise HTTPException(400,"No ContentDirectory service present")
+    q=req.query.strip()
+    if not q: raise HTTPException(400,"Empty search")
+    try: caps=(s.GetSearchCapabilities().get("SearchCaps") or "").strip()
+    except Exception: caps=""
+    fields=[f for f in SEARCH_FIELDS if caps=="*" or f in caps.split(",")]
+    if not fields: raise HTTPException(400,"This media server doesn't support searching -- browse the folders, or use the Library tab.")
+    any_field=" or ".join(f"{f} contains {_quote(q)}" for f in fields)
+    def run(criteria,start,count):
+        r=s.Search(ContainerID="0",SearchCriteria=criteria,Filter="*",StartingIndex=start,RequestedCount=count,SortCriteria="")
+        return parse_didl(r.get("Result","")),int(r.get("NumberReturned",0) or 0),int(r.get("TotalMatches",0) or 0)
+    albums=[]
+    if req.start==0:
+        album_fields=" or ".join(f"{f} contains {_quote(q)}" for f in fields if f in ("dc:title","upnp:artist"))
+        if album_fields:
+            try: albums=[a for a in run(f'upnp:class derivedfrom "object.container.album" and ({album_fields})',0,100)[0] if a.get("type")=="container"]
+            except Exception: albums=[]   # some servers only search items: then just tracks
+    try: tracks,returned,total=run(f'upnp:class derivedfrom "object.item.audioItem" and ({any_field})',req.start,req.count)
+    except Exception as e: raise HTTPException(502,f"Search failed: {e}")
+    return {"items":albums+tracks,"number_returned":returned,"total_matches":total}
+
 @router.post("/api/browse")
 def browse(req:Browse):
     d=devices.get(req.device_id)

@@ -473,3 +473,45 @@ def test_mpris_player_forwards_keys_and_shows_the_current_track():
     emitted.clear()
     b.update(media.MediaState(status="Playing", title="Song", artist="Artist", album="Album", length=180, track_id="t/1", can_next=False, position=42))
     assert emitted == []                                                             # the position alone is polled, not signalled
+
+
+# ---------- server-wide search (Live mode) ----------
+
+ALBUM = ('<container id="alb1" parentID="x" childCount="2"><dc:title>Blue Album</dc:title><upnp:artist>Artist</upnp:artist>'
+         '<upnp:class>object.container.album.musicAlbum</upnp:class></container>')
+
+
+def search_server(caps="dc:title,upnp:artist,upnp:album,upnp:class"):
+    def answer(criteria):
+        return [ALBUM] if "object.container.album" in criteria else [TRACK]
+    srv = media_server(search=answer, search_caps=caps)
+    devices_api._publish_devices({srv.udn: srv})
+    return srv
+
+
+def test_search_returns_matching_albums_then_tracks_and_escapes_the_query():
+    srv = search_server()
+    r = client.post("/api/search", json={"device_id": srv.udn, "query": 'Blue "Moon"'})
+    assert r.status_code == 200
+    body = r.json()
+    assert [i["type"] for i in body["items"]] == ["container", "item"] and body["items"][0]["title"] == "Blue Album"
+    assert body["number_returned"] == 1 and body["total_matches"] == 1          # the counts are the tracks'
+    tracks_query = srv.searches[-1]
+    assert 'upnp:class derivedfrom "object.item.audioItem"' in tracks_query
+    assert 'dc:title contains "Blue \\"Moon\\""' in tracks_query and "dc:creator" not in tracks_query   # only what the server can search
+    app_state.devices.clear()
+
+
+def test_search_pages_through_tracks_without_repeating_the_albums():
+    srv = search_server()
+    body = client.post("/api/search", json={"device_id": srv.udn, "query": "x", "start": 200}).json()
+    assert all(i["type"] == "item" for i in body["items"])
+    assert not any("object.container.album" in c for c in srv.searches)
+    app_state.devices.clear()
+
+
+def test_search_on_a_server_without_search_says_so():
+    srv = search_server(caps="")
+    r = client.post("/api/search", json={"device_id": srv.udn, "query": "x"})
+    assert r.status_code == 400 and "doesn't support searching" in r.json()["detail"]
+    app_state.devices.clear()
