@@ -123,7 +123,7 @@ async function pollCaps(){
   try{
     const c=await api(`/api/devices/${encodeURIComponent(d)}/capabilities`);
     const device=deviceOwnsPlayback()||(queue.supported&&queue.active);
-    set('pause',c.supported&&c.can_pause===false);
+    set('pause',c.supported&&device&&c.can_pause===false);   // our own track list: CanPause is unreliable, leave Pause usable
     set('next',c.supported&&device&&c.can_skip_next===false);
     set('previous',c.supported&&device&&c.can_skip_previous===false);
   }catch(e){ ['pause','next','previous'].forEach(s=>set(s,false)) }
