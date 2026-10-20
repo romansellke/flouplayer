@@ -56,6 +56,10 @@ function renderLive(){
   const tracks=live.tracks.filter(t=>!q||SEARCH_FIELDS.some(k=>(t[k]||'').toLowerCase().includes(q))).filter(qualityMatch);
   // tracks grouped by album, in server order (a folder is usually one album)
   const groups={}; tracks.forEach(t=>(groups[albumKey(t)]??=[]).push(t));
+  // Search results come in the server's relevance order: put each album's tracks back in track order
+  // (stable sort, so tracks without a number keep their place). A folder keeps the server's order.
+  if(live.stack[live.stack.length-1].search!=null)
+    Object.values(groups).forEach(ts=>ts.sort((a,b)=>(parseInt(a.track_number)||0)-(parseInt(b.track_number)||0)));
   const entries=Object.entries(groups);
   state.currentPlaylist=entries.flatMap(([,ts])=>ts);
   state.view={entries,groups,byId:new Map(tracks.map(t=>[t.id,t])),rendered:entries.length};

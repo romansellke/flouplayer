@@ -15,6 +15,10 @@ All notable changes to Flou Player are documented here. The format follows
 ### Changed
 - Header icons: Library health now has a tag icon, Diagnostics the pulse icon.
 
+### Fixed
+- Live search results list each album's tracks in track order (the server
+  returns them by relevance).
+
 ## [0.18.0] - 2026-10-20
 
 ### Added
