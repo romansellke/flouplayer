@@ -297,6 +297,7 @@ const albumObserver=new IntersectionObserver(es=>{if(es.some(e=>e.isIntersecting
 // keep=true re-renders in place (same albums rendered, same scroll
 // position) -- used when only the look changes, e.g. the play marker.
 function renderAlbums(keep=false){
+  if(typeof drawSearchClear==='function') drawSearchClear();   // the × follows the search text (live.js)
   if(isLive()) return renderLive();
   const c=$('#content');
   const prevRendered=keep?state.view.rendered:0, prevScroll=keep?c.scrollTop:0;

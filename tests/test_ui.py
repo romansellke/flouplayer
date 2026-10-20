@@ -126,6 +126,23 @@ def test_enter_searches_the_whole_server_and_results_open_like_folders(page, api
     assert queries == ["Trac", "Trac"]
 
 
+def test_the_search_can_be_reset_back_to_the_folder_before_it(page, api):
+    api.routes["search"] = {"items": [track(7, album="Elsewhere")], "number_returned": 1, "total_matches": 1}
+    start_live(page, api, TREE)
+    page.click("[data-cid=a]"); page.wait_for_selector("[data-cid=alb1]")
+    assert not page.is_visible("#searchClear")
+    page.fill("#search", "x")
+    assert page.is_visible("#searchClear")                          # × appears with text
+    page.press("#search", "Enter"); page.wait_for_selector("[data-item=t7]")
+    assert page.is_visible("#searchClear")                          # ... and stays while in the search
+    page.click("#searchClear")
+    page.wait_for_selector("[data-cid=alb1]")                       # back in "Albums", where the search started
+    assert page.inner_text(".crumbs").replace("\n", "") == "Home›Albums"
+    assert not page.is_visible("#searchClear")
+    page.fill("#search", "zzz"); page.press("#search", "Escape")    # Esc clears a typed filter
+    assert page.input_value("#search") == "" and page.is_visible("[data-cid=alb1]")
+
+
 def test_the_cover_shows_the_album_artist_and_the_artist_column_is_optional(page, api):
     tree = dict(TREE, alb1=[track(1, album_artist="The Band"), track(2, album_artist="The Band")])
     start_live(page, api, tree)

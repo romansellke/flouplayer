@@ -20,6 +20,9 @@ All notable changes to Flou Player are documented here. The format follows
   returns them by relevance).
 - In Live mode the search field lined up a few pixels too far right (an empty
   library button box was still taking space); it now aligns with the tabs.
+- The search could not be reset: the search field has a **×** (and **Esc**)
+  that clears the text and, in Live mode, leaves a server search back to the
+  folder that was open before.
 
 ## [0.18.0] - 2026-10-20
 
