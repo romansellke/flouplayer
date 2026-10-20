@@ -276,11 +276,31 @@ def scan(srv):
 
 def test_scan_merges_the_same_track_listed_under_different_ids_and_urls():
     """Jellyfin-style: every view lists the track again with its own object id and stream URL."""
-    srv = media_server(tree={"0": [folder("a", "Albums"), folder("b", "Artists")],
+    srv = media_server(tree={"0": [folder("a", "Genres"), folder("b", "Artists")],
                              "a": [audio("t1", uri="http://x/a/1"), audio("t2", title="Other", uri="http://x/a/2")],
                              "b": [audio("t1b", uri="http://x/b/1"), audio("t2b", title="Other", uri="http://x/b/2")]})
     r = scan(srv).json()
     assert r["count"] == 2 and r["stats"]["merged_by_tags"] == 2 and r["stats"]["folders"] == 3
+
+
+def test_scan_merges_a_track_whose_views_differ_in_artist_number_and_duration_format():
+    def t(i, artist, number, duration):
+        return (f'<item id="{i}" parentID="x"><dc:title>Song</dc:title><upnp:artist>{artist}</upnp:artist><upnp:album>Album</upnp:album>'
+                f'<upnp:originalTrackNumber>{number}</upnp:originalTrackNumber><upnp:class>object.item.audioItem.musicTrack</upnp:class>'
+                f'<res protocolInfo="http-get:*:audio/flac:*" duration="{duration}">http://x/{i}</res></item>')
+    srv = media_server(tree={"0": [folder("a", "Genres"), folder("b", "Composers")],
+                             "a": [t("1", "Band", "1", "0:03:00")], "b": [t("2", "Band feat. X", "", "0:03:00.000")]})
+    assert scan(srv).json()["count"] == 1
+
+
+def test_scan_prefers_a_flat_songs_view_or_the_album_view_over_walking_every_view():
+    srv = media_server(tree={"0": [folder("g", "Genres"), folder("s", "Songs"), folder("r", "Artists")],
+                             "g": [audio("g1", title="Only in genre", uri="g")], "r": [audio("r1", title="Only in artist", uri="r")],
+                             "s": [audio("t1", uri="u1")]})
+    r = scan(srv).json()
+    assert r["count"] == 1 and r["scan_root"] == "Songs" and "Genres" in r["stats"]["root_folders"]
+    srv = media_server(tree={"0": [folder("g", "Genres"), folder("al", "Albums")], "g": [audio("g1", title="Genre only", uri="g")], "al": [audio("t1", uri="u1")]})
+    assert scan(srv).json()["scan_root"] == "Albums"
 
 
 def test_scan_keeps_tracks_that_only_differ_in_number_or_album():

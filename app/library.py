@@ -96,7 +96,8 @@ def scan(req: ScanReq):
     stats={"folders":0,"failed_folders":[],"duplicates":0,"merged_by_tags":0,"non_audio":0,"loops_skipped":0,"too_deep":0}
     started=time.time()
     try:
-        scan_root,scan_root_name=pick_scan_root(s,req.object_id)
+        scan_root,scan_root_name,root_titles=pick_scan_root(s,req.object_id)
+        stats["root_folders"]=root_titles[:40]
         tracks=[]; visited={scan_root}; seen_uris=set(); seen_keys=set(); idle=0
         with cf.ThreadPoolExecutor(max_workers=SCAN_WORKERS) as executor:
             # each pending folder carries the titles leading to it, to spot a tree that loops

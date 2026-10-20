@@ -43,6 +43,12 @@ All notable changes to Flou Player are documented here. The format follows
 - Tracks were found many times on servers like Jellyfin, which list the same
   file under several views with different object ids and stream URLs. Tracks
   are now also merged by title, album, artist, track number and duration.
+- Without a by-folder view the scan walked every view (Artist, Genre, Composer
+  ...) and still counted a library of 1400 files as 13000 tracks, because the
+  copies differed in artist, track number or duration format. It now prefers a
+  flat "Songs"/"Tracks" view, then the "Albums" view, and merges copies by title,
+  album and duration in seconds. The Diagnostics log lists the server's top-level
+  folders.
 - Videos and photos on servers that mix them into the music tree are no longer
   counted as tracks.
 - A "Folders" view one level down (Jellyfin: Music > Folders) is now found and

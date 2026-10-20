@@ -6,6 +6,7 @@ let cancelled=false;
 function logScan(x){
   const st=x.stats||{};
   log(`Library scan: ${x.count} tracks, ${st.folders??'?'} folders in ${st.seconds??'?'} s (root: ${x.scan_root})`);
+  if(st.root_folders?.length) log(`Scan: the server's top level has ${st.root_folders.length} folders: ${st.root_folders.join(', ')}`);
   const skipped=[['same URL',st.duplicates],['same tags',st.merged_by_tags],['not audio',st.non_audio],['looping folder',st.loops_skipped],['too deep',st.too_deep]].filter(([,n])=>n);
   if(skipped.length) log('Scan skipped: '+skipped.map(([k,n])=>`${n} (${k})`).join(', '));
   if(st.stalled) log('Scan stopped early: thousands of folders in a row without a new track -- the server tree probably loops.','error');
