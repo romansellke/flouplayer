@@ -6,29 +6,28 @@ All notable changes to Flou Player are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.19.0] - 2026-10-20
+
 ### Added
+- **Server-wide search in Live mode**: Enter in the search field searches the
+  whole media server (ContentDirectory Search, e.g. MinimServer) for albums and
+  tracks by title, artist or album. The results open like a folder, with each
+  album's tracks in track order; **×** in the search field (or **Esc**) leaves
+  the search and returns to the folder you were in. Typing still filters the
+  open folder.
 - Library mode notices when the music on the media server has changed since
   the scan (the server's SystemUpdateID, raised e.g. after MinimServer rescans)
   and offers **Reload library** above the album list; "×" hides the note
   until the server changes again. Needs one fresh scan with this version.
 - Docs: a [feature list](docs/features.md) with everything Flou Player can do
   and what is tested on real hardware.
-- **Server-wide search in Live mode**: Enter in the search field searches the
-  whole media server (ContentDirectory Search, e.g. MinimServer) for albums and
-  tracks by title, artist or album; the results open like a folder. Typing
-  still filters the open folder.
 
 ### Changed
 - Header icons: Library health now has a tag icon, Diagnostics the pulse icon.
 
 ### Fixed
-- Live search results list each album's tracks in track order (the server
-  returns them by relevance).
 - In Live mode the search field lined up a few pixels too far right (an empty
   library button box was still taking space); it now aligns with the tabs.
-- The search could not be reset: the search field has a **×** (and **Esc**)
-  that clears the text and, in Live mode, leaves a server search back to the
-  folder that was open before.
 
 ## [0.18.0] - 2026-10-20
 
@@ -394,7 +393,8 @@ the OpenHome queue tab; a position/seek bar and a live dB volume readout; a
 Diagnostics log and About dialog; 17 colour themes; installable Linux app
 packaging; and the GPL-3.0-or-later license.
 
-[Unreleased]: https://github.com/romansellke/flouplayer/compare/v0.18.0...HEAD
+[Unreleased]: https://github.com/romansellke/flouplayer/compare/v0.19.0...HEAD
+[0.19.0]: https://github.com/romansellke/flouplayer/compare/v0.18.0...v0.19.0
 [0.18.0]: https://github.com/romansellke/flouplayer/compare/v0.17.0...v0.18.0
 [0.17.0]: https://github.com/romansellke/flouplayer/compare/v0.16.1...v0.17.0
 [0.16.1]: https://github.com/romansellke/flouplayer/compare/v0.16.0...v0.16.1
