@@ -11,7 +11,7 @@ function logScan(x){
   if(skipped.length) log('Scan skipped: '+skipped.map(([k,n])=>`${n} (${k})`).join(', '));
   if(st.stalled){
     if(st.loops_skipped||st.too_deep) log('Scan stopped early: thousands of folders in a row without a new track -- the server tree loops.','error');
-    else log('Scan ended after thousands of folders without a new track: only the same tracks again, in the server\'s other views. The library is probably complete.','warn');
+    else log('Scan ended after thousands of folders without a new track: only the same tracks again, in the server\'s other views. The library is probably complete.');
   }
   (st.failed_folders||[]).forEach(f=>log('Scan: folder could not be read: '+f,'warn'));
 }
