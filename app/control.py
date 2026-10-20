@@ -65,6 +65,11 @@ def set_uri_and_play(av,uri,metadata):
             if attempt<3: time.sleep(0.4)
     raise RuntimeError(f"Play failed after setting the track: {upnp_error(last)}")
 
+def _still_playing(av):
+    time.sleep(0.4)
+    try: return av.GetTransportInfo(InstanceID=0).get("CurrentTransportState")=="PLAYING"
+    except Exception: return False
+
 TRANSPORT_ACTIONS={"play":"Play","pause":"Pause","stop":"Stop","next":"SkipNext","previous":"SkipPrevious"}
 
 @router.post("/api/control")
@@ -83,6 +88,9 @@ def control(req:Control):
         if ts:
             try:
                 getattr(ts,TRANSPORT_ACTIONS[req.action])()
+                # Some devices accept Pause on the OpenHome Transport but keep playing a
+                # track that was started through AVTransport: check, and pause there too.
+                if req.action=="pause" and av and _still_playing(av): av.Pause(InstanceID=0)
                 return {"ok":True}
             except Exception:
                 if not av: raise HTTPException(502,"Control command failed (OpenHome Transport)")
