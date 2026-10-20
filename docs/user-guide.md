@@ -10,7 +10,7 @@
   elapsed time at the left, remaining time at the right, a thick seek bar
   with a time grid in between (a tick every minute, every 5/10 minutes for
   long tracks).
-- **Toolbar:** the Library/Queue tabs, the Live/Cached switch, **Search
+- **Toolbar:** the Library/Queue tabs, the **Live** toggle, **Search
   devices**, the media server and output device dropdowns (with each
   device's own icon, taken from its UPnP description), the **Source**
   dropdown and **Pins** button of the output device (OpenHome devices),
@@ -25,7 +25,7 @@
 
 ## Live or cached library
 
-The **Live | Cached** switch in the toolbar chooses how the library is shown.
+The **Live** toggle in the toolbar chooses how the library is shown: on = Live, off = Cached.
 The choice is remembered.
 
 ### Live (default)

@@ -87,7 +87,7 @@ $('#server').addEventListener('change',()=>{ if(isLive()) liveOpen($('#server').
 
 function setLibMode(mode,save=true){
   document.documentElement.dataset.libmode=mode;
-  document.querySelectorAll('#libMode button').forEach(b=>b.classList.toggle('active',b.dataset.mode===mode));
+  $('#libMode').classList.toggle('active',mode==='live'); $('#libMode').setAttribute('aria-pressed',String(mode==='live'));
   if(save) try{localStorage.setItem('flou_libmode',mode)}catch(e){}
   $('#search').value='';
   if(mode==='live'){
@@ -99,5 +99,5 @@ function setLibMode(mode,save=true){
     initFromCache().then(()=>{ if(!state.tracks.length){ state.view={entries:[],groups:{},byId:new Map(),rendered:0}; state.currentPlaylist=[]; $('#count').textContent=''; $('#content').innerHTML='<div class="empty">Click "Load library" to scan the media server, or switch to Live to browse it directly.</div>' } });
   }
 }
-document.querySelectorAll('#libMode button').forEach(b=>b.onclick=()=>{ if(b.dataset.mode!==libMode()||document.documentElement.dataset.libmode!==b.dataset.mode) setLibMode(b.dataset.mode) });
+$('#libMode').onclick=()=>setLibMode(isLive()?'cached':'live');
 setLibMode(libMode(),false);
