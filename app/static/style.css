@@ -214,6 +214,11 @@ input[type=range]:hover::-webkit-slider-thumb{transform:scale(1.25)}
 .libtools{display:flex;gap:8px;align-items:center;flex:1 1 440px;min-width:0}
 .libtools .hidden{display:none}
 .libtools button{flex:0 0 auto;white-space:nowrap}
+/* Load / Cancel / Clear form one joined button group; hidden members drop out without breaking the rounded ends */
+.libbtns{display:flex;flex:0 0 auto;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+.libtools .libbtns button{border:0;border-radius:0}
+.libtools .libbtns button:not(.hidden)~button:not(.hidden){border-left:1px solid var(--line)}
+.libbtns:not(:has(button:not(.hidden))){display:none}
 #search,.toolbar input[type=text]{
   flex:1 1 160px;min-width:0;border-radius:var(--radius);border:1px solid var(--line);padding:8px 14px 8px 36px;
   background:var(--bg) var(--search) no-repeat 13px center;outline:none;
@@ -232,7 +237,7 @@ input[type=range]:hover::-webkit-slider-thumb{transform:scale(1.25)}
    flex container sizes its rows to their content instead of the
    available height, which lets the album list grow to full length. */
 .workspace{gap:8px;display:flex;flex:1 1 auto;min-height:0;overflow:hidden}
-.active{background:var(--hover) !important;color:var(--text);font-weight:500;box-shadow:inset 2px 0 0 var(--highlight)}
+.active{background:var(--accent) !important;color:var(--on-accent);font-weight:600}
 
 main{gap:8px;flex:1 1 600px;min-width:320px;min-height:0;display:flex;flex-direction:column}
 .facets{display:flex;flex-wrap:wrap;flex:0 0 auto;background:var(--track);border:1px solid var(--faint);border-radius:var(--radius);overflow:hidden}
@@ -266,7 +271,7 @@ select.btn-link{background:var(--bg);color:var(--text);font-family:inherit}
 .toolbar .seg button{border-radius:0;padding:8px 12px;font-size:12px}
 .toolbar .seg button:first-child{border-radius:var(--radius) 0 0 var(--radius)}
 .toolbar .seg button:last-child{border-radius:0 var(--radius) var(--radius) 0;margin-left:-1px}
-.toolbar .seg button.active{background:var(--hover) !important;border-color:var(--muted);box-shadow:none;font-weight:600}
+.toolbar .seg button.active{background:var(--accent) !important;color:var(--on-accent);border-color:var(--accent);box-shadow:none;font-weight:600}
 html[data-libmode=live] #loadLibrary,html[data-libmode=live] .facets,html[data-libmode=live] #facetToggle{display:none}
 
 /* Live browsing */
@@ -321,7 +326,7 @@ button.crumb:hover{background:var(--hover);color:var(--text)}
 .tracks .genre{width:90px;color:var(--muted)}
 .tracks .year{width:50px;text-align:right;color:var(--muted)}
 /* the currently playing track: accent colour and a play icon instead of the track number */
-.tracks tr.playing{background:var(--track);color:var(--text);font-weight:600}
+.tracks tr.playing{background:var(--hover);color:var(--text);font-weight:600;box-shadow:inset 3px 0 0 var(--highlight)}
 .tracks tr.playing td{color:var(--text)}
 .tracks tr.playing .n{color:var(--highlight)}
 
@@ -375,7 +380,7 @@ button.crumb:hover{background:var(--hover);color:var(--text)}
 /* ---------- About ---------- */
 .iconbtn{display:grid;place-items:center;width:34px;height:34px;padding:0;border:0;border-radius:var(--radius);background:none;color:var(--muted);cursor:pointer;flex:0 0 auto}
 .iconbtn:hover{background:var(--hover);color:var(--text)}
-.iconbtn.active{background:var(--hover);color:var(--text)}
+.iconbtn.active{background:var(--accent) !important;color:var(--on-accent)}
 .iconbtn svg{width:16px;height:16px}
 .modal-content.about{min-width:320px;max-width:460px}
 .about h3{margin:0 0 2px}
@@ -410,7 +415,7 @@ button.crumb:hover{background:var(--hover);color:var(--text)}
 .tabs{display:flex;gap:4px;flex:0 0 auto;margin-right:8px;padding-right:12px;border-right:1px solid var(--line)}
 .toolbar .tab{border:0;background:none;color:var(--muted);cursor:pointer;font:inherit;font-size:13px;padding:6px 14px;border-radius:var(--radius);border-bottom:2px solid transparent}
 .toolbar .tab:hover:not(:disabled){background:var(--hover);color:var(--text)}
-.toolbar .tab.active{color:var(--text);font-weight:600;border-bottom-color:var(--accent)}
+.toolbar .tab.active{background:var(--accent) !important;color:var(--on-accent);font-weight:600;border-bottom-color:var(--accent)}
 .toolbar .tab:disabled{opacity:.4;cursor:default}
 main[data-tab=queue]>.facets,main[data-tab=queue]>.albums:not(#queueView){display:none}
 main[data-tab=health]>.facets,main[data-tab=health]>.albums:not(#healthView){display:none}
@@ -440,7 +445,8 @@ button.busy{cursor:progress;pointer-events:none}
 @media (prefers-reduced-motion:reduce){.spinner{animation-duration:2s}}
 
 /* ---------- Device extras: mute, source, pins, stream quality ---------- */
-.transport button[aria-pressed=true]{color:var(--text);background:var(--hover)}
+.transport button[aria-pressed=true]{color:var(--on-accent);background:var(--accent)}
+.transport button[aria-pressed=true]:hover{opacity:.85;background:var(--accent);color:var(--on-accent)}
 #muteBtn .cross{display:none}
 #muteBtn[aria-pressed=true] .cross{display:inline}
 #muteBtn[aria-pressed=true] .waves{display:none}
@@ -484,7 +490,8 @@ kbd{display:inline-block;min-width:20px;padding:1px 6px;border:1px solid var(--l
 #healthChecks{overflow-y:auto;padding:8px;border-right:1px solid var(--line)}
 .hcheck{display:flex;align-items:center;gap:8px;width:100%;padding:7px 8px;border:0;border-radius:var(--radius);background:none;color:var(--text);font:inherit;font-size:12.5px;text-align:left;cursor:pointer}
 .hcheck:hover{background:var(--hover)}
-.hcheck.active{background:var(--track);font-weight:600}
+.hcheck.active{background:var(--accent) !important;color:var(--on-accent);font-weight:600}
+.hcheck.active .hcount{color:inherit}
 .hdot{flex:0 0 8px;width:8px;height:8px;border-radius:50%;background:var(--muted)}
 .hdot.warn{background:#e0a030}.hdot.info{background:var(--highlight)}.hdot.ok{background:#4caf72}
 .hname{flex:1;min-width:0}
