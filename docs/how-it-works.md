@@ -57,8 +57,9 @@ separate; this depends on the server's DIDL-Lite metadata.
   renderers, playback uses AVTransport.
 - Only one media server is loaded at a time. The *Source* dropdown switches
   the output device's own inputs, not the media server.
-- In Live mode, Next/Previous step through the folder that is currently open,
-  and the search only filters that folder.
+- In Live mode, Next/Previous step through the folder that is currently open
+  (or the search results). Typing filters that folder; Enter uses the media
+  server's own search, so what it finds depends on the server.
 - No code from proprietary apps such as mconnect was used.
 
 ## License and dependencies

@@ -39,7 +39,12 @@ what you see.
   **Alt+←** to go one folder up.
 - A folder that contains tracks is shown as an album block with cover and
   track table.
-- The search field filters the current folder only.
+- Typing in the search field filters the current folder. Press **Enter** to
+  search the **whole media server** instead (its own search, e.g. MinimServer):
+  the results -- matching albums and tracks, by title, artist or album --
+  show up as a folder of their own (*Home › Search "..."*). Albums open as
+  usual and the path bar leads back to the results. Servers without a search
+  function say so.
 - Large folders load in steps of 300 entries; use **Load more** at the end.
 - Nothing is scanned or stored: the view is always current and starts
   instantly.
@@ -165,7 +170,7 @@ HTML5 audio. No UPnP renderer is needed, which is handy for testing.
 
 ## Library health
 
-The **Health** view (the pulse icon in the header; click it again to go back)
+The **Health** view (the tag icon in the header; click it again to go back)
 checks the scanned library (Cached mode; load it first) for incomplete or
 inconsistent tags. The list on the left shows each check with the
 number of albums it found (a ✓ means nothing found; orange = probably wrong,
@@ -262,7 +267,7 @@ Nord, Catppuccin Mocha, Tokyo Night, ...). The choice is remembered.
 
 ## Diagnostics and About
 
-- **Diagnostics** (list button in the header, with a badge for unseen errors): a timestamped log of the
+- **Diagnostics** (pulse icon in the header, with a badge for unseen errors): a timestamped log of the
   last 300 entries with errors in red and a badge for unseen errors; an
   errors-only filter; **Device info**, which lists the firmware and all
   services of the selected player; and **Copy report** (versions, device services and log)

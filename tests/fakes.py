@@ -115,9 +115,21 @@ def linn_player(host="192.168.1.21", **overrides):
     return openhome, av, state
 
 
-def media_server(host="192.168.1.50", tree=None):
-    """A ContentDirectory server whose tree is {object_id: [DIDL-Lite <item>/<container> xml fragments]}."""
+def media_server(host="192.168.1.50", tree=None, search=None, search_caps="dc:title,upnp:artist,upnp:album,upnp:class"):
+    """A ContentDirectory server whose tree is {object_id: [DIDL-Lite <item>/<container> xml fragments]}.
+    search(criteria) -> [xml fragments] answers Search; every call is recorded in .searches."""
     tree = tree or {}
+    searches = []
+
+    def didl(page):
+        return ('<DIDL-Lite xmlns="urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/" xmlns:dc="http://purl.org/dc/elements/1.1/" '
+                'xmlns:upnp="urn:schemas-upnp-org:metadata-1-0/upnp/">' + "".join(page) + "</DIDL-Lite>")
+
+    def do_search(ContainerID="0", SearchCriteria="", Filter="*", StartingIndex=0, RequestedCount=200, SortCriteria=""):
+        searches.append(SearchCriteria)
+        items = search(SearchCriteria) if search else []
+        page = items[StartingIndex:StartingIndex + RequestedCount]
+        return {"Result": didl(page), "NumberReturned": len(page), "TotalMatches": len(items), "UpdateID": 1}
 
     def browse(ObjectID, BrowseFlag="BrowseDirectChildren", Filter="*", StartingIndex=0, RequestedCount=500, SortCriteria=""):
         items = tree.get(ObjectID, [])
@@ -126,5 +138,8 @@ def media_server(host="192.168.1.50", tree=None):
                'xmlns:upnp="urn:schemas-upnp-org:metadata-1-0/upnp/">' + "".join(page) + "</DIDL-Lite>")
         return {"Result": xml, "NumberReturned": len(page), "TotalMatches": len(items), "UpdateID": 1}
 
-    cd = FakeService("urn:upnp-org:serviceId:ContentDirectory", "urn:schemas-upnp-org:service:ContentDirectory:1", {"Browse": browse})
-    return FakeDevice(f"uuid:{host}-ms", f"http://{host}:9790/ms/device.xml", "Music Server", [cd], model_name="MinimServer")
+    cd = FakeService("urn:upnp-org:serviceId:ContentDirectory", "urn:schemas-upnp-org:service:ContentDirectory:1",
+                     {"Browse": browse, "Search": do_search, "GetSearchCapabilities": lambda: {"SearchCaps": search_caps}})
+    dev = FakeDevice(f"uuid:{host}-ms", f"http://{host}:9790/ms/device.xml", "Music Server", [cd], model_name="MinimServer")
+    dev.searches = searches
+    return dev

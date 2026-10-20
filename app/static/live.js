@@ -21,11 +21,13 @@ async function liveOpen(stack){
   await liveMore(seq);
 }
 async function liveMore(seq=live.seq){
-  const server=$('#server').value, id=live.stack[live.stack.length-1].id;
+  const server=$('#server').value, top=live.stack[live.stack.length-1];
   if(live.loading===seq) return;   // this very load is already running (a newer navigation may start its own)
   live.loading=seq;
   try{
-    const r=await api('/api/browse',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({device_id:server,object_id:id,start:live.loaded,count:LIVE_PAGE})});
+    const r=top.search!=null   // a search "folder": the server's own search over everything
+      ?await api('/api/search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({device_id:server,query:top.search,start:live.loaded,count:LIVE_PAGE})})
+      :await api('/api/browse',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({device_id:server,object_id:top.id,start:live.loaded,count:LIVE_PAGE})});
     if(seq!==live.seq) return; // navigated away meanwhile
     const items=r.items||[];
     live.containers.push(...items.filter(i=>i.type==='container'));
@@ -62,7 +64,7 @@ function renderLive(){
   $('#breadcrumb').textContent='Live · '+($('#server').selectedOptions[0]?.textContent||'');
   const cards=conts.map(x=>`<div class="livecard" data-cid="${esc(x.id)}" title="${esc(x.title)}"><div class="cover" ${cover(x.album_art)}>${x.album_art?'':'<span class="glyph">▤</span>'}</div><div class="livetitle">${esc(x.title)}</div>${x.artist?`<div class="livesub">${esc(x.artist)}</div>`:''}</div>`).join('');
   const more=live.loaded<live.total?`<div class="livemore"><button type="button" id="liveMore" class="btn-link">Load more (${live.loaded} of ${live.total})</button></div>`:'';
-  const empty=(!conts.length&&!tracks.length)?`<div class="empty">${q||$('#qualityFilter').value?'Nothing matches the search or filter.':'This folder is empty.'}</div>`:'';
+  const empty=(!conts.length&&!tracks.length)?`<div class="empty">${q||$('#qualityFilter').value?'Nothing matches the search or filter.':live.stack[live.stack.length-1].search!=null?'Nothing found on the server.':'This folder is empty.'}</div>`:'';
   c.innerHTML=`<div class="crumbs">${liveCrumbs()}</div>${cards?`<div class="livegrid">${cards}</div>`:''}${entries.map(albumHtml).join('')}${more}${empty}`;
 }
 $('#content').addEventListener('click',e=>{
@@ -85,11 +87,23 @@ document.addEventListener('keydown',e=>{
 });
 $('#server').addEventListener('change',()=>{ if(isLive()) liveOpen($('#server').value?[{id:'0',title:'Home'}]:[]) });
 
+// Typing filters the open folder; Enter searches the whole server and shows the
+// result as a folder of its own (Home › Search "..."), so albums open and Back works as usual.
+function liveSearch(q){
+  if(!$('#server').value) return;
+  $('#search').value='';
+  liveOpen([{id:'0',title:'Home'},{id:'search',search:q,title:`Search “${q}”`}]);
+}
+$('#search').addEventListener('keydown',e=>{
+  if(e.key==='Enter' && isLive() && $('#search').value.trim()){ e.preventDefault(); liveSearch($('#search').value.trim()) }
+});
+
 function setLibMode(mode,save=true){
   document.documentElement.dataset.libmode=mode;
   if(typeof drawTabs==='function') drawTabs();
   if(save) try{localStorage.setItem('flou_libmode',mode)}catch(e){}
   $('#search').value='';
+  $('#search').placeholder=mode==='live'?'Filter · Enter searches the server':'Search music';
   if(mode==='live'){
     $('#libTitle').textContent='Library';
     if($('#server').value) liveOpen([{id:'0',title:'Home'}]);
