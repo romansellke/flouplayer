@@ -6,6 +6,9 @@ All notable changes to Flou Player are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+- Header icons: Library health now has a tag icon, Diagnostics the pulse icon.
+
 ## [0.18.0] - 2026-10-20
 
 ### Added

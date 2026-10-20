@@ -165,7 +165,7 @@ HTML5 audio. No UPnP renderer is needed, which is handy for testing.
 
 ## Library health
 
-The **Health** view (the pulse icon in the header; click it again to go back)
+The **Health** view (the tag icon in the header; click it again to go back)
 checks the scanned library (Cached mode; load it first) for incomplete or
 inconsistent tags. The list on the left shows each check with the
 number of albums it found (a ✓ means nothing found; orange = probably wrong,
@@ -262,7 +262,7 @@ Nord, Catppuccin Mocha, Tokyo Night, ...). The choice is remembered.
 
 ## Diagnostics and About
 
-- **Diagnostics** (list button in the header, with a badge for unseen errors): a timestamped log of the
+- **Diagnostics** (pulse icon in the header, with a badge for unseen errors): a timestamped log of the
   last 300 entries with errors in red and a badge for unseen errors; an
   errors-only filter; **Device info**, which lists the firmware and all
   services of the selected player; and **Copy report** (versions, device services and log)
