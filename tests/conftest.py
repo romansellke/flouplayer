@@ -67,6 +67,8 @@ class MockApi:
         for needle, answer in self.routes.items():
             if needle in url:
                 body = answer(req) if callable(answer) else answer
+                if isinstance(body, tuple):                   # (status, json): an error answer
+                    return route.fulfill(status=body[0], json=body[1])
                 return route.fulfill(json=body)
         route.fulfill(status=404, json={"detail": "not mocked"})
 

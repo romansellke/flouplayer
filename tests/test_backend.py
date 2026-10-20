@@ -404,6 +404,13 @@ def test_queue_replace_clears_inserts_in_order_and_plays_the_first(player):
     assert len(state["queue"]) == 2 and state["seeked"] == [state["queue"][0]]
 
 
+def test_queue_replace_can_start_at_a_later_track(player):
+    oh, state = player
+    items = [{"uri": f"http://x/{n}.flac", "metadata": ""} for n in "abc"]
+    assert queue(oh, action="replace", items=items, start=1).status_code == 200
+    assert len(state["queue"]) == 3 and state["seeked"] == [state["queue"][1]]   # all three in, plays the second
+
+
 def test_queue_switches_the_device_to_its_playlist_source_first(player):
     oh, state = player
     state["source"] = 1                                      # Radio is active

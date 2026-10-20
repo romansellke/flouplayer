@@ -119,10 +119,16 @@ iTunes-style column browser and instant searching across everything.
 
 ## Playing music
 
-- **Double-click** a track to play it on the selected output device. When a
-  track ends, the next one from the currently displayed list starts
-  automatically (detected by polling the position; stopping playback
-  yourself does not trigger this).
+- **Double-click** a track to play it on the selected output device.
+  - On **Linn/OpenHome** devices the track's album replaces the device's
+    queue and plays from that track. The device then plays on by itself:
+    gapless, and also when Flou Player is closed; Previous/Next step through
+    the album. If the queue can't be used, the single track is played as
+    below (noted in Diagnostics).
+  - On other devices (Marantz, Sonos, ...) and "This computer" the single
+    track plays; when it ends, the next one from the currently displayed list
+    starts automatically (detected by polling the position, so Flou Player has
+    to stay open; stopping playback yourself does not trigger this).
 - Play, pause, stop, next, previous and the **position bar** work through
   the standard UPnP services. On Linn/OpenHome devices the transport buttons
   use the device's own Transport service, so they also work while another

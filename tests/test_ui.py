@@ -436,6 +436,40 @@ def test_ctrl_arrows_step_through_the_displayed_tracks_in_the_cached_library(pag
     assert uris()[-1] == "u3"                                               # nothing after the last track
 
 
+def queue_api(fail=False):
+    """A renderer with an OpenHome playlist: GET reads it, POST changes it (or fails)."""
+    def answer(req):
+        if req.method == "POST" and fail:
+            return 502, {"detail": "Playlist action failed"}
+        return {"ok": True} if req.method == "POST" else {"active": False, "token": 1, "entries": [], "current_id": 0, "state": "Stopped"}
+    return answer
+
+
+def test_double_click_on_an_openhome_device_plays_the_album_through_the_device_queue(page, api):
+    api.routes["/queue"] = queue_api()
+    start_cached_with_player(page, api, [dict(track(i, album_artist="Band"), id=f"c{i}") for i in (1, 2, 3)])
+    page.wait_for_function("queue.supported")
+    page.dblclick("[data-item=c2]"); page.wait_for_timeout(200)
+    replace = [p for p in api.posts if p.get("action") == "replace"]
+    assert [i["uri"] for i in replace[0]["items"]] == ["u1", "u2", "u3"] and replace[0]["start"] == 1   # whole album, from track 2
+    assert not [p for p in api.posts if p.get("action") == "set_uri"]
+
+
+def test_if_the_device_queue_fails_double_click_falls_back_to_the_single_track(page, api):
+    api.routes["/queue"] = queue_api(fail=True)
+    start_cached_with_player(page, api, [dict(track(i, album_artist="Band"), id=f"c{i}") for i in (1, 2)])
+    page.wait_for_function("queue.supported")
+    page.dblclick("[data-item=c2]"); page.wait_for_timeout(300)
+    assert [p["uri"] for p in api.posts if p.get("action") == "set_uri"] == ["u2"]
+
+
+def test_without_a_device_queue_double_click_plays_the_single_track(page, api):
+    start_cached_with_player(page, api, [dict(track(i, album_artist="Band"), id=f"c{i}") for i in (1, 2)])
+    page.dblclick("[data-item=c2]"); page.wait_for_timeout(200)
+    assert [p["uri"] for p in api.posts if p.get("action") == "set_uri"] == ["u2"]
+    assert not [p for p in api.posts if p.get("action") == "replace"]
+
+
 def test_next_follows_the_filtered_list_and_does_nothing_when_the_playing_track_is_hidden(page, api):
     tracks = [audio_track(1, "audio/flac", "44100", "16"), audio_track(2, "audio/mpeg", "44100"), audio_track(3, "audio/flac", "96000", "24")]
     start_cached_with_player(page, api, tracks)
