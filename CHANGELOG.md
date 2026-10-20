@@ -16,7 +16,17 @@ All notable changes to Flou Player are documented here. The format follows
   duration, what was skipped (same URL, same tags, not audio, looping or too
   deep folders), unreadable folders, and cancel/clear actions.
 
+- Getting-started guide: step-by-step instructions for downloading the code from
+  GitHub and installing it, and a troubleshooting section for devices that are
+  found but do not play (Marantz/HEOS, Sonos) with a table of UPnP error codes.
+
 ### Fixed
+- Playing on plain UPnP AV renderers (Marantz, Sonos): the player is stopped
+  first, a refused DIDL metadata is retried without it, *Play* is retried a few
+  times when the device answers "701 Transition not available" while it loads,
+  and errors show the UPnP code and description (for example
+  `SetAVTransportURI failed: UPnP error 714 (Illegal MIME-type)`) instead of a
+  bare tuple. Not tried on real hardware.
 - A scan could run away on servers whose folder tree loops (a folder listing
   itself again under a new object id) and report tens of thousands of tracks
   for a library of a thousand. The scan now stops descending when a folder

@@ -162,6 +162,49 @@ def test_transport_falls_back_to_avtransport(player, monkeypatch):
     assert av.calls[-1][0] == "Play"
 
 
+# ---------- plain UPnP AV renderers (Marantz/HEOS, Sonos) ----------
+
+def av_only_renderer(actions):
+    from tests.fakes import FakeDevice, FakeService
+    av = FakeService("urn:upnp-org:serviceId:AVTransport", "urn:schemas-upnp-org:service:AVTransport:1", actions)
+    dev = FakeDevice("uuid:sonos", "http://192.168.1.60:1400/xml/device_description.xml", "Sonos Arc", [av])
+    devices_api._publish_devices({dev.udn: dev})
+    return dev, av
+
+
+def play(dev, uri="http://x/t.flac", metadata="<DIDL-Lite/>"):
+    return client.post("/api/control", json={"device_id": dev.udn, "action": "set_uri", "uri": uri, "metadata": metadata})
+
+
+def test_set_uri_retries_without_metadata_when_the_renderer_refuses_it():
+    def set_uri(InstanceID, CurrentURI, CurrentURIMetaData):
+        if CurrentURIMetaData: raise upnpclient.UPNPError(712, "Format of metadata invalid", None)
+        return {}
+    dev, av = av_only_renderer({"Stop": {}, "SetAVTransportURI": set_uri, "Play": {}})
+    assert play(dev).status_code == 200
+    assert [c[0] for c in av.calls] == ["Stop", "SetAVTransportURI", "SetAVTransportURI", "Play"]
+    assert av.calls[2][1]["CurrentURIMetaData"] == ""
+
+
+def test_set_uri_retries_play_while_the_renderer_loads(monkeypatch):
+    monkeypatch.setattr("app.control.time.sleep", lambda s: None)
+    tries = []
+    def pl(InstanceID, Speed):
+        tries.append(1)
+        if len(tries) < 3: raise upnpclient.UPNPError(701, "Transition not available", None)
+        return {}
+    dev, av = av_only_renderer({"SetAVTransportURI": {}, "Play": pl})   # no Stop action: ignored
+    assert play(dev).status_code == 200 and len(tries) == 3
+
+
+def test_set_uri_reports_the_upnp_error_code(monkeypatch):
+    monkeypatch.setattr("app.control.time.sleep", lambda s: None)
+    def bad(**kw): raise upnpclient.UPNPError(714, "Illegal MIME-type", None)
+    dev, av = av_only_renderer({"SetAVTransportURI": bad, "Play": {}})
+    r = play(dev)
+    assert r.status_code == 502 and "SetAVTransportURI failed" in r.json()["detail"] and "714" in r.json()["detail"]
+
+
 # ---------- library ----------
 
 def test_browse_pages_through_a_folder():

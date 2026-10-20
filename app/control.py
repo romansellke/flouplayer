@@ -1,5 +1,6 @@
 """Transport, volume, mute, standby, source and pin commands (POST /api/control)."""
 from __future__ import annotations
+import time
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException
@@ -11,6 +12,35 @@ from app.upnp import _openhome_service, _wake, find_volume_service, peer_service
 router=APIRouter()
 
 class Control(BaseModel): device_id:str; action:str; value:Optional[int]=None; uri:Optional[str]=None; metadata:Optional[str]=None
+
+def upnp_error(e):
+    """"714 Illegal MIME-type" instead of upnpclient's bare tuple -- the code is what tells a
+    renderer's refusal apart from a network problem."""
+    a=getattr(e,"args",())
+    if len(a)>=2 and isinstance(a[0],int): return f"UPnP error {a[0]} ({a[1]})"
+    return str(e) or e.__class__.__name__
+
+def set_uri_and_play(av,uri,metadata):
+    """Starts a track on a plain UPnP AV renderer (Marantz/HEOS, Sonos, ...). These are pickier than
+    Linn players: some refuse the DIDL metadata (retried without it), and some answer Play right after
+    SetAVTransportURI with 701 until they have loaded the stream (retried a few times)."""
+    try: av.Stop(InstanceID=0)   # a renderer still on another input or track often refuses a new URI otherwise
+    except Exception: pass
+    try:
+        av.SetAVTransportURI(InstanceID=0,CurrentURI=uri,CurrentURIMetaData=metadata)
+    except Exception as first:
+        if not metadata: raise RuntimeError(f"SetAVTransportURI failed: {upnp_error(first)}")
+        try: av.SetAVTransportURI(InstanceID=0,CurrentURI=uri,CurrentURIMetaData="")
+        except Exception as second:
+            raise RuntimeError(f"SetAVTransportURI failed: {upnp_error(first)}; without metadata: {upnp_error(second)}")
+    last=None
+    for attempt in range(4):
+        try:
+            av.Play(InstanceID=0,Speed="1"); return
+        except Exception as e:
+            last=e
+            if attempt<3: time.sleep(0.4)
+    raise RuntimeError(f"Play failed after setting the track: {upnp_error(last)}")
 
 TRANSPORT_ACTIONS={"play":"Play","pause":"Pause","stop":"Stop","next":"SkipNext","previous":"SkipPrevious"}
 
@@ -39,7 +69,7 @@ def control(req:Control):
         elif req.action=="pause": av.Pause(InstanceID=0)
         elif req.action=="stop": av.Stop(InstanceID=0)
         elif req.action in ("next","previous"): getattr(av,req.action.capitalize())(InstanceID=0)
-        elif req.action=="set_uri": av.SetAVTransportURI(InstanceID=0,CurrentURI=req.uri or "",CurrentURIMetaData=req.metadata or ""); av.Play(InstanceID=0,Speed="1")
+        elif req.action=="set_uri": set_uri_and_play(av,req.uri or "",req.metadata or "")
         elif req.action=="seek":
             sec=max(0,req.value or 0)
             av.Seek(InstanceID=0,Unit="REL_TIME",Target=f"{sec//3600}:{sec%3600//60:02d}:{sec%60:02d}")
@@ -72,5 +102,5 @@ def control(req:Control):
             pins.InvokeIndex(Index=req.value)
         else: raise HTTPException(400,"Unknown action")
     except HTTPException: raise
-    except Exception as e: raise HTTPException(502,f"Control command failed: {e}")
+    except Exception as e: raise HTTPException(502,f"Control command failed: {upnp_error(e) if not isinstance(e,RuntimeError) else e}")
     return {"ok":True}
