@@ -186,6 +186,38 @@ def test_set_uri_retries_without_metadata_when_the_renderer_refuses_it():
     assert av.calls[2][1]["CurrentURIMetaData"] == ""
 
 
+def test_av_calls_send_a_utf8_charset_content_type():
+    """HEOS/Sonos answer upnpclient's bare text/xml with 400 Bad Request."""
+    dev, av = av_only_renderer({"Stop": {}, "SetAVTransportURI": {}, "Play": {}})
+    assert play(dev).status_code == 200
+    assert av.headers == {"Content-Type": 'text/xml; charset="utf-8"'}
+
+
+def test_set_uri_falls_back_to_a_minimal_didl_before_no_metadata():
+    seen = []
+    def set_uri(InstanceID, CurrentURI, CurrentURIMetaData):
+        seen.append(CurrentURIMetaData)
+        if len(seen) < 2: raise upnpclient.UPNPError(712, "Format of metadata invalid", None)
+        return {}
+    dev, av = av_only_renderer({"SetAVTransportURI": set_uri, "Play": {}})
+    full = ('<DIDL-Lite xmlns="urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/" xmlns:dc="http://purl.org/dc/elements/1.1/" '
+            'xmlns:upnp="urn:schemas-upnp-org:metadata-1-0/upnp/"><item id="9" parentID="3"><dc:title>A &amp; B</dc:title>'
+            '<upnp:class>object.item.audioItem.musicTrack</upnp:class><res protocolInfo="http-get:*:audio/flac:*">http://x/t.flac</res></item></DIDL-Lite>')
+    assert play(dev, metadata=full).status_code == 200
+    assert len(seen) == 2 and seen[0] == full
+    assert 'parentID="-1"' in seen[1] and "A &amp; B" in seen[1] and "http-get:*:audio/flac:*" in seen[1]
+
+
+def test_set_uri_names_the_http_refusal(monkeypatch):
+    import requests
+    monkeypatch.setattr("app.control.time.sleep", lambda s: None)
+    resp = requests.Response(); resp.status_code = 400; resp.reason = "Bad Request"; resp.url = "http://192.168.2.111:8080/AVTransport/ctrl"; resp._content = b"<html>bad</html>"
+    def bad(**kw): raise requests.exceptions.HTTPError("400 Client Error", response=resp)
+    dev, av = av_only_renderer({"SetAVTransportURI": bad, "Play": {}})
+    detail = play(dev).json()["detail"]
+    assert "HTTP 400 Bad Request from http://192.168.2.111:8080/AVTransport/ctrl" in detail and "bad" in detail
+
+
 def test_set_uri_retries_play_while_the_renderer_loads(monkeypatch):
     monkeypatch.setattr("app.control.time.sleep", lambda s: None)
     tries = []

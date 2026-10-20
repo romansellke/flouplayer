@@ -7,7 +7,8 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from app.state import devices
-from app.upnp import _openhome_service, _wake, find_volume_service, peer_service
+from app.didl import parse_didl
+from app.upnp import _openhome_service, _wake, av_transport, find_volume_service
 
 router=APIRouter()
 
@@ -18,7 +19,24 @@ def upnp_error(e):
     renderer's refusal apart from a network problem."""
     a=getattr(e,"args",())
     if len(a)>=2 and isinstance(a[0],int): return f"UPnP error {a[0]} ({a[1]})"
+    resp=getattr(e,"response",None)
+    if resp is not None:   # HTTP-level refusal: the device did not even take the SOAP message
+        body=" ".join((resp.text or "").split())[:200]
+        return f"HTTP {resp.status_code} {resp.reason or ''} from {resp.url}"+(f" -- {body}" if body else "")
     return str(e) or e.__class__.__name__
+
+def minimal_didl(metadata):
+    """A bare DIDL-Lite item (title, class, one resource) rebuilt from the server's full metadata.
+    HEOS and Sonos reject some vendor elements/namespaces that servers add; they only need these."""
+    try: item=parse_didl(metadata)[0]
+    except Exception: return ""
+    res=(item.get("resources") or [{}])[0]
+    if not res.get("uri"): return ""
+    esc=lambda v: (v or "").replace("&","&amp;").replace("<","&lt;").replace(">","&gt;").replace('"',"&quot;")
+    return ('<DIDL-Lite xmlns="urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/" xmlns:dc="http://purl.org/dc/elements/1.1/" '
+            'xmlns:upnp="urn:schemas-upnp-org:metadata-1-0/upnp/"><item id="0" parentID="-1" restricted="1">'
+            f'<dc:title>{esc(item["title"])}</dc:title><upnp:class>{esc(item["class"] or "object.item.audioItem.musicTrack")}</upnp:class>'
+            f'<res protocolInfo="{esc(res["protocol"] or "http-get:*:audio/mpeg:*")}">{esc(res["uri"])}</res></item></DIDL-Lite>')
 
 def set_uri_and_play(av,uri,metadata):
     """Starts a track on a plain UPnP AV renderer (Marantz/HEOS, Sonos, ...). These are pickier than
@@ -26,13 +44,18 @@ def set_uri_and_play(av,uri,metadata):
     SetAVTransportURI with 701 until they have loaded the stream (retried a few times)."""
     try: av.Stop(InstanceID=0)   # a renderer still on another input or track often refuses a new URI otherwise
     except Exception: pass
-    try:
-        av.SetAVTransportURI(InstanceID=0,CurrentURI=uri,CurrentURIMetaData=metadata)
-    except Exception as first:
-        if not metadata: raise RuntimeError(f"SetAVTransportURI failed: {upnp_error(first)}")
-        try: av.SetAVTransportURI(InstanceID=0,CurrentURI=uri,CurrentURIMetaData="")
-        except Exception as second:
-            raise RuntimeError(f"SetAVTransportURI failed: {upnp_error(first)}; without metadata: {upnp_error(second)}")
+    # the server's own metadata first, then a minimal rebuilt one, then none at all
+    attempts=[metadata] if metadata else []
+    if metadata and minimal_didl(metadata): attempts.append(minimal_didl(metadata))
+    attempts.append("")
+    errors=[]
+    for md in attempts:
+        try:
+            av.SetAVTransportURI(InstanceID=0,CurrentURI=uri,CurrentURIMetaData=md); break
+        except Exception as e:
+            errors.append(f'{"original metadata" if md==metadata and md else "minimal metadata" if md else "no metadata"}: {upnp_error(e)}')
+    else:
+        raise RuntimeError("SetAVTransportURI failed -- "+"; ".join(errors))
     last=None
     for attempt in range(4):
         try:
@@ -48,7 +71,7 @@ TRANSPORT_ACTIONS={"play":"Play","pause":"Pause","stop":"Stop","next":"SkipNext"
 def control(req:Control):
     d=devices.get(req.device_id)
     if not d: raise HTTPException(404,"Output device not found")
-    av=peer_service(d,["AVTransport"])
+    av=av_transport(d)
     if not av and req.action in ("play","pause","stop","next","previous","set_uri","seek") \
        and not (req.action in TRANSPORT_ACTIONS and _openhome_service(d,"Transport")):
         raise HTTPException(400,"No AVTransport service on this device")

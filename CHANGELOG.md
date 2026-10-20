@@ -21,6 +21,12 @@ All notable changes to Flou Player are documented here. The format follows
   found but do not play (Marantz/HEOS, Sonos) with a table of UPnP error codes.
 
 ### Fixed
+- Playing on Marantz/Denon (HEOS) and Sonos failed with "400 Bad Request ...
+  /AVTransport/ctrl": the SOAP requests are now sent as
+  `text/xml; charset="utf-8"` (upnpclient omits the charset), and the track
+  metadata falls back to a minimal rebuilt DIDL before being dropped. HTTP-level
+  refusals now name the status, URL and the device's answer in the error. Not
+  tried on real hardware.
 - Playing on plain UPnP AV renderers (Marantz, Sonos): the player is stopped
   first, a refused DIDL metadata is retried without it, *Play* is retried a few
   times when the device answers "701 Transition not available" while it loads,

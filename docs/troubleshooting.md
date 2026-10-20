@@ -21,6 +21,12 @@ still fails, the error message tells what the device objected to. Open
 **Diagnostics** (list button in the header) after a failed attempt; the entry
 reads like `SetAVTransportURI failed: UPnP error 714 (Illegal MIME-type)`:
 
+If the message is instead `400 Client Error: Bad Request for url: .../AVTransport/ctrl`
+(older versions), the device refused the request on the HTTP level, before
+any UPnP error: Marantz/Denon (HEOS) and Sonos want the SOAP request sent as
+`text/xml; charset="utf-8"`, which Flou Player now does, and they dislike
+vendor extras in the track metadata (it now retries with a minimal one).
+
 | Code | Meaning | What to try |
 | --- | --- | --- |
 | 701 | Transition not available | The device is busy with another input (TV/HDMI, AirPlay, Spotify ...). Switch it to network / Sonos-app playback, stop what it plays, and try again. |
