@@ -16,7 +16,7 @@ async function liveOpen(stack){
   const server=$('#server').value;
   if(!server){ $('#content').innerHTML='<div class="empty">Search for devices, then select a media server.</div>'; return }
   const seq=++live.seq;
-  live.stack=stack; live.containers=[]; live.tracks=[]; live.loaded=0; live.total=0;
+  live.stack=stack; drawSearchClear(); live.containers=[]; live.tracks=[]; live.loaded=0; live.total=0;
   $('#content').innerHTML='<div class="empty">Loading ...</div>';
   await liveMore(seq);
 }
@@ -56,6 +56,10 @@ function renderLive(){
   const tracks=live.tracks.filter(t=>!q||SEARCH_FIELDS.some(k=>(t[k]||'').toLowerCase().includes(q))).filter(qualityMatch);
   // tracks grouped by album, in server order (a folder is usually one album)
   const groups={}; tracks.forEach(t=>(groups[albumKey(t)]??=[]).push(t));
+  // Search results come in the server's relevance order: put each album's tracks back in track order
+  // (stable sort, so tracks without a number keep their place). A folder keeps the server's order.
+  if(live.stack[live.stack.length-1].search!=null)
+    Object.values(groups).forEach(ts=>ts.sort((a,b)=>(parseInt(a.track_number)||0)-(parseInt(b.track_number)||0)));
   const entries=Object.entries(groups);
   state.currentPlaylist=entries.flatMap(([,ts])=>ts);
   state.view={entries,groups,byId:new Map(tracks.map(t=>[t.id,t])),rendered:entries.length};
@@ -89,20 +93,33 @@ $('#server').addEventListener('change',()=>{ if(isLive()) liveOpen($('#server').
 
 // Typing filters the open folder; Enter searches the whole server and shows the
 // result as a folder of its own (Home › Search "..."), so albums open and Back works as usual.
+const inLiveSearch=()=>isLive()&&live.stack.some(c=>c.search!=null);
 function liveSearch(q){
   if(!$('#server').value) return;
+  if(!inLiveSearch()) live.beforeSearch=live.stack;   // where × / Esc lead back to
   $('#search').value='';
   liveOpen([{id:'0',title:'Home'},{id:'search',search:q,title:`Search “${q}”`}]);
 }
+// × in the search field / Esc: first clear the typed filter, then leave the server search
+// (back to the folder that was open before it).
+function clearSearch(){
+  if($('#search').value){ $('#search').value=''; renderAlbums() }
+  else if(inLiveSearch()) liveOpen(live.beforeSearch?.length?live.beforeSearch:[{id:'0',title:'Home'}]);
+  drawSearchClear();
+}
+function drawSearchClear(){ $('#searchClear').classList.toggle('hidden',!$('#search').value&&!inLiveSearch()) }
 $('#search').addEventListener('keydown',e=>{
   if(e.key==='Enter' && isLive() && $('#search').value.trim()){ e.preventDefault(); liveSearch($('#search').value.trim()) }
+  else if(e.key==='Escape'){ e.preventDefault(); clearSearch() }
 });
+$('#search').addEventListener('input',drawSearchClear);
+$('#searchClear').onclick=()=>{ clearSearch(); $('#search').focus() };
 
 function setLibMode(mode,save=true){
   document.documentElement.dataset.libmode=mode;
   if(typeof drawTabs==='function') drawTabs();
   if(save) try{localStorage.setItem('flou_libmode',mode)}catch(e){}
-  $('#search').value='';
+  $('#search').value=''; drawSearchClear();
   $('#search').placeholder=mode==='live'?'Filter · Enter searches the server':'Search music';
   if(mode==='live'){
     $('#libTitle').textContent='Library';

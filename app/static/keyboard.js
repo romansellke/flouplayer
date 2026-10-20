@@ -72,6 +72,7 @@ const SHORTCUTS=[
   ]],
   ['Library',[
     ['Ctrl/⌘+F','Focus the search field'],
+    ['Esc in the search field','Clear the search (in Live mode: back to the folder before the server search)'],
     ['Ctrl/⌘+L','Jump to the playing track'],
     ['Ctrl/⌘+B','Show / hide the column browser'],
     ['Ctrl/⌘+Q','Switch between Library and Queue'],

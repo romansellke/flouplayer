@@ -64,6 +64,8 @@ media server and an output device, and double-click a track.
 
 ## Documentation
 
+- [Features](docs/features.md) -- the complete feature list, and what is tested
+  on real hardware
 - [Getting started](docs/getting-started.md) -- requirements, downloading and installing,
   running from source, Arch Linux, first start
 - [User guide](docs/user-guide.md) -- live and cached library, playback, the

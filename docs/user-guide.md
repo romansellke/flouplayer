@@ -43,8 +43,9 @@ what you see.
   search the **whole media server** instead (its own search, e.g. MinimServer):
   the results -- matching albums and tracks, by title, artist or album --
   show up as a folder of their own (*Home › Search "..."*). Albums open as
-  usual and the path bar leads back to the results. Servers without a search
-  function say so.
+  usual and the path bar leads back to the results. **×** in the search field
+  (or **Esc**) leaves the search and returns to the folder you were in.
+  Servers without a search function say so.
 - Large folders load in steps of 300 entries; use **Load more** at the end.
 - Nothing is scanned or stored: the view is always current and starts
   instantly.
@@ -313,6 +314,7 @@ for the column type-ahead.
 | Shortcut | Action |
 | --- | --- |
 | Ctrl/⌘+F | Focus the search field |
+| Esc in the search field | Clear the search (in Live mode: back to the folder before the server search) |
 | Ctrl/⌘+L | Jump to the playing track |
 | Ctrl/⌘+B | Show / hide the column browser |
 | Ctrl/⌘+Q | Switch between Library and Queue |

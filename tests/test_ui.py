@@ -106,7 +106,7 @@ def test_enter_searches_the_whole_server_and_results_open_like_folders(page, api
     queries = []
     def search(req):
         queries.append(json.loads(req.post_data)["query"])
-        items = [{"type": "container", "id": "alb1", "title": "Album One"}, track(7, album="Elsewhere")]
+        items = [{"type": "container", "id": "alb1", "title": "Album One"}, track(7, album="Elsewhere"), track(5, album="Elsewhere")]
         return {"items": items, "number_returned": 1, "total_matches": 1}
     api.routes["search"] = search
     start_live(page, api, TREE)
@@ -116,6 +116,7 @@ def test_enter_searches_the_whole_server_and_results_open_like_folders(page, api
     page.press("#search", "Enter")
     page.wait_for_selector("[data-item=t7]")
     assert queries == ["Trac"] and page.input_value("#search") == ""
+    assert page.eval_on_selector_all("[data-item]", "rs => rs.map(r => r.dataset.item)") == ["t5", "t7"]   # back in track order
     assert page.inner_text(".crumbs").replace("\n", "") == "Home›Search “Trac”"
     page.click("[data-cid=alb1]")                                   # an album found by the search opens like a folder
     page.wait_for_selector("[data-item=t1]")
@@ -123,6 +124,23 @@ def test_enter_searches_the_whole_server_and_results_open_like_folders(page, api
     page.click(".crumb[data-depth='1']")                            # and back to the results
     page.wait_for_selector("[data-item=t7]")
     assert queries == ["Trac", "Trac"]
+
+
+def test_the_search_can_be_reset_back_to_the_folder_before_it(page, api):
+    api.routes["search"] = {"items": [track(7, album="Elsewhere")], "number_returned": 1, "total_matches": 1}
+    start_live(page, api, TREE)
+    page.click("[data-cid=a]"); page.wait_for_selector("[data-cid=alb1]")
+    assert not page.is_visible("#searchClear")
+    page.fill("#search", "x")
+    assert page.is_visible("#searchClear")                          # × appears with text
+    page.press("#search", "Enter"); page.wait_for_selector("[data-item=t7]")
+    assert page.is_visible("#searchClear")                          # ... and stays while in the search
+    page.click("#searchClear")
+    page.wait_for_selector("[data-cid=alb1]")                       # back in "Albums", where the search started
+    assert page.inner_text(".crumbs").replace("\n", "") == "Home›Albums"
+    assert not page.is_visible("#searchClear")
+    page.fill("#search", "zzz"); page.press("#search", "Escape")    # Esc clears a typed filter
+    assert page.input_value("#search") == "" and page.is_visible("[data-cid=alb1]")
 
 
 def test_the_cover_shows_the_album_artist_and_the_artist_column_is_optional(page, api):
