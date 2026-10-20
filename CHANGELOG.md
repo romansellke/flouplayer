@@ -23,6 +23,7 @@ All notable changes to Flou Player are documented here. The format follows
 - The **Queue** tab has a tooltip explaining that the queue lives on the output device (OpenHome Playlist) and what it does.
 
 ### Changed
+- Live mode hides Clear library (and Cancel); the Queue tab is set apart from Live/Library by a divider.
 - The Live and Library (cached) modes are now tabs next to Queue; the separate Live/Cached switch is gone.
 - Load library, Cancel and Clear library are now one joined button group.
 
