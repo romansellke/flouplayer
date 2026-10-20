@@ -136,14 +136,16 @@ def test_now_playing_returns_to_the_folder_of_the_playing_track(page, api):
     assert api.actions() == ["set_uri"]
 
 
-def test_switching_between_live_and_cached(page, api):
+def test_switching_between_live_and_library(page, api):
     start_live(page, api, TREE)
-    page.click("#libMode [data-mode=cached]")
+    page.click("#tabLibrary")
     assert page.evaluate("document.documentElement.dataset.libmode") == "cached"
     assert page.is_visible("#loadLibrary") and page.is_visible(".facets")
-    page.click("#libMode [data-mode=live]")
+    assert "active" in page.get_attribute("#tabLibrary", "class") and "active" not in page.get_attribute("#tabLive", "class")
+    page.click("#tabLive")
     page.wait_for_selector("[data-cid]")
-    assert not page.is_visible("#loadLibrary")
+    assert not page.is_visible("#loadLibrary") and not page.is_visible("#clearLibrary")
+    assert "active" in page.get_attribute("#tabLive", "class")
 
 
 # ---------- keyboard ----------

@@ -22,4 +22,4 @@ jobs:
           pip install -r requirements.txt -r requirements-dev.txt
           playwright install --with-deps chromium
       - name: Run the tests
-        run: pytest -q
+        run: pytest -q -rs
