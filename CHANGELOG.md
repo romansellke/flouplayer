@@ -18,6 +18,8 @@ All notable changes to Flou Player are documented here. The format follows
 ### Fixed
 - Live search results list each album's tracks in track order (the server
   returns them by relevance).
+- In Live mode the search field lined up a few pixels too far right (an empty
+  library button box was still taking space); it now aligns with the tabs.
 
 ## [0.18.0] - 2026-10-20
 
