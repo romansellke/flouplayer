@@ -28,6 +28,7 @@ $('#clearLibrary').onclick=async()=>{
     log('Saved library deleted (Clear library)');
     state.tracks=[]; state.filters={album_artist:'',artist:'',album:'',year:''};
     $('#breadcrumb').textContent='Library cleared';
+    $('#libChanged').classList.add('hidden');
     render();
     showToast('Library cleared');
   }catch(e){ logErr(e.message); notify('Could not clear the library: '+e.message) }
@@ -58,6 +59,7 @@ $('#loadLibrary').onclick=async()=>{
     $('#breadcrumb').textContent=`${x.count} tracks (${x.scan_root})`;
     render();
     logScan(x);
+    $('#libChanged').classList.add('hidden');
     if(x.warning && (x.stats?.loops_skipped||x.stats?.too_deep)) notify(x.warning);   // a plain multi-view server only gets the log line
   }catch(e){
     if(state.tracks.length) render();
@@ -374,13 +376,37 @@ $('#qualityFilter').onchange=()=>{ isLive()?renderAlbums():render() };
 
 // ---------- Restore the last scanned library from disk on startup ----------
 updateReadyState();
+// The media server raises a counter (SystemUpdateID) whenever its content changes; if it moved since
+// the scan, offer a fresh one. Checked when the library is shown and every few minutes; "Not now" hides
+// it until the server changes again.
+async function checkLibraryChanged(){
+  const box=$('#libChanged');
+  if(isLive()||!$('#server').value||!state.tracks.length||$('#loadLibrary').classList.contains('busy')) return box.classList.add('hidden');
+  try{
+    const r=await api(`/api/library/changed?device_id=${encodeURIComponent($('#server').value)}`);
+    let dismissed=''; try{ dismissed=localStorage.getItem('flou_libchanged_dismissed')||'' }catch(e){}
+    const show=r.known&&r.changed&&String(r.update_id)!==dismissed;
+    box.dataset.updateId=r.update_id??'';
+    if(show && box.classList.contains('hidden')) log('The music on the media server has changed since the library was scanned.');
+    box.classList.toggle('hidden',!show);
+  }catch(e){ box.classList.add('hidden') }   // server not reachable right now: say nothing
+}
+$('#libChangedReload').onclick=()=>{ $('#libChanged').classList.add('hidden'); $('#loadLibrary').click() };
+$('#libChangedDismiss').onclick=()=>{
+  try{ localStorage.setItem('flou_libchanged_dismissed',$('#libChanged').dataset.updateId||'') }catch(e){}
+  $('#libChanged').classList.add('hidden');
+};
+$('#server').addEventListener('change',()=>checkLibraryChanged());
+setInterval(checkLibraryChanged,5*60*1000);
+
 async function initFromCache(){
-  if(state.tracks.length) return render();
+  if(state.tracks.length){ render(); checkLibraryChanged(); return }
   try{
     const cached=await api('/api/library/cached');
     state.tracks=enrichTracks(cached.tracks);
     const when=cached.scanned_at?new Date(cached.scanned_at*1000).toLocaleString():'';
     $('#breadcrumb').textContent=`${cached.count} tracks (cached, ${cached.scan_root}${when?' · '+when:''})`;
     render();
+    checkLibraryChanged();
   }catch(e){/* no cached library yet -- that's fine, use Load Library */}
 }

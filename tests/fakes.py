@@ -115,7 +115,7 @@ def linn_player(host="192.168.1.21", **overrides):
     return openhome, av, state
 
 
-def media_server(host="192.168.1.50", tree=None, search=None, search_caps="dc:title,upnp:artist,upnp:album,upnp:class"):
+def media_server(host="192.168.1.50", tree=None, search=None, search_caps="dc:title,upnp:artist,upnp:album,upnp:class", update_id=None):
     """A ContentDirectory server whose tree is {object_id: [DIDL-Lite <item>/<container> xml fragments]}.
     search(criteria) -> [xml fragments] answers Search; every call is recorded in .searches."""
     tree = tree or {}
@@ -140,6 +140,8 @@ def media_server(host="192.168.1.50", tree=None, search=None, search_caps="dc:ti
 
     cd = FakeService("urn:upnp-org:serviceId:ContentDirectory", "urn:schemas-upnp-org:service:ContentDirectory:1",
                      {"Browse": browse, "Search": do_search, "GetSearchCapabilities": lambda: {"SearchCaps": search_caps}})
+    if update_id is not None:   # a list, so a test can change it: update_id[0] += 1
+        cd.actions["GetSystemUpdateID"] = lambda: {"Id": update_id[0]}
     dev = FakeDevice(f"uuid:{host}-ms", f"http://{host}:9790/ms/device.xml", "Music Server", [cd], model_name="MinimServer")
     dev.searches = searches
     return dev

@@ -515,3 +515,26 @@ def test_search_on_a_server_without_search_says_so():
     r = client.post("/api/search", json={"device_id": srv.udn, "query": "x"})
     assert r.status_code == 400 and "doesn't support searching" in r.json()["detail"]
     app_state.devices.clear()
+
+
+# ---------- has the library on the server changed since the scan? ----------
+
+def test_the_app_notices_when_the_server_content_changed_since_the_scan():
+    update_id = [7]
+    srv = media_server(tree={"0": [TRACK]}, update_id=update_id)
+    devices_api._publish_devices({srv.udn: srv})
+    assert client.post("/api/scan", json={"device_id": srv.udn, "object_id": "0"}).json()["system_update_id"] == 7
+    changed = lambda: client.get(f"/api/library/changed?device_id={srv.udn}").json()
+    assert changed() == {"known": True, "changed": False, "update_id": 7}
+    update_id[0] = 8                                                    # e.g. MinimServer rescanned new music
+    assert changed() == {"known": True, "changed": True, "update_id": 8}
+    assert client.get("/api/library/changed?device_id=uuid:other").json() == {"known": False}   # another server: can't tell
+    app_state.devices.clear()
+
+
+def test_without_an_update_id_nothing_is_claimed():
+    srv = media_server(tree={"0": [TRACK]})                                 # server doesn't offer GetSystemUpdateID
+    devices_api._publish_devices({srv.udn: srv})
+    client.post("/api/scan", json={"device_id": srv.udn, "object_id": "0"})
+    assert client.get(f"/api/library/changed?device_id={srv.udn}").json() == {"known": False}
+    app_state.devices.clear()

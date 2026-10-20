@@ -711,3 +711,29 @@ def test_the_overview_lists_the_zoom_shortcuts(page, api):
     page.keyboard.press("F1")
     text = page.inner_text("#keysBody")
     assert "Zoom the interface" in text and "Reset the zoom" in text
+
+
+# ---------- "the library on the server has changed" ----------
+
+def test_a_changed_server_library_is_pointed_out_until_reloaded_or_dismissed(page, api):
+    tracks = [dict(track(i, album_artist="Band"), id=f"c{i}") for i in (1, 2)]
+    state = {"changed": True, "update_id": 8}
+    api.routes.update({"library/cached": {"tracks": tracks, "count": 2, "scan_root": "root", "scanned_at": 1},
+                       "library/changed": lambda req: {"known": True, **state},
+                       "devices/restore": {"devices": [SERVER, PLAYER]},
+                       "scan/progress": {"running": False},
+                       "scan": {"tracks": tracks, "count": 2, "scan_root": "root", "stats": {}}})
+    page.add_init_script("localStorage.setItem('flou_libmode','cached'); localStorage.setItem('flou_server','srv1')")
+    open_app(page)
+    page.wait_for_selector("#libChanged:not(.hidden)")
+    page.click("#libChangedDismiss")                                 # "Not now" ...
+    assert page.is_hidden("#libChanged")
+    page.reload(); page.wait_for_selector(".album"); page.wait_for_timeout(300)
+    assert page.is_hidden("#libChanged")                             # ... stays quiet for this change
+    state["update_id"] = 9                                           # the server changes again
+    page.reload(); page.wait_for_selector("#libChanged:not(.hidden)")
+    page.click("#libChangedReload")                                  # Reload library = a fresh scan
+    page.wait_for_function("document.querySelector('#loadLibrary:not(.busy)')")
+    assert "POST scan" in api.requests and page.is_hidden("#libChanged")
+    page.click("#tabLive")
+    assert page.is_hidden("#libChanged")                             # never in Live mode

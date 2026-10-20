@@ -64,6 +64,13 @@ iTunes-style column browser and instant searching across everything.
 2. The result is saved to `~/.cache/flou_player/library.json` and reloaded
    automatically on the next start. Click **Load library** again whenever
    you want to refresh it, for example after adding new music.
+   Flou Player also notices by itself when the music on the server has
+   changed since the scan (the server's update counter, which MinimServer
+   raises after it has rescanned its folders): a note above the album list
+   then offers **Reload library**; **×** hides it until the server changes
+   again. It is checked when the library is shown and every five minutes.
+   Servers that don't report changes get no note; a library scanned with an
+   older Flou Player version needs one fresh scan first.
 3. **Cancel** (shown while the scan runs) stops it and discards the result.
    **Clear library** deletes the saved library and empties the list -- use it
    when a scan went wrong, then load the library again.
