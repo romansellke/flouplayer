@@ -7,9 +7,8 @@
   (small cover, title, artist and album, and the stream quality -- click the
   cover to see it full size), the TIDAL and Library health buttons, the Diagnostics and About buttons and the
   theme picker. Under it, the **position bar**:
-  elapsed time at the left, remaining time at the right, a thick seek bar
-  with a time grid in between (a tick every minute, every 5/10 minutes for
-  long tracks).
+  elapsed time at the left, remaining time at the right (both as
+  dot-matrix digits, like a pixel LCD), and a seek bar in blocks in between.
 - **Toolbar:** the Live/Library/Queue tabs, **Search
   devices**, the media server and output device dropdowns (with each
   device's own icon, taken from its UPnP description), the **Source**

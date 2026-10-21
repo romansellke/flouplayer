@@ -242,20 +242,38 @@ function curPos(){
   const p=prog.base+(prog.playing?age:0);
   return prog.dur?Math.min(p,prog.dur):p;
 }
+// The times are drawn as a 5x7 dot matrix (LCD style): lit dots in the text colour, unlit ones faintly visible.
+// The text stays in the element (screen readers, copy), the SVG is only the picture of it.
+const PIX_GLYPHS={
+  '0':['01110','10001','10011','10101','11001','10001','01110'],'1':['00100','01100','00100','00100','00100','00100','01110'],
+  '2':['01110','10001','00001','00010','00100','01000','11111'],'3':['11110','00001','00001','01110','00001','00001','11110'],
+  '4':['00010','00110','01010','10010','11111','00010','00010'],'5':['11111','10000','11110','00001','00001','10001','01110'],
+  '6':['00110','01000','10000','11110','10001','10001','01110'],'7':['11111','00001','00010','00100','01000','01000','01000'],
+  '8':['01110','10001','10001','01110','10001','10001','01110'],'9':['01110','10001','10001','01111','00001','00010','01100'],
+  ':':['0','0','1','0','1','0','0'],'-':['000','000','000','111','000','000','000']};
+function pixelSvg(text){
+  let x=0, on='', off='';
+  for(const ch of text){
+    const g=PIX_GLYPHS[ch]; if(!g) continue;
+    g[0].split('').forEach((_,c)=>g.forEach((row,r)=>{ const sq=`M${x+c} ${r}h.86v.86h-.86z`; if(row[c]==='1') on+=sq; else off+=sq }));
+    x+=g[0].length+1;
+  }
+  const w=Math.max(x-1,1);
+  return `<svg class="pix" viewBox="0 0 ${w} 7" width="${w*PIX}" height="${7*PIX}" aria-hidden="true"><path class="off" d="${off}"/><path d="${on}"/></svg>`;
+}
+const PIX=3;   // screen pixels per dot
+function setPixelText(el,text){
+  if(el._pix===text) return; el._pix=text;
+  el.innerHTML=`<span class="sr">${esc(text)}</span>`+(text?pixelSvg(text):'');
+}
 function drawProgress(){
   const seek=$('#seek');
   const pos=prog.seeking?+seek.value/1000*prog.dur:curPos();
-  $('#elapsedL').textContent=prog.dur||pos?fmtClock(pos):'';
-  $('#elapsedR').textContent=prog.dur?'-'+fmtClock(prog.dur-pos):'';
+  setPixelText($('#elapsedL'),prog.dur||pos?fmtClock(pos):'');
+  setPixelText($('#elapsedR'),prog.dur?'-'+fmtClock(prog.dur-pos):'');
   seek.disabled=!(prog.dur&&prog.seekable);
   if(!prog.seeking) seek.value=prog.dur?Math.round(pos/prog.dur*1000):0;
-  // Fill follows the handle; the time grid ticks every minute (5 / 10 min for long tracks).
-  seek.style.setProperty('--pct',(+seek.value/10)+'%');
-  if(prog.dur!==seek._gridDur){
-    seek._gridDur=prog.dur;
-    const step=prog.dur>3600?600:prog.dur>1200?300:60;
-    seek.style.setProperty('--tick',prog.dur?(step/prog.dur*100)+'%':'100%');
-  }
+  seek.style.setProperty('--pct',(+seek.value/10)+'%');   // the fill follows the handle
 }
 function clearProgress(){ setProgress(0,0,false,false) }
 setInterval(()=>{ if(prog.playing&&!prog.seeking) drawProgress() },250);
