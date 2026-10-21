@@ -36,7 +36,7 @@ app and includes one router per topic; the rest is split like this:
 
 | File | Contents |
 | --- | --- |
-| `main.py` | The app, static files, `/` and the About/ping endpoints, build ID and source info |
+| `main.py` | The app, static files, `/` and the About/ping endpoints, build ID and source info; refuses requests that don't come from the app's own window (other web pages, foreign host names) |
 | `state.py` | Shared state: the discovered devices (one dict, updated in place), locks, and where the app keeps its files |
 | `upnp.py` | Helpers for UPnP devices: finding services (also on a player's sibling devices), icons, device JSON |
 | `didl.py` | DIDL-Lite parsing and walking a ContentDirectory |

@@ -10,7 +10,7 @@ import app.main as m
 from app import devices as devices_api, state as app_state
 from tests.fakes import linn_player, media_server
 
-client = TestClient(m.app)
+client = TestClient(m.app, base_url="http://127.0.0.1:8765")   # the backend only answers local requests
 
 TRACK = ('<item id="t1" parentID="a1"><dc:title>Song</dc:title><upnp:artist>Artist</upnp:artist><upnp:album>Album</upnp:album>'
          '<upnp:class>object.item.audioItem.musicTrack</upnp:class>'
@@ -216,6 +216,23 @@ def test_av_calls_send_a_utf8_charset_content_type():
     dev, av = av_only_renderer({"Stop": {}, "SetAVTransportURI": {}, "Play": {}})
     assert play(dev).status_code == 200
     assert av.headers == {"Content-Type": 'text/xml; charset="utf-8"'}
+
+
+def test_rendering_control_volume_sends_a_utf8_charset_content_type():
+    """The volume of a HEOS/Sonos player goes through RenderingControl, which needs the same header."""
+    from tests.fakes import FakeService
+    level = {"v": 20}
+    rc = FakeService("urn:upnp-org:serviceId:RenderingControl", "urn:schemas-upnp-org:service:RenderingControl:1", {
+        "GetVolume": lambda InstanceID, Channel: {"CurrentVolume": level["v"]},
+        "SetVolume": lambda InstanceID, Channel, DesiredVolume: level.update(v=DesiredVolume) or {},
+    })
+    dev, _ = av_only_renderer({})
+    dev.services.append(rc)
+    assert client.get(f"/api/devices/{dev.udn}/volume").json()["percent"] == 20
+    assert rc.headers == {"Content-Type": 'text/xml; charset="utf-8"'}
+    rc.headers = None
+    assert control(dev, "volume", 35).status_code == 200
+    assert level["v"] == 35 and rc.headers == {"Content-Type": 'text/xml; charset="utf-8"'}
 
 
 def test_set_uri_falls_back_to_a_minimal_didl_before_no_metadata():
@@ -460,6 +477,29 @@ def test_ping_identifies_the_app_and_the_page_is_not_cached():
     assert page.status_code == 200 and "Flou Player" in page.text
     assert page.headers["cache-control"] == "no-cache"
     assert client.get("/static/core.js").headers["cache-control"] == "no-cache"
+
+
+@pytest.mark.parametrize("headers", [
+    {"Host": "attacker.example:8765"},                                   # DNS rebinding: a foreign name on 127.0.0.1
+    {"Origin": "https://evil.example"},                                  # a form post / fetch from another site
+    {"Origin": "null"},                                                  # sandboxed frame, file:// page
+    {"Origin": "http://127.0.0.1:3000"},                                 # another local web app
+    {"Sec-Fetch-Site": "cross-site"},                                    # <img>/<audio> from another site (no Origin)
+    {"Sec-Fetch-Site": "same-site"},
+])
+def test_requests_from_other_sites_are_refused(headers):
+    for r in (client.post("/api/media/command/next", headers=headers), client.get("/api/app/ping", headers=headers)):
+        assert r.status_code == 403 and "detail" in r.json()
+
+
+@pytest.mark.parametrize("headers", [
+    {},                                                                  # scripts, a second launch (desktop.py)
+    {"Origin": "http://127.0.0.1:8765", "Sec-Fetch-Site": "same-origin"},  # the app's own page
+    {"Sec-Fetch-Site": "none"},                                          # the address typed into a browser
+    {"Host": "localhost:8765", "Origin": "http://localhost:8765"},
+])
+def test_the_apps_own_requests_are_answered(headers):
+    assert client.post("/api/media/command/bogus", headers=headers).json() == {"ok": False}
 
 
 def test_transcode_only_accepts_http_urls():

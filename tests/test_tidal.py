@@ -10,7 +10,7 @@ from app import devices as devices_api, state as app_state, tidal
 from app.didl import parse_didl
 from tests.fakes import linn_player, oh
 
-client = TestClient(m.app)
+client = TestClient(m.app, base_url="http://127.0.0.1:8765")   # the backend only answers local requests
 
 
 class Pic:
