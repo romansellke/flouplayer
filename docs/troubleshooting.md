@@ -6,6 +6,9 @@
   (same subnet/VLAN) -- SSDP discovery does not cross routers.
 - With a firewall (`ufw`/`firewalld`), allow incoming UDP traffic from your
   local network (SSDP uses port 1900), otherwise the answers never arrive.
+- A search that takes long (a device that doesn't answer, e.g. after a
+  network outage) gives up on it after about 15 seconds; **Cancel search**
+  stops it at once.
 - Click **Search devices** again; the Diagnostics dialog (list button in
   the header) logs what was found.
 

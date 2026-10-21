@@ -12,16 +12,34 @@ from app.upnp import _has_openhome_product, _host, device_json, av_transport, fi
 
 router=APIRouter()
 
+# upnpclient.discover() reads each device's description (and every service's) one after the other, each
+# request with a 10 s timeout: after a network outage one device that answers SSDP but not HTTP made a search
+# take minutes. So the descriptions are read in parallel and the search gives up on stragglers after this long.
+DISCOVER_LOAD_SECONDS=15
+
+def _find(timeout:int):
+    """SSDP search (two passes at once, answers are UDP and get lost now and then), then the devices'
+    descriptions in parallel. Devices that don't answer within DISCOVER_LOAD_SECONDS are left out."""
+    locations={}; error=None
+    with cf.ThreadPoolExecutor(max_workers=2) as ex:
+        for fut in [ex.submit(lambda: list(upnpclient.ssdp.scan(timeout))) for _ in range(2)]:
+            try:
+                for entry in fut.result(): locations.setdefault(entry.location,None)
+            except Exception as e: error=e
+    if not locations and error: raise error
+    pool=cf.ThreadPoolExecutor(max_workers=8)
+    futs=[pool.submit(upnpclient.Device,loc) for loc in locations]
+    done,_=cf.wait(futs,timeout=DISCOVER_LOAD_SECONDS)
+    pool.shutdown(wait=False,cancel_futures=True)   # don't wait for devices that are gone
+    found=[]
+    for f in futs:
+        if f in done and not f.exception(): found.append(f.result())
+    return found
+
 @router.get("/api/discover")
 def discover(timeout:int=4):
-    # SSDP answers are UDP and get lost now and then (the number of devices
-    # found varied between searches), so run two passes at once and merge.
-    found=[]; error=None
-    with cf.ThreadPoolExecutor(max_workers=2) as ex:
-        for fut in [ex.submit(upnpclient.discover,timeout=timeout) for _ in range(2)]:
-            try: found+=fut.result()
-            except Exception as e: error=e
-    if not found and error: raise HTTPException(502,f"SSDP discovery failed: {error}")
+    try: found=_find(timeout)
+    except Exception as e: raise HTTPException(502,f"SSDP discovery failed: {e}")
     fresh={}
     for d in found:
         key=getattr(d,"udn",None) or getattr(d,"location",None) or str(id(d)); fresh[key]=d

@@ -821,3 +821,33 @@ def test_tidal_login_shows_link_and_code(page, api):
     api.routes["tidal/status"] = {"available": True, "logged_in": True, "user": "miles@example.org"}
     page.wait_for_selector("#tidalSearch:visible", timeout=5000)                    # the page notices the login by itself
     assert page.inner_text("#tidalAccount") == "Logged in as miles@example.org"
+
+
+def test_tidal_explains_when_the_selected_device_has_no_usable_playlist(page, api):
+    tidal_routes(api)
+    api.routes["/queue"] = lambda req: (502, {"detail": "no playlist"})
+    open_app(page)
+    select_renderer(page)
+    page.click("#tidalBtn")
+    page.fill("#tidalSearch", "miles"); page.press("#tidalSearch", "Enter")
+    page.wait_for_selector(".ttable tr[data-ti='0']")
+    page.dblclick(".ttable tr[data-ti='0']"); page.wait_for_timeout(300)
+    assert "no usable playlist" in page.inner_text("#toast")                          # not "select an output device": one is selected
+    assert not [p for p in api.posts if p.get("action") in ("insert", "replace")]
+
+
+def test_a_device_search_that_hangs_can_be_cancelled(page, api):
+    api.routes.update({"devices/restore": {"devices": []}, "discover": {"devices": [SERVER, PLAYER]}})
+    open_app(page)
+    page.evaluate("""() => { const real = window.fetch; window.hang = true;
+        window.fetch = (url, opt) => !(window.hang && String(url).includes('/api/discover')) ? real(url, opt)
+          : new Promise((_, rej) => opt.signal.addEventListener('abort', () => rej(new DOMException('aborted', 'AbortError')))) }""")
+    page.click("#discover")
+    assert "Cancel search" in page.inner_text("#discover")
+    page.click("#discover")                                                            # the same button cancels
+    page.wait_for_function("document.querySelector('#discover').textContent === 'Search devices'")
+    assert page.evaluate("logEntries.some(e => e.msg === 'Device search cancelled' && e.level === 'info')")
+    assert not page.evaluate("logEntries.some(e => e.level === 'error')")             # a cancel is not an error
+    page.evaluate("window.hang = false")
+    page.click("#discover")                                                            # and searching works again afterwards
+    page.wait_for_function("document.querySelectorAll('#server option').length > 1")

@@ -39,7 +39,7 @@ def control(device, action, value=None):
 def test_discover_presents_a_linn_player_once_and_remembers_it(monkeypatch):
     oh, av, _ = linn_player()
     srv = media_server()
-    monkeypatch.setattr(upnpclient, "discover", lambda timeout=4: [oh, av, srv])
+    monkeypatch.setattr(devices_api, "_find", lambda timeout: [oh, av, srv])
     r = client.get("/api/discover").json()["devices"]
     names = sorted(d["name"] for d in r)
     assert names == ["Linn Majik DSM", "Music Server"]          # the sibling "UPnP AV" device is hidden
@@ -66,6 +66,31 @@ def test_restore_reconnects_by_url_and_skips_dead_devices(monkeypatch):
     r = client.post("/api/devices/restore").json()["devices"]
     assert sorted(d["name"] for d in r) == ["Linn Majik DSM", "Music Server"]
     assert set(app_state.devices) == {oh.udn, av.udn, srv.udn}
+
+
+def test_discover_does_not_wait_for_a_device_that_answers_ssdp_but_not_http(monkeypatch):
+    """After a network outage a device can still answer the SSDP search while its description never
+    arrives; the search must return the others in time instead of hanging for minutes."""
+    import threading, time
+    from types import SimpleNamespace
+    oh, av, _ = linn_player()
+    release = threading.Event()
+    by_url = {oh.location: oh, av.location: av}
+
+    def fake_device(location):
+        if location == "http://192.168.1.77/stuck.xml": release.wait(30)
+        return by_url[location]
+
+    monkeypatch.setattr(upnpclient.ssdp, "scan", lambda timeout=5: [SimpleNamespace(location=l) for l in (oh.location, "http://192.168.1.77/stuck.xml", av.location)])
+    monkeypatch.setattr(upnpclient, "Device", fake_device)
+    monkeypatch.setattr(devices_api, "DISCOVER_LOAD_SECONDS", 0.5)
+    t0 = time.time()
+    try:
+        r = client.get("/api/discover").json()["devices"]
+    finally:
+        release.set()
+        app_state.devices.clear()
+    assert time.time() - t0 < 5 and [d["name"] for d in r] == ["Linn Majik DSM"]
 
 
 def test_restore_without_saved_devices_is_empty():
