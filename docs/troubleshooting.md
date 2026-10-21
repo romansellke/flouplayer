@@ -110,6 +110,26 @@ The built-in web engine plays FLAC, WAV, MP3 and Ogg directly. AAC/ALAC
 (seeking isn't possible in such tracks). Raw PCM streams (`audio/L16`) can't
 be played locally. See [Local playback](user-guide.md#local-playback).
 
+## TIDAL
+
+- **"TIDAL support needs the 'tidalapi' package":** the app was updated but
+  its dependencies weren't. `./run.command` installs them by itself; in a
+  manual setup run `pip install -r requirements.txt`, then restart.
+- **The login link expired:** it is valid for a few minutes. Click **Log in
+  to TIDAL** again for a new one.
+- **"Select a Linn/OpenHome output device":** TIDAL plays on the device
+  itself, so choose a Linn/OpenHome device, not "This computer".
+- **"The output device has no TIDAL login":** add TIDAL to the device in the
+  Linn app (Linn Account). Logging in to TIDAL in Flou Player is not enough:
+  that login is only for searching.
+- **The device shows a login status/error:** the device's TIDAL login no
+  longer works (password changed, subscription ended). Sign in again in the
+  Linn app.
+- **A track is greyed out:** TIDAL doesn't offer it for streaming (in your
+  region or at all); it is skipped when you play the album.
+- **Search says "Not logged in to TIDAL":** the saved login was rejected,
+  e.g. after logging out on TIDAL's website. Log in again.
+
 ## Reporting a bug
 
 Open the **Diagnostics** dialog and use **Copy report** (versions, device
