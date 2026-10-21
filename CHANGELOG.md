@@ -26,10 +26,25 @@ All notable changes to Flou Player are documented here. The format follows
   **Search devices** turns into **Cancel search** while a search runs.
 - The label of the active Live/Library/Queue tab was unreadable while the
   mouse was over it (text and background in the same colour).
+- Volume on plain UPnP players (Marantz/Denon HEOS, Sonos): reading and setting
+  it now sends the `text/xml; charset="utf-8"` content type these players
+  require, as playback already did; before, they could answer
+  "400 Bad Request".
+- An unexpected error in the background service now shows as a readable
+  message (status and text) instead of a JSON parse error, and a refused
+  request shows the reason instead of "[object Object]".
+
+### Security
+- The background service only answers Flou Player's own window (and scripts on
+  this computer): requests from other web pages open in a browser -- a form
+  post, an embedded image, a foreign host name pointed at 127.0.0.1 -- are
+  refused. Before, any web page could e.g. skip tracks, log out of TIDAL or
+  quit the app.
 
 ### Changed
 - Docs: new screenshots of Live and Library mode, plus Library health,
   Diagnostics and the theme picker, in the feature list and the user guide.
+  The Library mode screenshot shows the new pixel LCD position bar.
 
 ## [0.19.0] - 2026-10-20
 

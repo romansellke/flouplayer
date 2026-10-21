@@ -86,7 +86,14 @@ async function api(url,opt){
   let r;
   try{r=await fetch(url,opt)}
   catch(e){ if(e.name==='AbortError') throw e; throw Error('Lost connection to the Flou Player background service -- please restart Flou Player.') }
-  const j=await r.json();if(!r.ok)throw Error(j.detail||r.statusText);return j}
+  // A crash in the backend answers with plain text ("Internal Server Error"), not JSON: report that, not a JSON parse error.
+  const text=await r.text(); let j;
+  try{ j=JSON.parse(text) }catch(e){ throw Error(`The background service answered ${[r.status,r.statusText].filter(Boolean).join(' ')}: ${text.trim().slice(0,200)||'(empty)'} (${url})`) }
+  if(!r.ok){
+    const d=j?.detail;   // a string, or FastAPI's list of validation errors
+    throw Error(typeof d==='string'?d:Array.isArray(d)?d.map(x=>x?.msg||JSON.stringify(x)).join('; '):`${r.status} ${r.statusText}`);
+  }
+  return j}
 function isLocal(){return $('#renderer').value===LOCAL_RENDERER_ID}
 
 function deviceOption(d){return `<option value="${esc(d.id)}" data-icon="${esc(d.icon||'')}">${esc(d.name)}${d.model?' · '+esc(d.model):''}</option>`}

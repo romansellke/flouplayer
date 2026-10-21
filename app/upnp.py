@@ -48,14 +48,15 @@ def find_volume_service(d):
     """Prefers the OpenHome Volume service (typical for Linn devices):
     it offers real dB resolution via Characteristics()
     (VolumeMilliDbPerStep). Fallback: classic UPnP-AV
-    RenderingControl service (0-100 only, no dB)."""
+    RenderingControl service (0-100 only, no dB) -- wrapped in StrictSoap
+    like AVTransport, since it is what HEOS and Sonos players offer."""
     for dev in peer_devices(d):
         for s in dev.services:
             sid=(getattr(s,"service_id","")+" "+getattr(s,"service_type","")).lower()
             if "openhome" in sid and "volume" in sid: return s,"openhome"
     for s in d.services:
         sid=(getattr(s,"service_id","")+" "+getattr(s,"service_type","")).lower()
-        if "renderingcontrol" in sid or "volume" in sid: return s,"renderingcontrol"
+        if "renderingcontrol" in sid or "volume" in sid: return StrictSoap(s),"renderingcontrol"
     return None,None
 
 def device_icon(d):

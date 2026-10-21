@@ -318,6 +318,17 @@ def test_about_dialog_shows_version_and_source(page, api):
     assert "developed with ai assistance" in page.inner_text("#aboutModal").lower()
 
 
+def test_backend_errors_read_as_messages_not_json_parse_errors(page, api):
+    api.routes["invalid"] = (422, {"detail": [{"loc": ["body", "value"], "msg": "Input should be a valid integer"}]})
+    api.routes["refused"] = (400, {"detail": "No volume service on this device"})
+    page.route("**/api/crash", lambda route: route.fulfill(status=500, body="Internal Server Error", content_type="text/plain"))
+    open_app(page)
+    msg = lambda url: page.evaluate("u => api(u).then(() => 'ok', e => e.message)", url)
+    assert msg("/api/crash") == "The background service answered 500 Internal Server Error: Internal Server Error (/api/crash)"
+    assert msg("/api/invalid") == "Input should be a valid integer"
+    assert msg("/api/refused") == "No volume service on this device"
+
+
 # ---------- album order ----------
 
 def test_albums_are_ordered_by_album_artist_then_album(page, api):

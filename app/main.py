@@ -10,9 +10,10 @@ from __future__ import annotations
 import contextlib
 import json
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from fastapi import FastAPI
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from app import __version__, control, devices as devices_api, library, media, openhome, playlist, tidal, transcode
@@ -28,6 +29,25 @@ async def lifespan(_app):
 
 app=FastAPI(title="Flou Player", version=__version__, lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+# Only the app's own page (and scripts on this computer) may use the backend. It listens on 127.0.0.1
+# only, but any web page open in a browser can still send requests there: a form post or an <img> from
+# another site, or a foreign host name pointed at 127.0.0.1 (DNS rebinding) to read the answers too.
+# So the Host must be a loopback name, and a request the browser marks as coming from elsewhere is refused.
+LOCAL_HOSTS={"127.0.0.1","localhost","::1"}
+
+def is_local_request(headers):
+    host=(headers.get("host") or "").lower()
+    if urlsplit("//"+host).hostname not in LOCAL_HOSTS: return False
+    origin=headers.get("origin")
+    if origin is not None and urlsplit(origin.lower()).netloc!=host: return False   # "null" included
+    return headers.get("sec-fetch-site") not in ("cross-site","same-site")   # same-site: another port on this computer
+
+@app.middleware("http")
+async def only_local(request,call_next):
+    if not is_local_request(request.headers):
+        return JSONResponse({"detail":"Flou Player only answers its own window."},status_code=403)
+    return await call_next(request)
 
 @app.middleware("http")
 async def no_cache_ui(request,call_next):
