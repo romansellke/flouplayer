@@ -26,9 +26,7 @@ router=APIRouter()
 
 SESSION_FILE=CACHE_DIR/"tidal.json"
 # The URI a Linn/OpenHome device resolves itself with its stored TIDAL login.
-# NOTE: the form Linn's apps put into the playlist; not publicly documented.
-# If a device refuses it, compare with the URI of a TIDAL track the Linn app
-# added to the queue (Diagnostics -> Device info, or the queue's metadata).
+# Not publicly documented; tested on a Linn Majik DSM.
 TRACK_URI="tidal://track?version=1&trackId={id}"
 COVER_SIZE=320
 

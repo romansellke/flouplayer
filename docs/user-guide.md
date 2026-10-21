@@ -259,9 +259,7 @@ The tracks go into the device's queue like music from the library, so the
 **Queue** tab, the transport buttons and other control apps work with them as
 usual.
 
-> TIDAL is written against the format Linn's apps use and not yet verified on
-> a real device. If a device won't play the tracks, *Diagnostics → Device
-> info* and a TIDAL track added with the Linn app help to find out why.
+> TIDAL is tested on a Linn Majik DSM.
 
 ## Device controls: mute, source, pins, stream quality
 

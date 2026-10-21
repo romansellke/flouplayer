@@ -12,7 +12,7 @@ All notable changes to Flou Player are documented here. The format follows
   or queue them on the Linn/OpenHome output device. The device streams TIDAL
   itself with the TIDAL account stored on it (Linn app / Linn Account), so
   playback goes on when Flou Player is closed; the view shows whether the
-  device has a TIDAL login. Not yet verified on a real device.
+  device has a TIDAL login. Tested on a Linn Majik DSM.
 
 ### Fixed
 - The label of the active Live/Library/Queue tab was unreadable while the
