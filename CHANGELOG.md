@@ -14,6 +14,11 @@ All notable changes to Flou Player are documented here. The format follows
   playback goes on when Flou Player is closed; the view shows whether the
   device has a TIDAL login. Tested on a Linn Majik DSM.
 
+### Changed
+- The position bar looks like a pixel LCD: elapsed and remaining time in
+  5x7 dot-matrix digits (unlit dots faintly visible), the bar in blocks with a
+  square handle. The time grid on the bar is gone.
+
 ### Fixed
 - **Searching for devices can no longer hang** (e.g. after a network outage, when
   a device still answered the search but not its description): the devices'

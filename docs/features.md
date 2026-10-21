@@ -54,7 +54,7 @@ explains each point in detail.
 - **This computer**: play through the computer's own speakers; FLAC (hi-res
   too), WAV, MP3, Ogg directly, AAC/ALAC (`.m4a`) converted to FLAC on the fly
 - Transport: previous, play, pause, stop, next; **position bar** with seeking
-  and a time grid; elapsed / remaining time
+  in blocks; elapsed / remaining time as dot-matrix (pixel LCD) digits
 - **Volume**: the device's step as the Linn shows it plus the dB it works out
   to; ramped changes, mouse wheel, follows other controllers
 - Display with cover, title, artist, album and the **stream quality** the
