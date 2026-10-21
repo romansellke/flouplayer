@@ -1,6 +1,8 @@
 fastapi==0.116.1
 uvicorn[standard]==0.35.0
 upnpclient==2.0.3
+# TIDAL login and search (the Linn device plays the tracks itself) -- see app/tidal.py.
+tidalapi==0.8.11
 # Transcodes AAC/ALAC (.m4a) etc. to FLAC for local playback; bundles ffmpeg.
 av>=12
 
