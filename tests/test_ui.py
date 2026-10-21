@@ -821,3 +821,16 @@ def test_tidal_login_shows_link_and_code(page, api):
     api.routes["tidal/status"] = {"available": True, "logged_in": True, "user": "miles@example.org"}
     page.wait_for_selector("#tidalSearch:visible", timeout=5000)                    # the page notices the login by itself
     assert page.inner_text("#tidalAccount") == "Logged in as miles@example.org"
+
+
+def test_tidal_explains_when_the_selected_device_has_no_usable_playlist(page, api):
+    tidal_routes(api)
+    api.routes["/queue"] = lambda req: (502, {"detail": "no playlist"})
+    open_app(page)
+    select_renderer(page)
+    page.click("#tidalBtn")
+    page.fill("#tidalSearch", "miles"); page.press("#tidalSearch", "Enter")
+    page.wait_for_selector(".ttable tr[data-ti='0']")
+    page.dblclick(".ttable tr[data-ti='0']"); page.wait_for_timeout(300)
+    assert "no usable playlist" in page.inner_text("#toast")                          # not "select an output device": one is selected
+    assert not [p for p in api.posts if p.get("action") in ("insert", "replace")]

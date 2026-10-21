@@ -127,14 +127,16 @@ function drawTidalView(){
 const tidalShownTracks=()=>tidal.view?.data?.tracks||[];
 
 // ---- Playing: into the device queue, like the library does.
-function tidalCanPlay(){
-  if(useDeviceQueue()) return true;
-  notify('TIDAL plays on the Linn/OpenHome output device itself -- select one as output device.');
+async function tidalCanPlay(){
+  if(!dev()||isLocal()){ notify('TIDAL plays on the Linn/OpenHome output device itself -- select one as output device.'); return false }
+  if(!queue.supported) await pollQueue(true);   // one failed poll marks the queue unsupported: ask again before giving up
+  if(queue.supported) return true;
+  notify('The output device has no usable playlist right now (OpenHome Playlist), so TIDAL can\'t play on it. See Diagnostics for details.');
   return false;
 }
 async function tidalQueue(tracks,{play=false,replace=false,start=0}={}){
   tracks=tracks.filter(t=>t.available);
-  if(!tracks.length||!tidalCanPlay()) return;
+  if(!tracks.length||!await tidalCanPlay()) return;
   try{
     await queueApi({action:replace?'replace':'insert',items:tracks.map(tidalItem),play,start});
     if(!play&&!replace) showToast(`Added ${tracks.length} track${tracks.length>1?'s':''} to the queue`);
