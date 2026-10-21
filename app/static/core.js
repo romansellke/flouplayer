@@ -85,7 +85,7 @@ $('#diagDevice').onclick=async()=>{
 async function api(url,opt){
   let r;
   try{r=await fetch(url,opt)}
-  catch(e){throw Error('Lost connection to the Flou Player background service -- please restart Flou Player.')}
+  catch(e){ if(e.name==='AbortError') throw e; throw Error('Lost connection to the Flou Player background service -- please restart Flou Player.') }
   const j=await r.json();if(!r.ok)throw Error(j.detail||r.statusText);return j}
 function isLocal(){return $('#renderer').value===LOCAL_RENDERER_ID}
 

@@ -15,6 +15,10 @@ All notable changes to Flou Player are documented here. The format follows
   device has a TIDAL login. Tested on a Linn Majik DSM.
 
 ### Fixed
+- **Searching for devices can no longer hang** (e.g. after a network outage, when
+  a device still answered the search but not its description): the devices'
+  descriptions are read in parallel and given up on after 15 seconds, and
+  **Search devices** turns into **Cancel search** while a search runs.
 - The label of the active Live/Library/Queue tab was unreadable while the
   mouse was over it (text and background in the same colour).
 

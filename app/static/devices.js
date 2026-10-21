@@ -75,13 +75,18 @@ $(`#renderer option[value="${LOCAL_RENDERER_ID}"]`).dataset.icon=ICON_LOCAL; // 
 const serverPicker=createDevicePicker($('#server'),ICON_SERVER);
 const rendererPicker=createDevicePicker($('#renderer'),ICON_RENDERER);
 
+// While a search runs the button turns into "Cancel": a click gives up the request (the backend limits itself too,
+// see DISCOVER_LOAD_SECONDS) so the UI is never stuck "Searching" -- e.g. after a network outage.
+let discoverAbort=null;
 $('#discover').onclick=async()=>{
   const btn=$('#discover');
-  if(btn.classList.contains('busy')) return;
-  setBusy(btn,true,'Searching');
+  if(discoverAbort){ discoverAbort.abort(); return }
+  const ctl=discoverAbort=new AbortController();
+  btn._label=btn.textContent; btn.style.minWidth=btn.offsetWidth+'px';
+  btn.innerHTML='<span class="spinner" aria-hidden="true"></span>Cancel search'; btn.title='Stop searching';
   try{
     log('Searching local network ...');
-    const x=await api('/api/discover');
+    const x=await api('/api/discover',{signal:ctl.signal});
     state.devices=x.devices;
     populateServerSelect(x.devices.filter(d=>d.server));
     populateRendererSelect(x.devices.filter(d=>d.renderer));
@@ -89,6 +94,6 @@ $('#discover').onclick=async()=>{
     for(const k of ['server','renderer']){ const w=savedDev(k); if(w&&w!==LOCAL_RENDERER_ID&&$('#'+k).value!==w) log(`Remembered ${k} (${w}) was not found in this search`,'warn') }
     log(`Found ${x.devices.length} device(s): `+x.devices.map(d=>d.name+(d.server?' [server]':'')+(d.renderer?' [output]':'')).join(', '));
     updateReadyState();
-  }catch(e){logErr(e.message)}
-  finally{ setBusy(btn,false) }
+  }catch(e){ if(ctl.signal.aborted) log('Device search cancelled'); else logErr(e.message) }
+  finally{ discoverAbort=null; btn.textContent=btn._label; btn.style.minWidth=''; btn.title='' }
 };
