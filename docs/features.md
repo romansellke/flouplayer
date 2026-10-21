@@ -68,6 +68,14 @@ explains each point in detail.
 - Add with **+** (track), **+ Queue** (album), **▶** (album, replaces the
   queue), **▶ Play all** / **+ Queue all** (everything shown)
 
+## TIDAL (Linn/OpenHome)
+
+- Log in with TIDAL's device login (open a link, confirm a code)
+- Search artists, albums and tracks; album and artist pages
+- Play or queue on the output device, which streams TIDAL itself with its own
+  TIDAL login (so it plays on with the app closed); shows whether the device
+  has one
+
 ## Device controls (Linn/OpenHome)
 
 - **Mute**, showing the device's real state
@@ -120,7 +128,7 @@ information. Lists can be copied for a spreadsheet. Nothing is changed.
 | | |
 | --- | --- |
 | Tested with a **Linn Majik DSM** and **MinimServer** | browsing, Live search, playback, Pause, the device queue (gapless, plays on with the app closed), media keys / MPRIS |
-| Written against the specifications, **not yet verified** | dB volume readout, mute, source, pins, standby, stream quality, firmware; playback on Marantz/Denon (HEOS) and Sonos |
+| Written against the specifications, **not yet verified** | TIDAL playback, dB volume readout, mute, source, pins, standby, stream quality, firmware; playback on Marantz/Denon (HEOS) and Sonos |
 
 Reports from other devices are welcome -- *Diagnostics → Copy report* has
 everything needed.

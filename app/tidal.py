@@ -157,8 +157,9 @@ def login():
     """Starts TIDAL's device login: the page shows the link, the user confirms it in a browser."""
     tidalapi=_tidalapi()
     with _lock:
-        if _login.get("future") and not _login["future"].done():
-            return status()
+        running=_login.get("future") and not _login["future"].done()
+    if running: return status()   # a second click: keep the running login (status() takes the lock itself)
+    with _lock:
         s=tidalapi.Session()
         try: link,fut=s.login_oauth()
         except Exception as e:

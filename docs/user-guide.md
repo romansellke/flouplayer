@@ -5,7 +5,7 @@
 - **Header:** transport buttons (previous, play, pause, stop, next), volume
   slider with the volume readout (step and dB) and mute button, the LCD-style display of the current track
   (small cover, title, artist and album, and the stream quality -- click the
-  cover to see it full size), the Diagnostics and About buttons and the
+  cover to see it full size), the TIDAL and Library health buttons, the Diagnostics and About buttons and the
   theme picker. Under it, the **position bar**:
   elapsed time at the left, remaining time at the right, a thick seek bar
   with a time grid in between (a tick every minute, every 5/10 minutes for
@@ -234,6 +234,34 @@ On Linn/OpenHome devices the device's own playlist has its own **Queue** tab
   the device advances by itself.
 
 > The queue is tested on a Linn Majik DSM.
+
+## TIDAL
+
+The **TIDAL** icon in the header opens the TIDAL view (click it again to go
+back). Flou Player uses TIDAL only to find music; the **output device plays
+it itself**, with the TIDAL account stored on the device. So TIDAL needs a
+Linn/OpenHome output device that is signed in to TIDAL (add TIDAL in the
+Linn app / your Linn Account). The view says whether the device has a TIDAL
+login.
+
+- **Log in:** click **Log in to TIDAL**, open the link that appears (or copy
+  it), log in to TIDAL in the browser and confirm the code. The view continues
+  by itself. The login is kept in `~/.cache/flou_player/tidal.json`;
+  **Log out** removes it (the device keeps its own login).
+- **Search** for artists, albums and tracks (Enter). Click an album or artist
+  to open it, **← Back** returns.
+- **▶ Play** on an album replaces the queue and plays it; **+ Queue** adds it.
+  Double-click a track in an album to play the album from that track,
+  double-click a search result to add and play just that track; **+** adds a
+  track. Tracks TIDAL doesn't offer for streaming are greyed out and skipped.
+
+The tracks go into the device's queue like music from the library, so the
+**Queue** tab, the transport buttons and other control apps work with them as
+usual.
+
+> TIDAL is written against the format Linn's apps use and not yet verified on
+> a real device. If a device won't play the tracks, *Diagnostics → Device
+> info* and a TIDAL track added with the Linn app help to find out why.
 
 ## Device controls: mute, source, pins, stream quality
 

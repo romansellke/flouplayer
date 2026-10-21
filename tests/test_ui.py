@@ -737,3 +737,87 @@ def test_a_changed_server_library_is_pointed_out_until_reloaded_or_dismissed(pag
     assert "POST scan" in api.requests and page.is_hidden("#libChanged")
     page.click("#tabLive")
     assert page.is_hidden("#libChanged")                             # never in Live mode
+
+
+# ---------- TIDAL ----------
+
+def ttrack(i, available=True):
+    return {"id": str(i), "title": f"Tidal {i}", "artist": "Miles", "album": "Kind of Blue", "album_id": "5", "track_number": i,
+            "duration": 185, "quality": "LOSSLESS", "album_art": "", "available": available,
+            "uri": f"tidal://track?version=1&trackId={i}", "metadata": f"<m{i}/>"}
+
+
+def tidal_routes(api, logged_in=True):
+    api.routes.update({
+        "tidal/status": {"available": True, "logged_in": logged_in, "user": "miles@example.org"},
+        "tidal/search": {"artists": [{"id": "7", "name": "Miles", "picture": ""}],
+                         "albums": [{"id": "5", "title": "Kind of Blue", "artist": "Miles", "year": 1959, "tracks": 3, "quality": "LOSSLESS", "album_art": ""}],
+                         "tracks": [ttrack(9)]},
+        "tidal/albums/5": {"album": {"id": "5", "title": "Kind of Blue", "artist": "Miles", "year": 1959, "tracks": 3, "quality": "LOSSLESS", "album_art": ""},
+                           "tracks": [ttrack(1), ttrack(2, available=False), ttrack(3)]},
+        "/tidal": {"supported": True, "user": "miles", "enabled": True, "status": "", "ready": True},
+        "/queue": queue_api(),
+    })
+
+
+def test_tidal_search_album_and_play_through_the_device_queue(page, api):
+    tidal_routes(api)
+    open_app(page)
+    select_renderer(page)
+    page.wait_for_function("queue.supported")
+    page.click("#tidalBtn")
+    page.wait_for_selector("#tidalSearch:visible")
+    assert page.inner_text("#tidalDevice") == "Device plays TIDAL as miles"
+    page.fill("#tidalSearch", "miles"); page.press("#tidalSearch", "Enter")
+    page.wait_for_selector("[data-talbum='5']")
+    assert page.inner_text(".ttable .title") == "Tidal 9"
+    page.click("[data-talbum='5']")
+    page.wait_for_selector("[data-tplay]")
+    page.click("[data-tplay]"); page.wait_for_timeout(200)
+    replace = [p for p in api.posts if p.get("action") == "replace"]
+    assert [i["uri"] for i in replace[0]["items"]] == ["tidal://track?version=1&trackId=1", "tidal://track?version=1&trackId=3"]   # unavailable left out
+    api.posts.clear()
+    page.dblclick("tr[data-ti='2']"); page.wait_for_timeout(200)                     # track 3: the album from there
+    replace = [p for p in api.posts if p.get("action") == "replace"]
+    assert replace[0]["start"] == 1 and len(replace[0]["items"]) == 2
+    page.click("[data-tback]")
+    page.wait_for_selector("[data-talbum='5']")
+    # the header icon toggles back to the library, and its active state stays readable
+    assert page.get_attribute("#tidalBtn", "aria-pressed") == "true"
+    page.click("#tidalBtn")
+    assert page.evaluate("currentTab()") == "library"
+
+
+def test_tidal_needs_a_linn_output_device(page, api):
+    tidal_routes(api)
+    open_app(page)
+    page.click("#tidalBtn")
+    page.wait_for_selector("#tidalSearch:visible")
+    assert "Select a Linn/OpenHome output device" in page.inner_text("#tidalDevice")
+    page.fill("#tidalSearch", "miles"); page.press("#tidalSearch", "Enter")
+    page.wait_for_selector(".ttable tr[data-ti='0']")
+    page.dblclick(".ttable tr[data-ti='0']"); page.wait_for_timeout(200)
+    assert not [p for p in api.posts if p.get("action") in ("insert", "replace")]
+    assert "output device" in page.inner_text("#toast")
+
+
+def test_tidal_login_shows_link_and_code(page, api):
+    state = {"started": False}
+    def status(req):
+        if not state["started"]:
+            return {"available": True, "logged_in": False}
+        return {"available": True, "logged_in": False, "login": {"url": "https://link.tidal.com/ABCDE", "code": "ABCDE", "expires_in": 300}}
+    def login(req):
+        state["started"] = True
+        return status(req)
+    api.routes.update({"tidal/status": status, "tidal/login": login})
+    open_app(page)
+    page.click("#tidalBtn")
+    page.wait_for_selector("#tidalLoginStart:visible")
+    assert not page.is_visible("#tidalSearch")
+    page.click("#tidalLoginStart")
+    page.wait_for_selector("#tidalLoginLink:visible")
+    assert page.inner_text("#tidalLoginCode") == "ABCDE" and page.get_attribute("#tidalLoginUrl", "href") == "https://link.tidal.com/ABCDE"
+    api.routes["tidal/status"] = {"available": True, "logged_in": True, "user": "miles@example.org"}
+    page.wait_for_selector("#tidalSearch:visible", timeout=5000)                    # the page notices the login by itself
+    assert page.inner_text("#tidalAccount") == "Logged in as miles@example.org"
