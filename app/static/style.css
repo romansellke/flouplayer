@@ -412,7 +412,7 @@ button.crumb:hover{background:var(--hover);color:var(--text)}
 .tabs{display:flex;gap:4px;flex:0 0 auto;margin-right:8px;padding-right:12px;border-right:1px solid var(--line)}
 .toolbar .tab{border:0;background:none;color:var(--muted);cursor:pointer;font:inherit;font-size:13px;padding:6px 14px;border-radius:var(--radius);border-bottom:2px solid transparent}
 .toolbar .tab:hover:not(:disabled){background:var(--hover);color:var(--text)}
-.toolbar .tab.active{background:var(--accent) !important;color:var(--on-accent);font-weight:600;border-bottom-color:var(--accent)}
+.toolbar .tab.active,.toolbar .tab.active:hover:not(:disabled){background:var(--accent) !important;color:var(--on-accent);font-weight:600;border-bottom-color:var(--accent)}
 .toolbar .tab:disabled{opacity:.4;cursor:default}
 /* Queue is a different kind of view (the device's playlist), so a divider sets it apart from Live / Library */
 .toolbar #tabQueue{position:relative;margin-left:12px}
@@ -421,6 +421,8 @@ main[data-tab=queue]>.facets,main[data-tab=queue]>.albums:not(#queueView){displa
 main[data-tab=health]>.facets,main[data-tab=health]>.albums:not(#healthView){display:none}
 main:not([data-tab=queue])>#queueView{display:none}
 main:not([data-tab=health])>#healthView{display:none}
+main[data-tab=tidal]>.facets,main[data-tab=tidal]>.albums:not(#tidalView){display:none}
+main:not([data-tab=tidal])>#tidalView{display:none}
 #queueBody{flex:1 1 auto;min-height:0;overflow:auto;padding:0 20px 12px}
 .qtable{margin:0}
 .qtable .n{width:38px}
@@ -514,3 +516,29 @@ kbd{display:inline-block;min-width:20px;padding:1px 6px;border:1px solid var(--l
 .libchanged.hidden{display:none}
 .libchanged-x{border:0;background:none;color:var(--muted);cursor:pointer;font-size:16px;line-height:1;padding:2px 6px;border-radius:6px}
 .libchanged-x:hover{color:var(--text);background:var(--hover)}
+
+/* ---------- TIDAL ---------- */
+#tidalView .hidden{display:none}
+#tidalDevice.warn{color:var(--highlight)}
+.tsearch{flex:0 0 auto;padding:0 20px 10px}
+.tsearch input{width:100%;max-width:520px;border:1px solid var(--line);border-radius:var(--radius);padding:8px 12px 8px 32px;background:var(--bg) var(--search) no-repeat 11px center;color:var(--text)}
+.tsearch input:focus{outline:none;border-color:var(--muted)}
+#tidalScroll{flex:1 1 auto;min-height:0;overflow:auto}
+#tidalLogin p{margin:0 0 12px}
+#tidalLogin a{color:var(--highlight)}
+#tidalLoginCode{font-size:16px;letter-spacing:.12em;color:var(--text)}
+.terr{color:var(--highlight)}
+.tsect{margin:14px 20px 0;font-size:10.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.ttable{padding:0 20px;box-sizing:border-box}
+.ttable tr.unavailable td{opacity:.45}
+.thead{padding:8px 20px 0}
+.thead:empty{display:none}
+.cover.round{border-radius:50%}
+.talbum,.tartist{display:flex;gap:18px;align-items:flex-end;padding:12px 20px}
+.talbum .cover,.tartist .cover{--cover:160px;cursor:default}
+.tmeta{display:flex;flex-direction:column;gap:6px;min-width:0}
+.ttitle{font-size:20px;font-weight:700;letter-spacing:-.01em}
+.tartist .ttitle{align-self:center}
+.tsub{color:var(--muted);font-size:12.5px}
+.tsub .crumb{padding:0;font-size:inherit}
+.tbtns{display:flex;gap:8px;margin-top:6px}

@@ -81,8 +81,9 @@ function showTab(name){
   document.querySelector('main').dataset.tab=name;
   drawTabs();
   if(name==='queue'){ renderQueue(); pollQueue(true); scrollToCurrentQueue(false) }
-  $('#healthBtn').classList.toggle('active',name==='health'); $('#healthBtn').setAttribute('aria-pressed',String(name==='health'));
+  for(const [id,view] of [['#healthBtn','health'],['#tidalBtn','tidal']]){ $(id).classList.toggle('active',name===view); $(id).setAttribute('aria-pressed',String(name===view)) }
   if(name==='health') renderHealth();
+  if(name==='tidal') renderTidal();
 }
 function scrollToCurrentQueue(smooth=true){
   const row=document.querySelector('#queueList tr.playing');
