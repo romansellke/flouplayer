@@ -412,7 +412,7 @@ button.crumb:hover{background:var(--hover);color:var(--text)}
 .tabs{display:flex;gap:4px;flex:0 0 auto;margin-right:8px;padding-right:12px;border-right:1px solid var(--line)}
 .toolbar .tab{border:0;background:none;color:var(--muted);cursor:pointer;font:inherit;font-size:13px;padding:6px 14px;border-radius:var(--radius);border-bottom:2px solid transparent}
 .toolbar .tab:hover:not(:disabled){background:var(--hover);color:var(--text)}
-.toolbar .tab.active{background:var(--accent) !important;color:var(--on-accent);font-weight:600;border-bottom-color:var(--accent)}
+.toolbar .tab.active,.toolbar .tab.active:hover:not(:disabled){background:var(--accent) !important;color:var(--on-accent);font-weight:600;border-bottom-color:var(--accent)}
 .toolbar .tab:disabled{opacity:.4;cursor:default}
 /* Queue is a different kind of view (the device's playlist), so a divider sets it apart from Live / Library */
 .toolbar #tabQueue{position:relative;margin-left:12px}
