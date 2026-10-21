@@ -44,6 +44,8 @@ Linux).
   stream quality the device reports
 - Keyboard control (Space, arrows, volume, mute) with a built-in shortcut overview (Ctrl/⌘+/ or F1),
   plus the keyboard's **media keys** and the panel's player controls (MPRIS)
+- **TIDAL**: search TIDAL and play it on the Linn device, which streams it
+  with its own TIDAL login
 - A **Health** view (header icon) that checks the library for tag problems (missing Artist or
   Album Artist, missing covers, track numbers, ...)
 - Album covers, selectable track columns, 17 colour themes, Diagnostics and

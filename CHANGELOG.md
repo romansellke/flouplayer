@@ -6,6 +6,18 @@ All notable changes to Flou Player are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- **TIDAL** (header icon): log in to TIDAL (open the link shown, confirm the
+  code), search artists, albums and tracks, open albums and artists, and play
+  or queue them on the Linn/OpenHome output device. The device streams TIDAL
+  itself with the TIDAL account stored on it (Linn app / Linn Account), so
+  playback goes on when Flou Player is closed; the view shows whether the
+  device has a TIDAL login. Tested on a Linn Majik DSM.
+
+### Fixed
+- The label of the active Live/Library/Queue tab was unreadable while the
+  mouse was over it (text and background in the same colour).
+
 ### Changed
 - Docs: new screenshots of Live and Library mode, plus Library health,
   Diagnostics and the theme picker, in the feature list and the user guide.
