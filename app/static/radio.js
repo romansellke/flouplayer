@@ -69,26 +69,29 @@ $('#radioResults').addEventListener('dblclick',e=>{
   const tr=e.target.closest('tr[data-rs],tr[data-rf]'); if(!tr) return;
   radioQueue(radioPick(tr.dataset.rs!==undefined?'rs:'+tr.dataset.rs:'rf:'+tr.dataset.rf),{replace:true});
 });
+const radioQuality=()=>({bitrate_min:+$('#radioMinRate').value||0,codec:$('#radioCodec').value});
+const radioQualityOn=()=>{ const q=radioQuality(); return !!(q.bitrate_min||q.codec) };
 const radioActive=()=>Object.entries(radio.filters).filter(([,v])=>v);
 // Shows the Clear button and the chips of the chosen country/genre/language only while there is something to clear.
 function radioSync(){
   const act=radioActive(), chips=$('#radioChips');
-  $('#radioClear').classList.toggle('hidden',!($('#radioSearch').value||act.length||radio.found));
+  $('#radioClear').classList.toggle('hidden',!($('#radioSearch').value||act.length||radioQualityOn()||radio.found));
   chips.classList.toggle('hidden',!act.length);
   chips.innerHTML=act.map(([k,v])=>`<span class="rchip">${RADIO_KINDS[k]}: ${esc(v)}<button type="button" data-rchip="${k}" title="Remove" aria-label="Remove ${RADIO_KINDS[k]} ${esc(v)}">×</button></span>`).join('');
 }
 function radioReset(){
   $('#radioSearch').value=''; radio.found=null; radio.query='';
-  radio.filters={country:'',tag:'',language:''};
+  radio.filters={country:'',tag:'',language:''}; $('#radioMinRate').value=''; $('#radioCodec').value='';
   radioSync(); drawRadioFacets(); drawRadio(); $('#radioSearch').focus();
 }
 async function radioSearch(){
   const q=$('#radioSearch').value.trim(), act=radioActive();
-  if(!q&&!act.length){ radio.found=null; radio.query=''; radioSync(); drawRadio(); return }
-  radio.query=[q,...act.map(([,v])=>v)].filter(Boolean).join(' · ');
+  const qual=radioQuality();
+  if(!q&&!act.length&&!radioQualityOn()){ radio.found=null; radio.query=''; radioSync(); drawRadio(); return }
+  radio.query=[q,...act.map(([,v])=>v),qual.bitrate_min?'≥ '+qual.bitrate_min+' kbit/s':'',qual.codec].filter(Boolean).join(' · ');
   radioSync();
   $('#radioResults').innerHTML='<div class="empty"><span class="spinner" aria-hidden="true"></span> Loading…</div>';
-  const params=new URLSearchParams({q,by:$('#radioBy').value,limit:q?40:100,...radio.filters});
+  const params=new URLSearchParams({q,by:$('#radioBy').value,limit:q?40:100,...radio.filters,bitrate_min:qual.bitrate_min,codec:qual.codec});
   try{ radio.found=(await api('/api/radio/search?'+params)).stations }
   catch(err){ radio.found=null; drawRadio(); notify(err.message); return }
   radioSync(); drawRadio();
@@ -99,6 +102,7 @@ $('#radioSearch').addEventListener('keydown',e=>{
 });
 // Emptying the box (also with the field's own x) drops the results of the words; a chosen country/genre/language stays.
 $('#radioSearch').addEventListener('input',e=>{ if(!e.target.value&&radio.found) radioSearch(); else radioSync() });
+$('#radioMinRate').onchange=$('#radioCodec').onchange=radioSearch;
 $('#radioSearchBar').onsubmit=e=>{ e.preventDefault(); radioSearch() };
 
 // ---------- Browsing by country, genre or language ----------
