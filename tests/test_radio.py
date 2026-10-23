@@ -66,6 +66,14 @@ def test_search_by_country_genre_and_language_filters(directory):
     assert directory[1][1]["name"] == "fm" and "tagExact" not in directory[1][1] and len(directory) == 2
 
 
+def test_search_by_stream_quality(directory):
+    client.get("/api/radio/search?bitrate_min=256&codec=FLAC")                        # quality alone is enough to search
+    p = directory[0][1]
+    assert p["bitrateMin"] == 256 and p["codec"] == "FLAC" and "codecExact" not in p and "name" not in p
+    client.get("/api/radio/search?q=jazz&by=tag")                                     # no quality asked: nothing is added
+    assert "bitrateMin" not in directory[1][1] and "codec" not in directory[1][1]
+
+
 def test_facets_are_listed_cached_and_small_ones_left_out(monkeypatch):
     calls = []
     monkeypatch.setattr(radio, "_facet_cache", {})
