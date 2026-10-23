@@ -893,6 +893,26 @@ def test_radio_search_play_and_favourite(page, api):
     assert page.evaluate("currentTab()") == "library"
 
 
+def test_radio_browse_by_country_and_reset(page, api):
+    seen = []
+    api.routes.update({"radio/facets": {"items": [{"name": "Germany", "count": 900}, {"name": "France", "count": 700}]},
+                       "radio/search": lambda r: seen.append(r.url) or {"stations": [radio_station(1)]},
+                       "radio/favourites": {"stations": []}, "/queue": queue_api()})
+    open_app(page)
+    page.click("#radioBtn")
+    page.click("#radioBrowse")
+    page.wait_for_selector(".rfacet")
+    page.fill("#radioFacetFilter", "fra")
+    assert page.locator(".rfacet").count() == 1
+    page.click(".rfacet")
+    page.wait_for_selector("tr[data-rs='0']")
+    assert page.is_hidden("#radioBrowser") and "Country: France" in page.inner_text("#radioChips")
+    assert "country=France" in seen[-1]
+    page.click("#radioClear")                                  # resets the words and the chosen country
+    page.wait_for_selector("#radioChips.hidden", state="attached")
+    assert page.locator("tr[data-rs]").count() == 0 and page.is_hidden("#radioClear")
+
+
 def test_radio_needs_a_linn_output_device(page, api):
     api.routes.update({"radio/search": {"stations": [radio_station(1)]}, "radio/favourites": {"stations": []}, "/queue": queue_api()})
     open_app(page)
