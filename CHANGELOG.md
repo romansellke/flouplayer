@@ -7,6 +7,11 @@ All notable changes to Flou Player are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- **Radio** (header icon): search internet radio stations by name or genre
+  (free directory radio-browser.info, no login), keep favourites and add stream
+  URLs of your own, and play or queue them on the Linn/OpenHome output device.
+  The device fetches the stream itself, so it plays on with Flou Player
+  closed. Playing on "This computer" is not supported yet.
 - **TIDAL** (header icon): log in to TIDAL (open the link shown, confirm the
   code), search artists, albums and tracks, open albums and artists, and play
   or queue them on the Linn/OpenHome output device. The device streams TIDAL

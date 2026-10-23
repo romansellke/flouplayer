@@ -4,7 +4,8 @@ The endpoints live in the other modules of this package:
 devices (search, reconnect, readings), openhome (sources, pins, standby, ...),
 control (transport/volume/... commands), library (browse, scan, cache),
 transcode (local playback), playlist (the device queue), tidal (TIDAL search,
-played by the device) and media (media keys / MPRIS).
+played by the device), radio (internet radio stations, played by the
+device) and media (media keys / MPRIS).
 """
 from __future__ import annotations
 import contextlib
@@ -16,7 +17,7 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from app import __version__, control, devices as devices_api, library, media, openhome, playlist, tidal, transcode
+from app import __version__, control, devices as devices_api, library, media, openhome, playlist, radio, tidal, transcode
 
 # Resolve static files relative to this module, not the current working
 # directory, so the app also works when started from another folder.
@@ -108,6 +109,6 @@ def ping():
     on the same port (see desktop.py)."""
     return {"app":APP_ID,"build":BUILD_ID}
 
-for _module in (devices_api, openhome, control, library, transcode, playlist, tidal, media):
+for _module in (devices_api, openhome, control, library, transcode, playlist, tidal, radio, media):
     app.include_router(_module.router)
 

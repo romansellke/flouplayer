@@ -862,3 +862,45 @@ def test_a_device_search_that_hangs_can_be_cancelled(page, api):
     page.evaluate("window.hang = false")
     page.click("#discover")                                                            # and searching works again afterwards
     page.wait_for_function("document.querySelectorAll('#server option').length > 1")
+
+
+# ---------- Radio ----------
+
+def radio_station(i, name=None):
+    return {"id": f"s{i}", "name": name or f"Station {i}", "url": f"http://radio/{i}", "codec": "MP3", "bitrate": 128, "country": "Germany",
+            "tags": "jazz", "logo": "", "uri": f"http://radio/{i}", "metadata": f"<m{i}/>"}
+
+
+def test_radio_search_play_and_favourite(page, api):
+    favs = {"stations": []}
+    api.routes.update({"radio/search": {"stations": [radio_station(1), radio_station(2)]},
+                       "radio/favourites": lambda r: favs, "/queue": queue_api()})
+    open_app(page)
+    select_renderer(page)
+    page.wait_for_function("queue.supported")
+    page.click("#radioBtn")
+    page.wait_for_selector("#radioSearch:visible")
+    assert page.get_attribute("#radioBtn", "aria-pressed") == "true"
+    page.fill("#radioSearch", "jazz"); page.press("#radioSearch", "Enter")
+    page.wait_for_selector("tr[data-rs='1']")
+    api.posts.clear()
+    page.dblclick("tr[data-rs='1']"); page.wait_for_timeout(200)
+    replace = [p for p in api.posts if p.get("action") == "replace"]
+    assert replace[0]["items"] == [{"uri": "http://radio/2", "metadata": "<m2/>"}] and replace[0]["play"] is True
+    page.hover("tr[data-rs='0']"); page.click("[data-radd='rs:0']"); page.wait_for_timeout(200)
+    assert [p for p in api.posts if p.get("action") == "insert"][0]["items"][0]["uri"] == "http://radio/1"
+    page.click("#radioBtn")
+    assert page.evaluate("currentTab()") == "library"
+
+
+def test_radio_needs_a_linn_output_device(page, api):
+    api.routes.update({"radio/search": {"stations": [radio_station(1)]}, "radio/favourites": {"stations": []}, "/queue": queue_api()})
+    open_app(page)
+    page.click("#radioBtn")
+    page.wait_for_selector("#radioSearch:visible")
+    assert "Select a Linn/OpenHome output device" in page.inner_text("#radioDevice")
+    page.fill("#radioSearch", "jazz"); page.press("#radioSearch", "Enter")
+    page.wait_for_selector("tr[data-rs='0']")
+    page.dblclick("tr[data-rs='0']")
+    page.wait_for_selector("#toast:not(.hidden)")
+    assert not [p for p in api.posts if p.get("action")]

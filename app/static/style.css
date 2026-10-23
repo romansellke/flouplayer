@@ -428,6 +428,8 @@ main:not([data-tab=queue])>#queueView{display:none}
 main:not([data-tab=health])>#healthView{display:none}
 main[data-tab=tidal]>.facets,main[data-tab=tidal]>.albums:not(#tidalView){display:none}
 main:not([data-tab=tidal])>#tidalView{display:none}
+main[data-tab=radio]>.facets,main[data-tab=radio]>.albums:not(#radioView){display:none}
+main:not([data-tab=radio])>#radioView{display:none}
 #queueBody{flex:1 1 auto;min-height:0;overflow:auto;padding:0 20px 12px}
 .qtable{margin:0}
 .qtable .n{width:38px}
@@ -521,6 +523,18 @@ kbd{display:inline-block;min-width:20px;padding:1px 6px;border:1px solid var(--l
 .libchanged.hidden{display:none}
 .libchanged-x{border:0;background:none;color:var(--muted);cursor:pointer;font-size:16px;line-height:1;padding:2px 6px;border-radius:6px}
 .libchanged-x:hover{color:var(--text);background:var(--hover)}
+
+/* ---------- Radio ---------- */
+#radioView .hidden{display:none}
+#radioDevice.warn{color:var(--highlight)}
+#radioScroll{flex:1 1 auto;min-height:0;overflow:auto}
+#radioSearchBar input,#radioUrlBar input{width:auto;max-width:none}
+#radioSearch{width:320px}
+#radioUrl{width:380px}
+#radioUrlName{width:200px}
+.rtable .rlogo{width:44px;padding:3px 6px}
+.rtable .rlogo div{width:36px;height:36px;border-radius:4px;background:var(--card) center/cover no-repeat}
+.rtable button.fav.on{color:var(--highlight)}
 
 /* ---------- TIDAL ---------- */
 #tidalView .hidden{display:none}

@@ -77,6 +77,22 @@ only for searching, the device's for playing. The TIDAL view reads the
 device's login from the OpenHome **Credentials** service (id `tidal.com`)
 and says whether it is there and working.
 
+## Radio
+
+Like TIDAL, Flou Player only *finds* stations; the Linn/OpenHome device plays
+them.
+
+1. **Search** asks the community directory radio-browser.info (by name or by
+   genre, most listened first, stations marked broken are left out). It needs
+   no login. Several mirror servers are tried in turn.
+2. **Favourites and your own stream URLs** are kept in
+   `~/.cache/flou_player/radio.json`. Only `http://` and `https://` URLs are
+   accepted.
+3. **Playing** puts the stream URL into the device's playlist as a live item
+   (`object.item.audioItem.audioBroadcast`, DIDL-Lite with name and logo).
+   The device fetches the stream itself, so playback continues with Flou
+   Player closed. Pause and seeking don't apply to live streams.
+
 ## Known limitations
 
 - A full library scan makes many network requests and can still take a while
@@ -90,6 +106,10 @@ and says whether it is there and working.
   play on "This computer" or on other UPnP renderers. The `tidal://` URI
   format is not publicly documented (tested on a Linn Majik DSM).
   Favourites and your own TIDAL playlists are not shown yet.
+- Radio needs a Linn/OpenHome output device; it can't play on "This computer"
+  yet. Whether a device accepts `https://` streams depends on its firmware;
+  use the station's `http://` URL as an own stream URL if one doesn't play.
+  Not tested on real hardware yet.
 - Only one media server is loaded at a time. The *Source* dropdown switches
   the output device's own inputs, not the media server.
 - In Live mode, Next/Previous step through the folder that is currently open
