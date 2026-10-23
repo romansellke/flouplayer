@@ -106,14 +106,29 @@ def remove_favourite(station_id:str):
     return {"ok":True}
 
 # ---------- Searching ----------
+def _haystack(s,by):
+    fields=("name",) if by=="name" else ("tags",) if by=="tag" else ("name","tags","country","state","language")
+    return " ".join(str(s.get(f) or "") for f in fields).lower()
+
 @router.get("/api/radio/search")
 def search(q:str,by:str="name",limit:int=40):
-    """Stations by name or by genre (tag), the most listened first. Stations that don't work are left out."""
-    q=q.strip()
-    if not q: return {"stations":[]}
-    params={"limit":max(1,min(limit,100)),"hidebroken":"true","order":"clickcount","reverse":"true","name" if by!="tag" else "tag":q}
+    """Stations by name, genre (tag) or both ("all": also country, state and language), the most listened first.
+
+    Several words are all required, in any order, so a half-remembered name works: the directory is asked for
+    the longest word and the other words filter the answer. Stations that don't work are left out."""
+    words=q.lower().split()
+    if not words: return {"stations":[]}
+    limit=max(1,min(limit,100))
+    key=max(words,key=len)
+    fields=["tag"] if by=="tag" else ["name","tag"] if by=="all" else ["name"]
+    raw=[]
+    for field in fields:
+        raw+=_get("stations/search",{"limit":100 if len(words)>1 or by=="all" else limit,"hidebroken":"true","order":"clickcount","reverse":"true",field:key})
+    raw.sort(key=lambda s:-int(s.get("clickcount") or 0))
     out=[]; seen=set()
-    for s in _get("stations/search",params):
+    for s in raw:
+        hay=_haystack(s,by)
+        if not all(w in hay for w in words): continue
         st=_from_directory(s)
         if _valid_url(st["url"]) and st["url"] not in seen: seen.add(st["url"]); out.append(st)
-    return {"stations":out}
+    return {"stations":out[:limit]}

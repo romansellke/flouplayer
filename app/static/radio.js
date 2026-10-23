@@ -68,10 +68,20 @@ $('#radioResults').addEventListener('dblclick',e=>{
   const tr=e.target.closest('tr[data-rs],tr[data-rf]'); if(!tr) return;
   radioQueue(radioPick(tr.dataset.rs!==undefined?'rs:'+tr.dataset.rs:'rf:'+tr.dataset.rf),{replace:true});
 });
+function radioReset(){
+  $('#radioSearch').value=''; radio.found=null; radio.query='';
+  $('#radioClear').classList.add('hidden');
+  drawRadio(); $('#radioSearch').focus();
+}
+$('#radioClear').onclick=radioReset;
+$('#radioSearch').addEventListener('keydown',e=>{ if(e.key==='Escape'&&(e.target.value||radio.found)){ e.preventDefault(); e.stopPropagation(); radioReset() } });
+// Emptying the box (also with the field's own x) shows the favourites again.
+$('#radioSearch').addEventListener('input',e=>{ if(!e.target.value&&radio.found){ radio.found=null; $('#radioClear').classList.add('hidden'); drawRadio() } });
 $('#radioSearchBar').onsubmit=async e=>{
   e.preventDefault();
   const q=$('#radioSearch').value.trim();
-  if(!q){ radio.found=null; drawRadio(); return }
+  if(!q){ radioReset(); return }
+  $('#radioClear').classList.remove('hidden');
   radio.query=q;
   $('#radioResults').innerHTML='<div class="empty"><span class="spinner" aria-hidden="true"></span> Loading…</div>';
   try{ radio.found=(await api(`/api/radio/search?q=${encodeURIComponent(q)}&by=${$('#radioBy').value}`)).stations }
