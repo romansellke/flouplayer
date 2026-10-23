@@ -68,6 +68,13 @@ explains each point in detail.
 - Add with **+** (track), **+ Queue** (album), **▶** (album, replaces the
   queue), **▶ Play all** / **+ Queue all** (everything shown)
 
+## Radio (Linn/OpenHome)
+
+- Search internet radio stations by name or genre (radio-browser.info, no login)
+- Favourites, and stream URLs of your own
+- Play or queue on the output device, which fetches the stream itself (so it
+  plays on with the app closed)
+
 ## TIDAL (Linn/OpenHome)
 
 - Log in with TIDAL's device login (open a link, confirm a code)

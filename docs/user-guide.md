@@ -234,6 +234,16 @@ On Linn/OpenHome devices the device's own playlist has its own **Queue** tab
 
 > The queue is tested on a Linn Majik DSM.
 
+## Radio
+
+The **Radio** icon in the header opens the Radio view (click it again to go
+back). Type a station name and press Enter, or switch the box to *by genre*.
+Double-click a station to play it on the output device (it replaces the
+queue); **+** adds it to the queue, **☆** keeps it in your favourites, which
+are listed below the results. **+ Stream URL** saves a station that isn't in
+the directory. Radio needs a Linn/OpenHome output device; the device plays the
+stream itself, also when Flou Player is closed.
+
 ## TIDAL
 
 The **TIDAL** icon in the header opens the TIDAL view (click it again to go

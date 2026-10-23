@@ -81,9 +81,10 @@ function showTab(name){
   document.querySelector('main').dataset.tab=name;
   drawTabs();
   if(name==='queue'){ renderQueue(); pollQueue(true); scrollToCurrentQueue(false) }
-  for(const [id,view] of [['#healthBtn','health'],['#tidalBtn','tidal']]){ $(id).classList.toggle('active',name===view); $(id).setAttribute('aria-pressed',String(name===view)) }
+  for(const [id,view] of [['#healthBtn','health'],['#tidalBtn','tidal'],['#radioBtn','radio']]){ $(id).classList.toggle('active',name===view); $(id).setAttribute('aria-pressed',String(name===view)) }
   if(name==='health') renderHealth();
   if(name==='tidal') renderTidal();
+  if(name==='radio') renderRadio();
 }
 function scrollToCurrentQueue(smooth=true){
   const row=document.querySelector('#queueList tr.playing');

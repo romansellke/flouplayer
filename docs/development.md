@@ -23,6 +23,7 @@ file. Keep that order in mind when you move code between files.
 | `queue.js` | The device queue (OpenHome Playlist) |
 | `health.js` | Library health: the checks (`analyzeLibrary`, a pure function) and the Health view |
 | `tidal.js` | TIDAL: login, search, albums and artists, playing through the device queue |
+| `radio.js` | Radio: station search, favourites, own stream URLs, playing through the device queue |
 | `live.js` | Live browsing and the Live and Library tabs |
 | `openhome.js` | OpenHome device controls: mute, standby, source, pins, stream quality, capabilities, firmware |
 | `remember.js` | Remembering the chosen devices and reconnecting at startup |
@@ -47,6 +48,7 @@ app and includes one router per topic; the rest is split like this:
 | `transcode.py` | Converting formats the built-in player can't decode, for local playback |
 | `playlist.py` | The device queue (OpenHome Playlist) |
 | `tidal.py` | TIDAL: login (tidalapi), search, albums, artists, the device's TIDAL login (OpenHome Credentials) |
+| `radio.py` | Radio: station search (radio-browser.info), favourites and own URLs (`radio.json`), DIDL for live items |
 | `media.py` | Media keys: the MPRIS player on the session D-Bus (Linux) and the state/command bridge to the page |
 
 Modules share the device list through `app.state.devices`; change it in place
