@@ -55,6 +55,29 @@ def test_search_with_several_words_in_any_order_and_across_fields(directory):
     assert {"name", "tag"} <= {k for _, p in directory for k in p}      # "everything" asks for both name and genre
 
 
+def test_search_by_country_genre_and_language_filters(directory):
+    r = client.get("/api/radio/search?country=Germany&tag=jazz&language=german").json()["stations"]      # no words: only the filters
+    assert [s["name"] for s in r] == ["Jazz <FM>"]
+    params = directory[0][1]
+    assert (params["country"], params["countryExact"], params["tag"], params["tagExact"], params["language"], params["languageExact"]) \
+        == ("Germany", "true", "jazz", "true", "german", "true")
+    assert "name" not in params
+    client.get("/api/radio/search?q=fm&by=tag&country=Germany")                         # words next to a filter are matched against the name
+    assert directory[1][1]["name"] == "fm" and "tagExact" not in directory[1][1] and len(directory) == 2
+
+
+def test_facets_are_listed_cached_and_small_ones_left_out(monkeypatch):
+    calls = []
+    monkeypatch.setattr(radio, "_facet_cache", {})
+    monkeypatch.setattr(radio, "_get", lambda path, params: calls.append(path) or [
+        {"name": "jazz", "stationcount": 120}, {"name": "rare", "stationcount": 1}, {"name": "", "stationcount": 50}])
+    assert client.get("/api/radio/facets?kind=tag").json() == {"items": [{"name": "jazz", "count": 120}]}
+    client.get("/api/radio/facets?kind=tag")
+    assert calls == ["tags"]                                                             # the second answer comes from the cache
+    assert client.get("/api/radio/facets?kind=country").json()["items"][1]["name"] == "rare"   # countries: even one station counts
+    assert client.get("/api/radio/facets?kind=nonsense").status_code == 400
+
+
 def test_favourites_add_own_url_and_remove(directory):
     assert client.get("/api/radio/favourites").json() == {"stations": []}
     own = client.post("/api/radio/favourites", json={"name": "Mine", "url": "http://host:8000/live"}).json()["station"]

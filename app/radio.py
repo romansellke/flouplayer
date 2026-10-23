@@ -11,6 +11,7 @@ from __future__ import annotations
 import hashlib
 import json
 import threading
+import time
 import xml.etree.ElementTree as ET
 from urllib.parse import urlencode, urlsplit
 from urllib.request import Request, urlopen
@@ -106,24 +107,51 @@ def remove_favourite(station_id:str):
     return {"ok":True}
 
 # ---------- Searching ----------
+# ---------- Browsing ----------
+FACETS={"country":("countries",1,400),"tag":("tags",3,500),"language":("languages",3,300)}   # kind -> (directory path, fewest stations worth listing, how many)
+FACET_TTL=3600
+_facet_cache={}
+
+@router.get("/api/radio/facets")
+def facets(kind:str):
+    """Countries, genres (tags) or languages of the directory with their number of stations, the biggest first."""
+    if kind not in FACETS: raise HTTPException(400,"kind must be country, tag or language")
+    path,fewest,most=FACETS[kind]
+    with _lock: hit=_facet_cache.get(kind)
+    if hit and time.time()-hit[0]<FACET_TTL: return {"items":hit[1]}
+    raw=_get(path,{"hidebroken":"true","order":"stationcount","reverse":"true","limit":most})
+    items=[{"name":x["name"],"count":int(x.get("stationcount") or 0)} for x in raw if x.get("name")]
+    items=[x for x in items if x["count"]>=fewest]
+    with _lock: _facet_cache[kind]=(time.time(),items)
+    return {"items":items}
+
+# ---------- Searching ----------
 def _haystack(s,by):
     fields=("name",) if by=="name" else ("tags",) if by=="tag" else ("name","tags","country","state","language")
     return " ".join(str(s.get(f) or "") for f in fields).lower()
 
 @router.get("/api/radio/search")
-def search(q:str,by:str="name",limit:int=40):
+def search(q:str="",by:str="name",limit:int=40,country:str="",tag:str="",language:str=""):
     """Stations by name, genre (tag) or both ("all": also country, state and language), the most listened first.
 
     Several words are all required, in any order, so a half-remembered name works: the directory is asked for
-    the longest word and the other words filter the answer. Stations that don't work are left out."""
+    the longest word and the other words filter the answer. country, tag and language (exactly as listed by
+    /api/radio/facets) narrow it down further, with or without words; then the words are matched against the name.
+    Stations that don't work are left out."""
     words=q.lower().split()
-    if not words: return {"stations":[]}
+    exact={}
+    for field,value in (("country",country),("tag",tag),("language",language)):
+        if value.strip(): exact[field]=value.strip(); exact[field+"Exact"]="true"
+    if not words and not exact: return {"stations":[]}
+    if exact: by="name"
     limit=max(1,min(limit,100))
-    key=max(words,key=len)
-    fields=["tag"] if by=="tag" else ["name","tag"] if by=="all" else ["name"]
+    key=max(words,key=len) if words else ""
+    fields=[] if not words else ["tag"] if by=="tag" else ["name","tag"] if by=="all" else ["name"]
     raw=[]
-    for field in fields:
-        raw+=_get("stations/search",{"limit":100 if len(words)>1 or by=="all" else limit,"hidebroken":"true","order":"clickcount","reverse":"true",field:key})
+    for field in fields or [None]:
+        params={"limit":100 if len(words)>1 or by=="all" else limit,"hidebroken":"true","order":"clickcount","reverse":"true",**exact}
+        if field: params[field]=key
+        raw+=_get("stations/search",params)
     raw.sort(key=lambda s:-int(s.get("clickcount") or 0))
     out=[]; seen=set()
     for s in raw:

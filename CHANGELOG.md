@@ -13,7 +13,9 @@ All notable changes to Flou Player are documented here. The format follows
   The device fetches the stream itself, so it plays on with Flou Player
   closed. Playing on "This computer" is not supported yet. The search takes
   several words in any order (also across name, genre and country) and can be
-  cleared with a button, Esc or by emptying the box.
+  cleared with a button, Esc or by emptying the box. **Browse** lists the
+  directory's countries, genres and languages (with station counts) and
+  searches by the one you pick, also combined and with words.
 - **TIDAL** (header icon): log in to TIDAL (open the link shown, confirm the
   code), search artists, albums and tracks, open albums and artists, and play
   or queue them on the Linn/OpenHome output device. The device streams TIDAL

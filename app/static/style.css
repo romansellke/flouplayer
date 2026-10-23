@@ -532,6 +532,20 @@ kbd{display:inline-block;min-width:20px;padding:1px 6px;border:1px solid var(--l
 #radioSearch{width:320px}
 #radioUrl{width:380px}
 #radioUrlName{width:200px}
+#radioBrowser{flex:0 0 auto;margin:0 20px 10px;border:1px solid var(--faint);border-radius:var(--radius);background:var(--track)}
+#radioBrowser .rbhead{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 10px}
+#radioBrowser .rbhead .btn-link[aria-pressed=true]{background:var(--hover);border-color:var(--muted)}
+#radioFacetFilter{width:200px;margin-left:auto;border:1px solid var(--line);border-radius:var(--radius);padding:4px 10px;background:var(--bg);color:var(--text)}
+#radioFacets{display:flex;flex-wrap:wrap;gap:4px 6px;max-height:min(220px,30vh);overflow:auto;padding:0 10px 10px}
+#radioFacets .empty{padding:12px;flex:1}
+.rfacet{border:1px solid var(--line);border-radius:999px;background:none;color:var(--text);padding:3px 10px;font-size:12px;cursor:pointer}
+.rfacet:hover{background:var(--hover)}
+.rfacet.on{border-color:var(--highlight);color:var(--highlight)}
+.rfacet i{font-style:normal;margin-left:5px;font-size:11px;color:var(--muted)}
+#radioChips{flex:0 0 auto;display:flex;flex-wrap:wrap;gap:6px;padding:0 20px 10px}
+.rchip{display:inline-flex;align-items:center;gap:2px;border:1px solid var(--highlight);border-radius:999px;padding:2px 4px 2px 10px;font-size:12px}
+.rchip button{border:0;background:none;color:var(--muted);cursor:pointer;font-size:14px;line-height:1;padding:0 5px}
+.rchip button:hover{color:var(--text)}
 .rtable .rlogo{width:44px;padding:3px 6px}
 .rtable .rlogo div{width:36px;height:36px;border-radius:4px;background:var(--card) center/cover no-repeat}
 .rtable button.fav.on{color:var(--highlight)}

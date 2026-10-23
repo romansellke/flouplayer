@@ -84,7 +84,10 @@ them.
 
 1. **Search** asks the community directory radio-browser.info (by name or by
    genre, most listened first, stations marked broken are left out). It needs
-   no login. Several mirror servers are tried in turn.
+   no login. Several mirror servers are tried in turn. **Browse** lists the
+   directory's countries, genres and languages with their station counts
+   (`/api/radio/facets`, cached for an hour); picking one searches with that
+   filter, alone or combined with words (then matched against the name).
 2. **Favourites and your own stream URLs** are kept in
    `~/.cache/flou_player/radio.json`. Only `http://` and `https://` URLs are
    accepted.

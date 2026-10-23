@@ -240,8 +240,13 @@ The **Radio** icon in the header opens the Radio view (click it again to go
 back). Type what you know of the station and press Enter. The default
 *everything* looks at name, genre, country and language; *by name* and *by
 genre* narrow it down. Several words must all match, in any order, so
-`jazz berlin` finds a station you only half remember. **Clear** (or Esc, or
-emptying the box) resets the search and shows the favourites again.
+`jazz berlin` finds a station you only half remember. **Browse** opens a list
+of countries, genres or languages (switch with the three buttons, narrow the
+list with the filter box); click one to see its stations, most listened
+first. You can combine a country, a genre and a language, and add words in
+the search box (matched against the station name). The chosen ones show as
+chips above the results; **×** drops one. **Clear** (or Esc) resets
+everything and shows the favourites again.
 Double-click a station to play it on the output device (it replaces the
 queue); **+** adds it to the queue, **☆** keeps it in your favourites, which
 are listed below the results. **+ Stream URL** saves a station that isn't in

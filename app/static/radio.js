@@ -3,7 +3,8 @@
 // itself (see app/radio.py), so this needs a Linn/OpenHome output device.
 // (Classic script: shares one global scope with the other files, loaded in the order given in index.html.)
 
-const radio={favs:[],found:null,query:''};
+const radio={favs:[],found:null,query:'',filters:{country:'',tag:'',language:''},facets:{},kind:'country',shown:[]};
+const RADIO_KINDS={country:'Country',tag:'Genre',language:'Language'};
 const radioItem=s=>({uri:s.uri,metadata:s.metadata});
 const isFav=s=>radio.favs.some(f=>f.url===s.url);
 
@@ -68,26 +69,74 @@ $('#radioResults').addEventListener('dblclick',e=>{
   const tr=e.target.closest('tr[data-rs],tr[data-rf]'); if(!tr) return;
   radioQueue(radioPick(tr.dataset.rs!==undefined?'rs:'+tr.dataset.rs:'rf:'+tr.dataset.rf),{replace:true});
 });
+const radioActive=()=>Object.entries(radio.filters).filter(([,v])=>v);
+// Shows the Clear button and the chips of the chosen country/genre/language only while there is something to clear.
+function radioSync(){
+  const act=radioActive(), chips=$('#radioChips');
+  $('#radioClear').classList.toggle('hidden',!($('#radioSearch').value||act.length||radio.found));
+  chips.classList.toggle('hidden',!act.length);
+  chips.innerHTML=act.map(([k,v])=>`<span class="rchip">${RADIO_KINDS[k]}: ${esc(v)}<button type="button" data-rchip="${k}" title="Remove" aria-label="Remove ${RADIO_KINDS[k]} ${esc(v)}">×</button></span>`).join('');
+}
 function radioReset(){
   $('#radioSearch').value=''; radio.found=null; radio.query='';
-  $('#radioClear').classList.add('hidden');
-  drawRadio(); $('#radioSearch').focus();
+  radio.filters={country:'',tag:'',language:''};
+  radioSync(); drawRadioFacets(); drawRadio(); $('#radioSearch').focus();
+}
+async function radioSearch(){
+  const q=$('#radioSearch').value.trim(), act=radioActive();
+  if(!q&&!act.length){ radio.found=null; radio.query=''; radioSync(); drawRadio(); return }
+  radio.query=[q,...act.map(([,v])=>v)].filter(Boolean).join(' · ');
+  radioSync();
+  $('#radioResults').innerHTML='<div class="empty"><span class="spinner" aria-hidden="true"></span> Loading…</div>';
+  const params=new URLSearchParams({q,by:$('#radioBy').value,limit:q?40:100,...radio.filters});
+  try{ radio.found=(await api('/api/radio/search?'+params)).stations }
+  catch(err){ radio.found=null; drawRadio(); notify(err.message); return }
+  radioSync(); drawRadio();
 }
 $('#radioClear').onclick=radioReset;
-$('#radioSearch').addEventListener('keydown',e=>{ if(e.key==='Escape'&&(e.target.value||radio.found)){ e.preventDefault(); e.stopPropagation(); radioReset() } });
-// Emptying the box (also with the field's own x) shows the favourites again.
-$('#radioSearch').addEventListener('input',e=>{ if(!e.target.value&&radio.found){ radio.found=null; $('#radioClear').classList.add('hidden'); drawRadio() } });
-$('#radioSearchBar').onsubmit=async e=>{
-  e.preventDefault();
-  const q=$('#radioSearch').value.trim();
-  if(!q){ radioReset(); return }
-  $('#radioClear').classList.remove('hidden');
-  radio.query=q;
-  $('#radioResults').innerHTML='<div class="empty"><span class="spinner" aria-hidden="true"></span> Loading…</div>';
-  try{ radio.found=(await api(`/api/radio/search?q=${encodeURIComponent(q)}&by=${$('#radioBy').value}`)).stations }
-  catch(err){ radio.found=null; drawRadio(); notify(err.message); return }
-  drawRadio();
+$('#radioSearch').addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&(e.target.value||radio.found||radioActive().length)){ e.preventDefault(); e.stopPropagation(); radioReset() }
+});
+// Emptying the box (also with the field's own x) drops the results of the words; a chosen country/genre/language stays.
+$('#radioSearch').addEventListener('input',e=>{ if(!e.target.value&&radio.found) radioSearch(); else radioSync() });
+$('#radioSearchBar').onsubmit=e=>{ e.preventDefault(); radioSearch() };
+
+// ---------- Browsing by country, genre or language ----------
+async function radioLoadFacets(kind){
+  if(radio.facets[kind]) return;
+  $('#radioFacets').innerHTML='<div class="empty"><span class="spinner" aria-hidden="true"></span> Loading…</div>';
+  try{ radio.facets[kind]=(await api('/api/radio/facets?kind='+kind)).items }
+  catch(err){ notify(err.message) }
+}
+function drawRadioFacets(){
+  const box=$('#radioFacets'), kind=radio.kind, all=radio.facets[kind];
+  document.querySelectorAll('#radioBrowser [data-rkind]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.rkind===kind)));
+  if(!all){ box.innerHTML='<div class="empty">The list could not be loaded.</div>'; return }
+  const f=$('#radioFacetFilter').value.trim().toLowerCase();
+  radio.shown=f?all.filter(x=>x.name.toLowerCase().includes(f)):all;
+  box.innerHTML=radio.shown.length?radio.shown.map((x,i)=>`<button type="button" class="rfacet${radio.filters[kind]===x.name?' on':''}" data-rfacet="${i}">${esc(x.name)}<i>${x.count}</i></button>`).join(''):'<div class="empty">Nothing found.</div>';
+}
+async function radioShowKind(kind){
+  radio.kind=kind; await radioLoadFacets(kind); drawRadioFacets();
+}
+$('#radioBrowse').onclick=async()=>{
+  const box=$('#radioBrowser'), open=box.classList.toggle('hidden')===false;
+  $('#radioBrowse').setAttribute('aria-expanded',String(open));
+  if(open){ await radioShowKind(radio.kind); $('#radioFacetFilter').focus() }
 };
+document.querySelectorAll('#radioBrowser [data-rkind]').forEach(b=>b.onclick=()=>{ $('#radioFacetFilter').value=''; radioShowKind(b.dataset.rkind) });
+$('#radioFacetFilter').addEventListener('input',drawRadioFacets);
+$('#radioFacets').addEventListener('click',e=>{
+  const b=e.target.closest('[data-rfacet]'); if(!b) return;
+  const name=radio.shown[+b.dataset.rfacet].name;
+  radio.filters[radio.kind]=radio.filters[radio.kind]===name?'':name;       // a second click on the chosen one lets go of it
+  $('#radioBrowser').classList.add('hidden'); $('#radioBrowse').setAttribute('aria-expanded','false');
+  radioSearch();
+});
+$('#radioChips').addEventListener('click',e=>{
+  const b=e.target.closest('[data-rchip]'); if(!b) return;
+  radio.filters[b.dataset.rchip]=''; drawRadioFacets(); radioSearch();
+});
 $('#radioAddUrl').onclick=()=>{ $('#radioUrlBar').classList.toggle('hidden'); if(!$('#radioUrlBar').classList.contains('hidden')) $('#radioUrl').focus() };
 $('#radioUrlBar').onsubmit=async e=>{
   e.preventDefault();
