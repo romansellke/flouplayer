@@ -106,7 +106,6 @@ def remove_favourite(station_id:str):
     with _lock: _write([s for s in _read() if s["id"]!=station_id])
     return {"ok":True}
 
-# ---------- Searching ----------
 # ---------- Browsing ----------
 FACETS={"country":("countries",1,400),"tag":("tags",3,500),"language":("languages",3,300)}   # kind -> (directory path, fewest stations worth listing, how many)
 FACET_TTL=3600
@@ -131,25 +130,29 @@ def _haystack(s,by):
     return " ".join(str(s.get(f) or "") for f in fields).lower()
 
 @router.get("/api/radio/search")
-def search(q:str="",by:str="name",limit:int=40,country:str="",tag:str="",language:str=""):
+def search(q:str="",by:str="name",limit:int=40,country:str="",tag:str="",language:str="",bitrate_min:int=0,codec:str=""):
     """Stations by name, genre (tag) or both ("all": also country, state and language), the most listened first.
 
     Several words are all required, in any order, so a half-remembered name works: the directory is asked for
     the longest word and the other words filter the answer. country, tag and language (exactly as listed by
     /api/radio/facets) narrow it down further, with or without words; then the words are matched against the name.
+    bitrate_min (kbit/s) and codec (MP3, AAC, FLAC, ... as a part of the name) filter by stream quality.
     Stations that don't work are left out."""
     words=q.lower().split()
     exact={}
     for field,value in (("country",country),("tag",tag),("language",language)):
         if value.strip(): exact[field]=value.strip(); exact[field+"Exact"]="true"
-    if not words and not exact: return {"stations":[]}
+    quality={}
+    if bitrate_min>0: quality["bitrateMin"]=bitrate_min
+    if codec.strip(): quality["codec"]=codec.strip()
+    if not words and not exact and not quality: return {"stations":[]}
     if exact: by="name"
     limit=max(1,min(limit,100))
     key=max(words,key=len) if words else ""
     fields=[] if not words else ["tag"] if by=="tag" else ["name","tag"] if by=="all" else ["name"]
     raw=[]
     for field in fields or [None]:
-        params={"limit":100 if len(words)>1 or by=="all" else limit,"hidebroken":"true","order":"clickcount","reverse":"true",**exact}
+        params={"limit":100 if len(words)>1 or by=="all" else limit,"hidebroken":"true","order":"clickcount","reverse":"true",**exact,**quality}
         if field: params[field]=key
         raw+=_get("stations/search",params)
     raw.sort(key=lambda s:-int(s.get("clickcount") or 0))

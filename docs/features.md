@@ -73,6 +73,7 @@ explains each point in detail.
 - Search internet radio stations by name or genre (radio-browser.info, no login)
 - Browse the directory by country, genre or language (and combine them), with
   a Clear button to start over
+- Filter by stream quality: minimum bit rate and format (MP3, AAC, OGG, FLAC)
 - Favourites, and stream URLs of your own
 - Play or queue on the output device, which fetches the stream itself (so it
   plays on with the app closed)
