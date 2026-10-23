@@ -106,7 +106,6 @@ def remove_favourite(station_id:str):
     with _lock: _write([s for s in _read() if s["id"]!=station_id])
     return {"ok":True}
 
-# ---------- Searching ----------
 # ---------- Browsing ----------
 FACETS={"country":("countries",1,400),"tag":("tags",3,500),"language":("languages",3,300)}   # kind -> (directory path, fewest stations worth listing, how many)
 FACET_TTL=3600
