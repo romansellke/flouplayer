@@ -44,6 +44,17 @@ def test_search_by_genre_and_empty_query(directory):
     assert len(directory) == 1
 
 
+def test_search_with_several_words_in_any_order_and_across_fields(directory):
+    by_name = client.get("/api/radio/search?q=fm%20jazz").json()["stations"]
+    assert [s["name"] for s in by_name] == ["Jazz <FM>"]                  # the directory is asked for the longest word only
+    assert directory[0][1]["name"] == "jazz"
+    assert client.get("/api/radio/search?q=jazz%20nonsense").json() == {"stations": []}
+    assert client.get("/api/radio/search?q=germany%20swing&by=name").json() == {"stations": []}   # country/tags are not the name
+    everything = client.get("/api/radio/search?q=germany%20swing&by=all").json()["stations"]
+    assert [s["name"] for s in everything] == ["Jazz <FM>"]               # name, genre, country all count
+    assert {"name", "tag"} <= {k for _, p in directory for k in p}      # "everything" asks for both name and genre
+
+
 def test_favourites_add_own_url_and_remove(directory):
     assert client.get("/api/radio/favourites").json() == {"stations": []}
     own = client.post("/api/radio/favourites", json={"name": "Mine", "url": "http://host:8000/live"}).json()["station"]

@@ -237,7 +237,11 @@ On Linn/OpenHome devices the device's own playlist has its own **Queue** tab
 ## Radio
 
 The **Radio** icon in the header opens the Radio view (click it again to go
-back). Type a station name and press Enter, or switch the box to *by genre*.
+back). Type what you know of the station and press Enter. The default
+*everything* looks at name, genre, country and language; *by name* and *by
+genre* narrow it down. Several words must all match, in any order, so
+`jazz berlin` finds a station you only half remember. **Clear** (or Esc, or
+emptying the box) resets the search and shows the favourites again.
 Double-click a station to play it on the output device (it replaces the
 queue); **+** adds it to the queue, **☆** keeps it in your favourites, which
 are listed below the results. **+ Stream URL** saves a station that isn't in
