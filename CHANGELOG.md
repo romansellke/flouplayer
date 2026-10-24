@@ -6,6 +6,8 @@ All notable changes to Flou Player are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.20.0] - 2026-10-24
+
 ### Added
 - **Radio** (header icon): search internet radio stations by name or genre
   (free directory radio-browser.info, no login), keep favourites and add stream
@@ -453,7 +455,8 @@ the OpenHome queue tab; a position/seek bar and a live dB volume readout; a
 Diagnostics log and About dialog; 17 colour themes; installable Linux app
 packaging; and the GPL-3.0-or-later license.
 
-[Unreleased]: https://github.com/romansellke/flouplayer/compare/v0.19.0...HEAD
+[Unreleased]: https://github.com/romansellke/flouplayer/compare/v0.20.0...HEAD
+[0.20.0]: https://github.com/romansellke/flouplayer/compare/v0.19.0...v0.20.0
 [0.19.0]: https://github.com/romansellke/flouplayer/compare/v0.18.0...v0.19.0
 [0.18.0]: https://github.com/romansellke/flouplayer/compare/v0.17.0...v0.18.0
 [0.17.0]: https://github.com/romansellke/flouplayer/compare/v0.16.1...v0.17.0
