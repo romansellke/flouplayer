@@ -14,6 +14,8 @@ All notable changes to Flou Player are documented here. The format follows
   pointer fade away when idle; Esc leaves it.
 
 ### Changed
+- New app icon in graphite grey: a light grey ring with a gap where the blue stroke (the
+  default theme's highlight) crosses it, instead of the blue background with the gold stroke.
 - Docs: new screenshots of Live and Library mode with the new header and
   toolbar, plus new ones of the Radio and TIDAL views, in the README, the
   feature list and the user guide.
