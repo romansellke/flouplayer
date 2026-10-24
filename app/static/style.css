@@ -344,6 +344,8 @@ button.crumb:hover{background:var(--hover);color:var(--text)}
   header,.toolbar,.sectionhead,.album{padding-left:12px;padding-right:12px}
   /* 2x2 column browser, kept short so the album list keeps most of the height */
   .facets>div{flex-basis:45%;max-height:110px}
+  .tsearch,#radioChips{padding-left:12px;padding-right:12px}
+  #radioBrowser{margin-left:12px;margin-right:12px}
   .albuminfo{flex-basis:100%;width:100%}
 }
 
@@ -528,6 +530,10 @@ kbd{display:inline-block;min-width:20px;padding:1px 6px;border:1px solid var(--l
 #radioView .hidden{display:none}
 #radioDevice.warn{color:var(--highlight)}
 #radioScroll{flex:1 1 auto;min-height:0;overflow:auto}
+#radioControls.collapsed{display:none}
+/* One row of equally high controls, centred on each other (the search field is taller than a button by default). */
+#radioSearchBar,#radioUrlBar{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+#radioSearchBar>*,#radioUrlBar>*{box-sizing:border-box;height:34px;margin:0}
 #radioSearchBar input,#radioUrlBar input{width:auto;max-width:none}
 #radioSearch{width:320px}
 #radioUrl{width:380px}
