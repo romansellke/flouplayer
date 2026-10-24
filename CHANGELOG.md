@@ -6,6 +6,11 @@ All notable changes to Flou Player are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+- Docs: new screenshots of Live and Library mode with the new header and
+  toolbar, plus new ones of the Radio and TIDAL views, in the README, the
+  feature list and the user guide.
+
 ## [0.20.0] - 2026-10-24
 
 ### Added
