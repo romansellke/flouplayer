@@ -69,11 +69,11 @@ function renderQueue(){
 const fmtLong=sec=>{const h=Math.floor(sec/3600),m=Math.floor(sec%3600/60);return h?`${h} h ${m} min`:`${m} min`};
 // ---- Tabs: Library <-> Queue
 const currentTab=()=>document.querySelector('main').dataset.tab;
-// Live and Library (header icons) are the two ways to browse (live vs. the cached scan); Queue is the tab in the toolbar.
+// Live and Library (header icons) are the two ways to browse (live vs. the cached scan); Queue is the button in the toolbar.
 function drawTabs(){
   const name=currentTab(), lib=name==='library', live=typeof isLive==='function'&&isLive();
   for(const [id,on] of [['Live',lib&&live],['Library',lib&&!live],['Queue',name==='queue']]){
-    $('#tab'+id).classList.toggle('active',on); $('#tab'+id).setAttribute(id==='Queue'?'aria-selected':'aria-pressed',String(on));   // Live/Library are header icons
+    $('#tab'+id).classList.toggle('active',on); $('#tab'+id).setAttribute('aria-pressed',String(on));
   }
 }
 function showTab(name){
