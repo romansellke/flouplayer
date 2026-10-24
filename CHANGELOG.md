@@ -16,7 +16,8 @@ All notable changes to Flou Player are documented here. The format follows
   cleared with a button, Esc or by emptying the box. **Browse** lists the
   directory's countries, genres and languages (with station counts) and
   searches by the one you pick, also combined and with words. Streams can
-  be filtered by minimum bit rate and format (FLAC = lossless).
+  be filtered by minimum bit rate and format (FLAC = lossless). The search
+  bar can be folded away to leave more room for the list.
 - **TIDAL** (header icon): log in to TIDAL (open the link shown, confirm the
   code), search artists, albums and tracks, open albums and artists, and play
   or queue them on the Linn/OpenHome output device. The device streams TIDAL

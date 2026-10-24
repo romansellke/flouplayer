@@ -152,6 +152,16 @@ $('#radioUrlBar').onsubmit=async e=>{
   await radioLoadFavs(); drawRadio();
 };
 
+// The search bar, the stream URL form and the browser can be folded away to leave the room to the list.
+function radioFold(fold,save=true){
+  $('#radioControls').classList.toggle('collapsed',fold);
+  const b=$('#radioCollapse'); b.textContent=fold?'Search ▾':'Search ▴'; b.setAttribute('aria-expanded',String(!fold));
+  if(save) try{ localStorage.setItem('flou_radio_folded',fold?'1':'0') }catch(e){}
+  if(!fold) $('#radioSearch').focus();
+}
+$('#radioCollapse').onclick=()=>radioFold(!$('#radioControls').classList.contains('collapsed'));
+try{ if(localStorage.getItem('flou_radio_folded')==='1') radioFold(true,false) }catch(e){}
+
 // Called by showTab() when the Radio view opens.
 async function renderRadio(){
   drawRadioDevice();

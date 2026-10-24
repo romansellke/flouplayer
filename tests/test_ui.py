@@ -913,6 +913,17 @@ def test_radio_browse_by_country_and_reset(page, api):
     assert page.locator("tr[data-rs]").count() == 0 and page.is_hidden("#radioClear")
 
 
+def test_radio_search_bar_can_be_folded_away(page, api):
+    api.routes.update({"radio/favourites": {"stations": []}, "/queue": queue_api()})
+    open_app(page)
+    page.click("#radioBtn")
+    page.wait_for_selector("#radioSearch:visible")
+    page.click("#radioCollapse")
+    assert page.is_hidden("#radioSearch") and page.get_attribute("#radioCollapse", "aria-expanded") == "false"
+    page.click("#radioCollapse")
+    assert page.is_visible("#radioSearch")
+
+
 def test_radio_needs_a_linn_output_device(page, api):
     api.routes.update({"radio/search": {"stations": [radio_station(1)]}, "radio/favourites": {"stations": []}, "/queue": queue_api()})
     open_app(page)

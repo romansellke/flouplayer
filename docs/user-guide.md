@@ -248,7 +248,7 @@ the search box (matched against the station name). The chosen ones show as
 chips above the results; **×** drops one. The two boxes next to *by name*
 narrow the streams down by quality: a minimum bit rate (96 to 320 kbit/s) and a
 format (MP3, AAC, OGG, or FLAC for lossless); they also work on their own.
-**Clear** (or Esc) resets
+**Search ▴** in the top right folds the search bar and filters away to give the list more room (the choice is remembered). **Clear** (or Esc) resets
 everything and shows the favourites again.
 Double-click a station to play it on the output device (it replaces the
 queue); **+** adds it to the queue, **☆** keeps it in your favourites, which
