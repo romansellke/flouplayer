@@ -240,6 +240,8 @@ On Linn/OpenHome devices the device's own playlist has its own **Queue** button
 
 ## Radio
 
+![Radio](screenshot-radio.png)
+
 The **Radio** icon in the header opens the Radio view (click it again to go
 back). Type what you know of the station and press Enter. The default
 *everything* looks at name, genre, country and language; *by name* and *by
@@ -261,6 +263,8 @@ the directory. Radio needs a Linn/OpenHome output device; the device plays the
 stream itself, also when Flou Player is closed.
 
 ## TIDAL
+
+![TIDAL](screenshot-tidal.png)
 
 The **TIDAL** icon in the header opens the TIDAL view (click it again to go
 back). Flou Player uses TIDAL only to find music; the **output device plays

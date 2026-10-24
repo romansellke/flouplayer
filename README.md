@@ -21,9 +21,9 @@ by or supported by Linn Products Ltd. "Linn" and the names of its products
 are trademarks of their respective owner and are used here only to describe
 compatibility.*
 
-![Flou Player in Library mode: column browser and album list](docs/screenshot-cached.png)
+![Flou Player in Library mode: an album with cover and track table](docs/screenshot-cached.png)
 
-*Library mode -- the whole scanned library with the column browser.*
+*Library mode -- the whole scanned library, here one album with its tracks.*
 
 ![Flou Player in Live mode: browsing the media server folder by folder](docs/screenshot.png)
 

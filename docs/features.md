@@ -19,9 +19,9 @@ explains each point in detail.
   returns to where you were
 - Nothing is scanned or stored: always current, starts instantly
 
-![Library mode: an album with cover, track table and the playing track highlighted](screenshot-cached.png)
+![Library mode: an album with cover and track table](screenshot-cached.png)
 
-*Library mode -- the scanned library; the playing track is marked.*
+*Library mode -- the scanned library, albums grouped by artist.*
 
 **Library mode** -- a one-time scan of the whole library, kept on disk
 - iTunes-style **column browser**: Album Artist, Artist, Album, Year, with
@@ -70,6 +70,10 @@ explains each point in detail.
 
 ## Radio (Linn/OpenHome)
 
+![Radio: stations found by country, with logos](screenshot-radio.png)
+
+*Radio -- the stations of one country, picked with Browse.*
+
 - Search internet radio stations by name or genre (radio-browser.info, no login)
 - Browse the directory by country, genre or language (and combine them), with
   a Clear button to start over
@@ -79,6 +83,10 @@ explains each point in detail.
   plays on with the app closed)
 
 ## TIDAL (Linn/OpenHome)
+
+![TIDAL: an artist page with its albums](screenshot-tidal.png)
+
+*TIDAL -- an artist page opened from the search.*
 
 - Log in with TIDAL's device login (open a link, confirm a code)
 - Search artists, albums and tracks; album and artist pages
