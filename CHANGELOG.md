@@ -6,6 +6,13 @@ All notable changes to Flou Player are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- **Concert mode** (status line icon, Ctrl/⌘+K) for a TV: the playing track full screen with a big
+  cover, title, artist, album and year, the stream quality with a Hi-Res / Lossless badge, the position,
+  the volume (step and dB) and the next track. The format details (codec, bit rate, genre, track number)
+  can be switched on with the "i" button. Set in Inter (bundled, SIL Open Font License). Controls and
+  pointer fade away when idle; Esc leaves it.
+
 ### Changed
 - Docs: new screenshots of Live and Library mode with the new header and
   toolbar, plus new ones of the Radio and TIDAL views, in the README, the
