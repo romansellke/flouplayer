@@ -938,12 +938,13 @@ def test_radio_needs_a_linn_output_device(page, api):
 
 
 def test_concert_mode_shows_the_playing_track_and_closes_with_escape(page, api):
-    api.routes.update({"control": {"ok": True}})
+    api.routes.update({"control": {"ok": True},
+                       "/stream": {"supported": True, "codec": "FLAC", "sample_rate": 96000, "bit_depth": 24, "bit_rate": 2304000}})
     open_app(page)
     select_renderer(page)
+    page.wait_for_selector("#npQuality:not(.hidden)")   # the quality comes from the device, as in real use
     page.evaluate("""() => { const t = {id: 'c1', title: 'Blue in Green', artist: 'Miles Davis', album: 'Kind of Blue', date: '1959-08-17', album_art: '', resources: []};
                             state.tracks.push(t); state.nowPlayingId = 'c1';
-                            $('#npQuality').textContent = 'FLAC · 96 kHz · 24 bit · 2304 kbps'; $('#npQuality').classList.remove('hidden');
                             setVolumeLabel(42, -19.5); setProgress(30, 120, true, true) }""")
     page.keyboard.press("Control+k")
     page.wait_for_selector("#concert:not(.hidden)")
