@@ -599,7 +599,8 @@ kbd{display:inline-block;min-width:20px;padding:1px 6px;border:1px solid var(--l
 .concert.calm{cursor:none}
 .c-ambient{position:absolute;inset:-8%;background:center/cover no-repeat;filter:blur(70px) saturate(1.2);opacity:.35;transform:scale(1.1)}
 .c-stage{position:relative;flex:1;min-height:0;display:flex;align-items:center;justify-content:center;gap:6vw;padding:5vh 6vw 2vh}
-.c-cover{flex:0 0 auto;width:min(46vw,76vh);aspect-ratio:1;border-radius:calc(var(--radius)*1.5);background:var(--card) center/cover no-repeat;box-shadow:0 3vh 8vh rgba(0,0,0,.55)}
+.c-cover{--s:min(46vw,76vh);flex:0 0 auto;width:var(--s);height:var(--s);   /* explicit height: aspect-ratio isn't known to older Qt WebEngine */
+  border-radius:calc(var(--radius)*1.5);background:var(--card) center/cover no-repeat;box-shadow:0 3vh 8vh rgba(0,0,0,.55)}
 .c-cover.nocover{background-image:none}
 .c-info{flex:1 1 0;min-width:0;max-width:44vw;display:flex;flex-direction:column;gap:1.6vh}
 .c-title{font-size:clamp(28px,5.2vmin + 1vw,96px);font-weight:600;letter-spacing:-.03em;line-height:1.08;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
@@ -627,7 +628,7 @@ kbd{display:inline-block;min-width:20px;padding:1px 6px;border:1px solid var(--l
 .concert.idle .c-ctl,.concert.idle .c-prog{visibility:hidden}
 @media (max-aspect-ratio:1/1){   /* portrait / narrow window: cover above the text */
   .c-stage{flex-direction:column;justify-content:center;gap:4vh;text-align:center}
-  .c-cover{width:min(78vw,44vh)}
+  .c-cover{--s:min(78vw,44vh)}
   .c-info{max-width:88vw;align-items:stretch}
   .c-quality,.c-ctl{justify-content:center}
 }
