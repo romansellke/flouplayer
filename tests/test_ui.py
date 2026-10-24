@@ -973,3 +973,5 @@ def test_concert_mode_shows_the_cover_of_the_header_display(page, api):
     assert page.inner_text("#concertTitle") == "Some Station"
     assert "svg+xml" in page.evaluate("getComputedStyle($('#concertCover')).backgroundImage")
     assert page.evaluate("$('#concertCover').classList.contains('nocover')") is False
+    box = page.evaluate("(() => { const r = $('#concertCover').getBoundingClientRect(); return [r.width, r.height] })()")
+    assert box[0] > 100 and box[0] == box[1]   # a square with a real height of its own (older Qt WebEngine has no aspect-ratio)
