@@ -5,17 +5,15 @@
 - **Header:** transport buttons (previous, play, pause, stop, next), volume
   slider with the volume readout (step and dB) and mute button, the LCD-style display of the current track
   (small cover, title, artist and album, and the stream quality -- click the
-  cover to see it full size), and the four view icons at the right: **Live**,
-  **Library**, **TIDAL** and **Radio**. Under it, the **position bar**:
+  cover to see it full size), and the four view icons at the right: **Live**
+  (folder tree), **Library** (folder), **TIDAL** and **Radio**. Under it, the **position bar**:
   elapsed time at the left, remaining time at the right (both as
   dot-matrix digits, like a pixel LCD), and a seek bar in blocks in between.
-- **Toolbar:** the **Queue** tab, **Search devices**, the media server and
-  output device dropdowns (with each device's own icon, taken from its UPnP
-  description), the **Source** dropdown and **Pins** button of the output device
-  (OpenHome devices), and the search field. The small **▴** right of the Queue
-  tab folds everything but the tab away (leaving a line with the chosen
-  devices) to give the list more room; **▾** brings it back, and so does
-  Ctrl/⌘+F. The choice is remembered.
+- **Toolbar:** **Search devices**, the media server and output device
+  dropdowns (with each device's own icon, taken from its UPnP description), the
+  **Queue** button right of the output device, the **Source** dropdown, the
+  **Pins** button and the **power** button of the output device (OpenHome
+  devices), and the search field.
 - **Library panel:** the buttons **Load library**, **Cancel** (while scanning)
   and **Clear library** are at the top of the panel that lists the titles
   (Library mode), next to the other list controls.
@@ -309,7 +307,7 @@ offers them (not for the local speakers or plain UPnP renderers).
   `FLAC · 44.1 kHz · 16 bit · 1011 kbps`). It also works for sources that
   don't come from the media server, such as radio. Hidden while nothing is
   playing.
-- **Standby:** the power button left of the Source dropdown puts the device
+- **Standby:** the power button right of the Pins button puts the device
   into standby or wakes it up. It is highlighted while the device is on and
   grey in standby, and follows changes made elsewhere. Picking a source or a
   pin wakes a sleeping device by itself.

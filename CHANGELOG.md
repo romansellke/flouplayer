@@ -18,8 +18,6 @@ All notable changes to Flou Player are documented here. The format follows
   searches by the one you pick, also combined and with words. Streams can
   be filtered by minimum bit rate and format (FLAC = lossless). The search
   bar can be folded away to leave more room for the list.
-- The toolbar (tabs, devices, search) can be folded away with the **▴** next to
-  the tabs; the tabs and a line with the chosen devices stay.
 - **TIDAL** (header icon): log in to TIDAL (open the link shown, confirm the
   code), search artists, albums and tracks, open albums and artists, and play
   or queue them on the Linn/OpenHome output device. The device streams TIDAL
@@ -30,8 +28,10 @@ All notable changes to Flou Player are documented here. The format follows
 ### Changed
 - Less used functions (Library health, Keyboard shortcuts, Diagnostics, About,
   themes) moved from the header to the status line at the bottom. The header
-  now has icons for **Live**, **Library**, **TIDAL** and **Radio** (the Live and
-  Library tabs left the toolbar; Queue stays there). **Load library**,
+  now has icons for **Live**, **Library** (folder icon), **TIDAL** and **Radio**
+  (the Live and Library tabs left the toolbar). **Queue** is a button right of
+  the output device dropdown, and the standby button sits right of the Pins
+  button. **Load library**,
   **Cancel** and **Clear library** moved from the toolbar into the library
   panel that lists the titles.
 - The position bar looks like a pixel LCD: elapsed and remaining time in

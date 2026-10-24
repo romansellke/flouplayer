@@ -185,13 +185,6 @@ input[type=range]:hover::-webkit-slider-thumb{transform:scale(1.25)}
 }
 .toolbar select:hover{border-color:var(--muted)}
 
-/* Fold: only the tabs, the fold button and a one-line summary of the chosen devices stay */
-.toolbar .foldbtn{padding:6px 10px;background:none;border-color:transparent;color:var(--muted);font-weight:400}
-.toolbar .foldbtn:hover{color:var(--text)}
-#toolbarSummary{flex:1 1 0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);font-size:12px}
-#toolbarSummary.hidden{display:none}
-.toolbar.folded>:not(.tabs):not(#toolbarFold):not(#toolbarSummary){display:none !important}
-
 /* Device pickers (custom dropdowns with device icons, see devices.js).
    The real <select> stays in the DOM as the value holder, hidden. */
 .picker-source{display:none}
@@ -434,7 +427,6 @@ button.crumb:hover{background:var(--hover);color:var(--text)}
 #diagList .empty{color:var(--muted);padding:8px 0}
 
 /* ---------- Tabs + Queue view ---------- */
-.tabs{display:flex;gap:4px;flex:0 0 auto;margin-right:8px;padding-right:12px;border-right:1px solid var(--line)}
 .toolbar .tab{border:0;background:none;color:var(--muted);cursor:pointer;font:inherit;font-size:13px;padding:6px 14px;border-radius:var(--radius);border-bottom:2px solid transparent}
 .toolbar .tab:hover:not(:disabled){background:var(--hover);color:var(--text)}
 .toolbar .tab.active,.toolbar .tab.active:hover:not(:disabled){background:var(--accent) !important;color:var(--on-accent);font-weight:600;border-bottom-color:var(--accent)}
