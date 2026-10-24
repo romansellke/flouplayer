@@ -37,10 +37,17 @@ function concertFormat(q){
   const pcm=parts.filter(x=>/kHz|bit$/.test(x));
   return (pcm.length?pcm:parts.filter(x=>!/^\d+ kbps$/.test(x)||parts.length<3)).join(' · ');
 }
+// What the title display in the header shows right now (also for radio, TIDAL or a track started elsewhere,
+// which mediaTrack() doesn't know). The cover is taken from there too, so both always agree.
+function concertHeader(){
+  const c=$('#npCover'), art=c.classList.contains('hidden')?'':(c.style.backgroundImage.match(/url\(["']?(.*?)["']?\)$/)||[])[1]||'';
+  const title=$('#playing').textContent;
+  return title==='Flou Player'&&!art?null:{title,artist:$('#playingSub').textContent,album:'',art_url:art};
+}
 let concertKey='';
 function drawConcert(){
   if(!isConcert()) return;
-  const m=mediaTrack(), full=concertFullTrack();
+  const hd=concertHeader(), m=mediaTrack()?{...mediaTrack(),art_url:mediaTrack().art_url||hd?.art_url||''}:hd, full=concertFullTrack();
   const q=$('#npQuality').classList.contains('hidden')?'':$('#npQuality').textContent;
   const key=JSON.stringify([m,q,concertNext()?.title||'',concertDetails]);
   if(key!==concertKey){
@@ -50,7 +57,7 @@ function drawConcert(){
     $('#concertTitle').textContent=m?m.title:'Flou Player';
     $('#concertArtist').textContent=m?m.artist:'Nothing is playing';
     $('#concertAlbum').textContent=m?[m.album,(full?.date||'').slice(0,4)].filter(Boolean).join(' · '):'';
-    for(const id of ['concertCover','concertAmbient']) $('#'+id).style.backgroundImage=art?`url('${art}')`:'';
+    for(const id of ['concertCover','concertAmbient']) $('#'+id).style.backgroundImage=art?`url("${art.replace(/"/g,'%22')}")`:'';
     $('#concertCover').classList.toggle('nocover',!art);
     const grade=concertGrade(q);
     $('#concertQuality').classList.toggle('hidden',!q);
