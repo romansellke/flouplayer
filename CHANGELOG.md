@@ -31,9 +31,8 @@ All notable changes to Flou Player are documented here. The format follows
   now has icons for **Live**, **Library** (folder icon), **TIDAL** and **Radio**
   (the Live and Library tabs left the toolbar). **Queue** is a button right of
   the output device dropdown, and the standby button sits right of the Pins
-  button. **Load library**,
-  **Cancel** and **Clear library** moved from the toolbar into the library
-  panel that lists the titles.
+  button. **Load library**, **Cancel** and **Clear library** moved from the
+  toolbar into the library panel that lists the titles.
 - The position bar looks like a pixel LCD: elapsed and remaining time in
   5x7 dot-matrix digits (unlit dots faintly visible), the bar in blocks with a
   square handle. The time grid on the bar is gone.
