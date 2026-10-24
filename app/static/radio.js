@@ -155,7 +155,7 @@ $('#radioUrlBar').onsubmit=async e=>{
 // The search bar, the stream URL form and the browser can be folded away to leave the room to the list.
 function radioFold(fold,save=true){
   $('#radioControls').classList.toggle('collapsed',fold);
-  const b=$('#radioCollapse'); b.textContent=fold?'Search ▾':'Search ▴'; b.setAttribute('aria-expanded',String(!fold));
+  const b=$('#radioCollapse'); b.textContent=fold?'Show search ▾':'Hide search ▴'; b.setAttribute('aria-expanded',String(!fold));
   if(save) try{ localStorage.setItem('flou_radio_folded',fold?'1':'0') }catch(e){}
   if(!fold) $('#radioSearch').focus();
 }

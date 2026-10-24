@@ -535,8 +535,8 @@ kbd{display:inline-block;min-width:20px;padding:1px 6px;border:1px solid var(--l
 #radioSearchBar,#radioUrlBar{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
 #radioSearchBar>*,#radioUrlBar>*{box-sizing:border-box;height:34px;margin:0}
 #radioSearchBar input,#radioUrlBar input{width:auto;max-width:none}
-#radioSearch{width:320px}
-#radioUrl{width:380px}
+/* The search field takes the room the other controls leave, so the row ends flush with the panel like the fields above. */
+#radioSearch,#radioUrl{flex:1 1 260px;min-width:200px}
 #radioUrlName{width:200px}
 #radioBrowser{flex:0 0 auto;margin:0 20px 10px;border:1px solid var(--faint);border-radius:var(--radius);background:var(--track)}
 #radioBrowser .rbhead{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 10px}
