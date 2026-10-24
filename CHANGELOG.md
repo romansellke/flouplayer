@@ -6,6 +6,8 @@ All notable changes to Flou Player are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.20.0] - 2026-10-24
+
 ### Added
 - **Radio** (header icon): search internet radio stations by name or genre
   (free directory radio-browser.info, no login), keep favourites and add stream
@@ -31,9 +33,8 @@ All notable changes to Flou Player are documented here. The format follows
   now has icons for **Live**, **Library** (folder icon), **TIDAL** and **Radio**
   (the Live and Library tabs left the toolbar). **Queue** is a button right of
   the output device dropdown, and the standby button sits right of the Pins
-  button. **Load library**,
-  **Cancel** and **Clear library** moved from the toolbar into the library
-  panel that lists the titles.
+  button. **Load library**, **Cancel** and **Clear library** moved from the
+  toolbar into the library panel that lists the titles.
 - The position bar looks like a pixel LCD: elapsed and remaining time in
   5x7 dot-matrix digits (unlit dots faintly visible), the bar in blocks with a
   square handle. The time grid on the bar is gone.
@@ -454,7 +455,8 @@ the OpenHome queue tab; a position/seek bar and a live dB volume readout; a
 Diagnostics log and About dialog; 17 colour themes; installable Linux app
 packaging; and the GPL-3.0-or-later license.
 
-[Unreleased]: https://github.com/romansellke/flouplayer/compare/v0.19.0...HEAD
+[Unreleased]: https://github.com/romansellke/flouplayer/compare/v0.20.0...HEAD
+[0.20.0]: https://github.com/romansellke/flouplayer/compare/v0.19.0...v0.20.0
 [0.19.0]: https://github.com/romansellke/flouplayer/compare/v0.18.0...v0.19.0
 [0.18.0]: https://github.com/romansellke/flouplayer/compare/v0.17.0...v0.18.0
 [0.17.0]: https://github.com/romansellke/flouplayer/compare/v0.16.1...v0.17.0

@@ -15,7 +15,7 @@ The version lives in exactly one place: `__version__` in
 
 ## Where the version shows up
 
-- **About dialog** (info button, top right): the version, the build ID (a
+- **About dialog** (info button in the status line): the version, the build ID (a
   fingerprint of the code and UI files, used to detect an outdated running
   instance), the source (`git describe` plus commit date -- for example
   `v0.4.0-3-g75367ef-dirty` means three commits after v0.4.0 with local

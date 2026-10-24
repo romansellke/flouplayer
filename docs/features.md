@@ -60,7 +60,7 @@ explains each point in detail.
 - Display with cover, title, artist, album and the **stream quality** the
   device reports (codec, sample rate, bit depth, bit rate)
 
-## The device queue (Queue tab, Linn/OpenHome)
+## The device queue (Queue button, Linn/OpenHome)
 
 - The playlist stored on the device itself, shared with other control apps
 - Cover, artist, album, length and total time; Shuffle, Repeat, Clear

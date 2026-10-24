@@ -24,7 +24,7 @@ file. Keep that order in mind when you move code between files.
 | `health.js` | Library health: the checks (`analyzeLibrary`, a pure function) and the Health view |
 | `tidal.js` | TIDAL: login, search, albums and artists, playing through the device queue |
 | `radio.js` | Radio: station search, favourites, own stream URLs, playing through the device queue |
-| `live.js` | Live browsing and the Live and Library tabs |
+| `live.js` | Live browsing and the Live/Library mode switch |
 | `openhome.js` | OpenHome device controls: mute, standby, source, pins, stream quality, capabilities, firmware |
 | `remember.js` | Remembering the chosen devices and reconnecting at startup |
 | `keyboard.js` | Keyboard shortcuts |
