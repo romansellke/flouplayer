@@ -48,7 +48,7 @@ Linux).
   stream URLs, and play them on the Linn device
 - **TIDAL**: search TIDAL and play it on the Linn device, which streams it
   with its own TIDAL login
-- A **Health** view (header icon) that checks the library for tag problems (missing Artist or
+- A **Health** view (icon in the status line) that checks the library for tag problems (missing Artist or
   Album Artist, missing covers, track numbers, ...)
 - Album covers, selectable track columns, 17 colour themes, Diagnostics and
   About dialogs

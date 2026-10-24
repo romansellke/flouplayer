@@ -222,14 +222,17 @@ input[type=range]:hover::-webkit-slider-thumb{transform:scale(1.25)}
 .picker-menu li[aria-selected="true"]{color:var(--text);font-weight:500}
 .picker-menu li.picker-placeholder{color:var(--muted)}
 
-/* Load / Cancel / Clear and the search stay together and wrap as one block (own row when the toolbar is full) */
+/* The search (and its x) wraps as one block (own row when the toolbar is full) */
 .libtools{display:flex;gap:8px;align-items:center;flex:1 1 440px;min-width:0}
 .libtools .hidden{display:none}
 .libtools button{flex:0 0 auto;white-space:nowrap}
-/* Load / Cancel / Clear form one joined button group; hidden members drop out without breaking the rounded ends */
+/* Load / Cancel / Clear (in the library panel head) form one joined button group; hidden members drop out without breaking the rounded ends */
 .libbtns{display:flex;flex:0 0 auto;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
-.libtools .libbtns button{border:0;border-radius:0}
-.libtools .libbtns button:not(.hidden)~button:not(.hidden){border-left:1px solid var(--line)}
+.libbtns button{border:0;border-radius:0;background:none;color:var(--text);padding:4px 12px;font-size:12px;font-weight:400;cursor:pointer;white-space:nowrap;transition:background .15s}
+.libbtns button:hover{background:var(--hover)}
+.libbtns button:disabled{opacity:.4;cursor:default;background:none}
+.libbtns .hidden{display:none}
+.libbtns button:not(.hidden)~button:not(.hidden){border-left:1px solid var(--line)}
 .libbtns:not(:has(button:not(.hidden))){display:none}
 #search,.toolbar input[type=text]{
   flex:1 1 160px;min-width:0;border-radius:var(--radius);border:1px solid var(--line);padding:8px 14px 8px 36px;
@@ -241,8 +244,14 @@ input[type=range]:hover::-webkit-slider-thumb{transform:scale(1.25)}
 .toolbar .searchclear{flex:0 0 auto;width:26px;height:26px;margin-left:-38px;margin-right:12px;padding:0;border:0;border-radius:50%;background:none;color:var(--muted);font-size:17px;font-weight:400;line-height:1;z-index:1}
 .toolbar .searchclear:hover{color:var(--text);background:var(--hover)}
 #search:focus{border-color:var(--highlight)}
-.statusbar{flex:0 0 auto;padding:0 12px;color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.statusbar span{display:block;overflow:hidden;text-overflow:ellipsis}
+.statusbar{flex:0 0 auto;display:flex;align-items:center;gap:12px;padding:0 12px;color:var(--muted);font-size:12px;white-space:nowrap}
+.statusbar #breadcrumb{display:block;flex:1 1 0;min-width:0;overflow:hidden;text-overflow:ellipsis}
+/* The rarely used functions (Library health, shortcuts, Diagnostics, About, themes) live at the right end of the status bar */
+.footicons{display:flex;align-items:center;gap:2px;flex:0 0 auto}
+.footicons .iconbtn,.footicons #themeToggle{width:28px;height:28px;position:relative}
+.footicons .iconbtn svg,.footicons #themeToggle svg{width:14px;height:14px}
+/* The four ways to look at music: Live, Library, TIDAL, Radio */
+.modes{display:flex;align-items:center;gap:4px;flex:0 0 auto}
 
 /* ---------- Workspace ---------- */
 /* Height chain for ONE scrollable area (#content): every level needs
@@ -266,8 +275,10 @@ main{gap:8px;flex:1 1 600px;min-width:320px;min-height:0;display:flex;flex-direc
 .facets>div:focus{outline:none}
 
 .albums{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line-strong);border-radius:var(--radius);overflow:hidden}
-.sectionhead{flex:0 0 auto;display:flex;justify-content:space-between;align-items:center;padding:12px 20px;font-weight:600;font-size:14px;letter-spacing:-.01em}
-.sectionhead-right{display:flex;align-items:center;gap:12px;font-weight:400;font-size:12px;color:var(--muted)}
+.sectionhead{flex:0 0 auto;display:flex;flex-wrap:wrap;gap:8px 12px;justify-content:space-between;align-items:center;padding:12px 20px;font-weight:600;font-size:14px;letter-spacing:-.01em}
+.sectionhead b{white-space:nowrap}
+.sectionhead-right .btn-link,.sectionhead-right .libbtns{white-space:nowrap}
+.sectionhead-right{display:flex;flex-wrap:wrap;justify-content:flex-end;align-items:center;gap:8px 12px;font-weight:400;font-size:12px;color:var(--muted)}
 #content{flex:1 1 auto;min-height:0;overflow-y:auto}
 
 .colpicker{position:relative}
@@ -368,11 +379,11 @@ button.crumb:hover{background:var(--hover);color:var(--text)}
 #metaBody{font:11.5px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;white-space:pre-wrap;word-break:break-word;margin:0}
 .sentinel{height:1px}
 
-.themepicker{position:relative;margin-left:auto}
+.themepicker{position:relative}
 #themeToggle{display:grid;place-items:center;width:34px;height:34px;padding:0;border:0;background:none;color:var(--muted);cursor:pointer;border-radius:var(--radius);transition:background .15s,color .15s}
 #themeToggle:hover{background:var(--card);color:var(--text)}
 #themeToggle svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
-#themeMenu{position:absolute;right:0;top:calc(100% + 6px);z-index:30;min-width:230px;white-space:nowrap;max-height:calc(70vh / var(--z,1));overflow-y:auto;margin:0;padding:6px;list-style:none;background:var(--panel);border:1px solid var(--line-strong);border-radius:var(--radius);box-shadow:var(--shadow)}
+#themeMenu{position:absolute;right:0;bottom:calc(100% + 6px);z-index:30;min-width:230px;white-space:nowrap;max-height:calc(70vh / var(--z,1));overflow-y:auto;margin:0;padding:6px;list-style:none;background:var(--panel);border:1px solid var(--line-strong);border-radius:var(--radius);box-shadow:var(--shadow)}
 #themeMenu.hidden{display:none}
 #themeMenu li{display:flex;align-items:center;gap:10px;padding:6px 10px;border-radius:6px;cursor:pointer;text-transform:capitalize}
 #themeMenu li:hover{background:var(--card)}
@@ -429,8 +440,7 @@ button.crumb:hover{background:var(--hover);color:var(--text)}
 .toolbar .tab.active,.toolbar .tab.active:hover:not(:disabled){background:var(--accent) !important;color:var(--on-accent);font-weight:600;border-bottom-color:var(--accent)}
 .toolbar .tab:disabled{opacity:.4;cursor:default}
 /* Queue is a different kind of view (the device's playlist), so a divider sets it apart from Live / Library */
-.toolbar #tabQueue{position:relative;margin-left:12px}
-.toolbar #tabQueue::before{content:'';position:absolute;left:-9px;top:4px;bottom:4px;width:1px;background:var(--line-strong)}
+.toolbar #tabQueue{position:relative}
 main[data-tab=queue]>.facets,main[data-tab=queue]>.albums:not(#queueView){display:none}
 main[data-tab=health]>.facets,main[data-tab=health]>.albums:not(#healthView){display:none}
 main:not([data-tab=queue])>#queueView{display:none}

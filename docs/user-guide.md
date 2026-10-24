@@ -5,21 +5,25 @@
 - **Header:** transport buttons (previous, play, pause, stop, next), volume
   slider with the volume readout (step and dB) and mute button, the LCD-style display of the current track
   (small cover, title, artist and album, and the stream quality -- click the
-  cover to see it full size), the TIDAL and Library health buttons, the Diagnostics and About buttons and the
-  theme picker. Under it, the **position bar**:
+  cover to see it full size), and the four view icons at the right: **Live**,
+  **Library**, **TIDAL** and **Radio**. Under it, the **position bar**:
   elapsed time at the left, remaining time at the right (both as
   dot-matrix digits, like a pixel LCD), and a seek bar in blocks in between.
-- **Toolbar:** the Live/Library/Queue tabs, **Search
-  devices**, the media server and output device dropdowns (with each
-  device's own icon, taken from its UPnP description), the **Source**
-  dropdown and **Pins** button of the output device (OpenHome devices),
-  **Load library**
-  and the search field. The small **▴** right of the tabs folds everything but
-  the tabs away (leaving a line with the chosen devices) to give the list more
-  room; **▾** brings it back, and so does Ctrl/⌘+F. The choice is remembered.
+- **Toolbar:** the **Queue** tab, **Search devices**, the media server and
+  output device dropdowns (with each device's own icon, taken from its UPnP
+  description), the **Source** dropdown and **Pins** button of the output device
+  (OpenHome devices), and the search field. The small **▴** right of the Queue
+  tab folds everything but the tab away (leaving a line with the chosen
+  devices) to give the list more room; **▾** brings it back, and so does
+  Ctrl/⌘+F. The choice is remembered.
+- **Library panel:** the buttons **Load library**, **Cancel** (while scanning)
+  and **Clear library** are at the top of the panel that lists the titles
+  (Library mode), next to the other list controls.
 - **Status line** (very bottom of the window): what is loaded -- in Library mode
   the number of tracks and when the library was scanned, in Live mode the
-  media server being browsed.
+  media server being browsed. At its right end are the less used functions:
+  **Library health**, **Keyboard shortcuts**, **Diagnostics**, **About** and the
+  **theme** picker.
 - **Main area:** the library (column browser plus album list) or the queue,
   using the full window width. On very narrow windows the header wraps and
   the columns stack.
@@ -185,7 +189,7 @@ HTML5 audio. No UPnP renderer is needed, which is handy for testing.
 
 ![Library health](screenshot-health.png)
 
-The **Health** view (the tag icon in the header; click it again to go back)
+The **Health** view (the tag icon in the status line; click it again to go back)
 checks the scanned library (Cached mode; load it first) for incomplete or
 inconsistent tags. The list on the left shows each check with the
 number of albums it found (a ✓ means nothing found; orange = probably wrong,
@@ -327,14 +331,14 @@ offers them (not for the local speakers or plain UPnP renderers).
 
 ![The theme picker](screenshot-themes.png)
 
-The palette button in the header switches between 17 colour themes (Dracula,
+The palette button in the status line (bottom right) switches between 17 colour themes (Dracula,
 Nord, Catppuccin Mocha, Tokyo Night, ...). The choice is remembered.
 
 ## Diagnostics and About
 
 ![The Diagnostics dialog](screenshot-diagnostics.png)
 
-- **Diagnostics** (pulse icon in the header, with a badge for unseen errors): a timestamped log of the
+- **Diagnostics** (pulse icon in the status line, with a badge for unseen errors): a timestamped log of the
   last 300 entries with errors in red and a badge for unseen errors; an
   errors-only filter; **Device info**, which lists the firmware and all
   services of the selected player; and **Copy report** (versions, device services and log)
@@ -356,7 +360,7 @@ without it.
 
 ## Keyboard shortcuts
 
-Press **Ctrl/⌘+/** or **F1** (or click the keyboard button in the header) for
+Press **Ctrl/⌘+/** or **F1** (or click the keyboard button in the status line) for
 an overview of all shortcuts inside the app; **Esc** closes it.
 
 **Playback** -- these work anywhere in the window, except while you are typing

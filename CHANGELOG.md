@@ -28,6 +28,12 @@ All notable changes to Flou Player are documented here. The format follows
   device has a TIDAL login. Tested on a Linn Majik DSM.
 
 ### Changed
+- Less used functions (Library health, Keyboard shortcuts, Diagnostics, About,
+  themes) moved from the header to the status line at the bottom. The header
+  now has icons for **Live**, **Library**, **TIDAL** and **Radio** (the Live and
+  Library tabs left the toolbar; Queue stays there). **Load library**,
+  **Cancel** and **Clear library** moved from the toolbar into the library
+  panel that lists the titles.
 - The position bar looks like a pixel LCD: elapsed and remaining time in
   5x7 dot-matrix digits (unlit dots faintly visible), the bar in blocks with a
   square handle. The time grid on the bar is gone.

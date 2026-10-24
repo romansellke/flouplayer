@@ -9,8 +9,8 @@
 - A search that takes long (a device that doesn't answer, e.g. after a
   network outage) gives up on it after about 15 seconds; **Cancel search**
   stops it at once.
-- Click **Search devices** again; the Diagnostics dialog (list button in
-  the header) logs what was found.
+- Click **Search devices** again; the Diagnostics dialog (pulse icon in
+  the status line) logs what was found.
 
 ## A device is found but nothing plays (Marantz, Denon/HEOS, Sonos, ...)
 
@@ -21,7 +21,7 @@ the renderer first, sends the track, retries without the track's metadata if
 the device refuses it, and retries *Play* a few times while the device loads
 the stream. This could not be tried on such hardware here, so if playback
 still fails, the error message tells what the device objected to. Open
-**Diagnostics** (list button in the header) after a failed attempt; the entry
+**Diagnostics** (pulse icon in the status line) after a failed attempt; the entry
 reads like `SetAVTransportURI failed: UPnP error 714 (Illegal MIME-type)`:
 
 If the message is instead `400 Client Error: Bad Request for url: .../AVTransport/ctrl`
