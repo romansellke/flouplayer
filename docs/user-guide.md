@@ -28,7 +28,7 @@
 
 ## Live or cached library
 
-The **Live** and **Library** tabs in the toolbar choose how the library is shown (Library = the cached scan).
+The **Live** and **Library** icons in the header choose how the library is shown (Library = the cached scan).
 The choice is remembered.
 
 ### Live (default)
@@ -218,13 +218,13 @@ Fix the tags at the source (for example with a tag editor), then rescan.
 
 ## The queue (OpenHome playlist)
 
-Hover over the **Queue** tab for a short explanation. The queue is not kept
+Hover over the **Queue** button (in the toolbar, right of the output device) for a short explanation. The queue is not kept
 by Flou Player: it is the playlist stored **on the output device**, so it
 exists only on Linn/OpenHome devices (not on Marantz, Sonos or "This
 computer"), keeps playing when the app is closed, and is shared with other
 control apps.
 
-On Linn/OpenHome devices the device's own playlist has its own **Queue** tab
+On Linn/OpenHome devices the device's own playlist has its own **Queue** button
 (Ctrl/⌘+Q toggles it).
 
 - Lists the tracks with cover, artist, album, length and total time, with
@@ -281,7 +281,7 @@ login.
   track. Tracks TIDAL doesn't offer for streaming are greyed out and skipped.
 
 The tracks go into the device's queue like music from the library, so the
-**Queue** tab, the transport buttons and other control apps work with them as
+**Queue** button, the transport buttons and other control apps work with them as
 usual.
 
 > TIDAL is tested on a Linn Majik DSM.
@@ -293,8 +293,8 @@ offers them (not for the local speakers or plain UPnP renderers).
 
 - **Mute:** the speaker button next to the volume slider. It shows the
   device's real mute state, also when it was changed from another controller.
-- **Source:** the *Source* dropdown in the toolbar, right of the output
-  device, lists the device's inputs (for example Playlist, Radio, Analog,
+- **Source:** the *Source* dropdown in the toolbar, right of the Queue
+  button, lists the device's inputs (for example Playlist, Radio, Analog,
   Songcast, HDMI) and switches to the one you pick. It follows changes made from other
   controllers. Choosing *Playlist* returns to the queue.
 - **Pins:** the pushpin button right of the Source dropdown opens the list of pins
@@ -341,7 +341,7 @@ Nord, Catppuccin Mocha, Tokyo Night, ...). The choice is remembered.
   errors-only filter; **Device info**, which lists the firmware and all
   services of the selected player; and **Copy report** (versions, device services and log)
   for bug reports.
-- **About** (info button, top right): version, build, Python/system and
+- **About** (info button in the status line): version, build, Python/system and
   dependency versions, and the project link.
 
 ## Media keys and the panel's player controls

@@ -137,4 +137,4 @@ be played locally. See [Local playback](user-guide.md#local-playback).
 
 Open the **Diagnostics** dialog and use **Copy report** (versions, device
 services and the log) and paste it into the issue. The **About** dialog (info
-button, top right) shows the version and build.
+button in the status line) shows the version and build.
