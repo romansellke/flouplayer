@@ -14,7 +14,9 @@
   device's own icon, taken from its UPnP description), the **Source**
   dropdown and **Pins** button of the output device (OpenHome devices),
   **Load library**
-  and the search field.
+  and the search field. The small **▴** right of the tabs folds everything but
+  the tabs away (leaving a line with the chosen devices) to give the list more
+  room; **▾** brings it back, and so does Ctrl/⌘+F. The choice is remembered.
 - **Status line** (very bottom of the window): what is loaded -- in Library mode
   the number of tracks and when the library was scanned, in Live mode the
   media server being browsed.

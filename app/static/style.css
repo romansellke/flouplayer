@@ -169,7 +169,7 @@ input[type=range]:hover::-webkit-slider-thumb{transform:scale(1.25)}
 .progress input[type=range]:disabled::-webkit-slider-thumb{visibility:hidden}
 
 /* ---------- Toolbar ---------- */
-.toolbar{display:flex;flex-wrap:wrap;gap:8px;padding:10px 12px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);align-items:center}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;padding:10px 20px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);align-items:center}
 .toolbar button,button.btn{
   flex:0 0 auto;border:1px solid var(--line);border-radius:var(--radius);padding:8px 14px;background:var(--card);color:var(--text);font-weight:500;
   cursor:pointer;transition:opacity .15s,transform .05s;
@@ -184,6 +184,13 @@ input[type=range]:hover::-webkit-slider-thumb{transform:scale(1.25)}
   -webkit-appearance:none;appearance:none;cursor:pointer;transition:border-color .15s;
 }
 .toolbar select:hover{border-color:var(--muted)}
+
+/* Fold: only the tabs, the fold button and a one-line summary of the chosen devices stay */
+.toolbar .foldbtn{padding:6px 10px;background:none;border-color:transparent;color:var(--muted);font-weight:400}
+.toolbar .foldbtn:hover{color:var(--text)}
+#toolbarSummary{flex:1 1 0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);font-size:12px}
+#toolbarSummary.hidden{display:none}
+.toolbar.folded>:not(.tabs):not(#toolbarFold):not(#toolbarSummary){display:none !important}
 
 /* Device pickers (custom dropdowns with device icons, see devices.js).
    The real <select> stays in the DOM as the value holder, hidden. */
