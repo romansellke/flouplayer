@@ -1,14 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#4a88d0"/>
-      <stop offset="1" stop-color="#1f4f8a"/>
+      <stop offset="0" stop-color="#3b3e43"/>
+      <stop offset="1" stop-color="#1b1d20"/>
     </linearGradient>
   </defs>
   <rect x="8" y="8" width="240" height="240" rx="52" fill="url(#bg)"/>
-  <!-- Phi: a ring (like a record) with a golden vertical stroke through it -->
-  <g fill="none" stroke-linecap="round" stroke-width="18">
-    <circle cx="128" cy="128" r="58" stroke="#ffffff"/>
-    <path d="M128 48 V208" stroke="#e9cf8b"/>
+  <!-- a faint light edge, so the dark icon stands out on a dark background -->
+  <rect x="9" y="9" width="238" height="238" rx="51" fill="none" stroke="#ffffff" stroke-opacity=".08" stroke-width="2"/>
+  <!-- Phi: a ring (like a record) with a blue vertical stroke through it; the ring is
+       two arcs with a gap where the stroke crosses it, so the stroke sits in front
+       (arcs rather than a mask: Qt's SVG renderer for the window icon has no masks) -->
+  <g fill="none" stroke-width="18">
+    <path d="M113 71.97 A58 58 0 0 0 113 184.03 M143 71.97 A58 58 0 0 1 143 184.03" stroke="#e4e6e9"/>
+    <path d="M128 48 V208" stroke="#7aa2f7" stroke-linecap="round"/>
   </g>
 </svg>
