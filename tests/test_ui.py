@@ -959,3 +959,16 @@ def test_concert_mode_shows_the_playing_track_and_closes_with_escape(page, api):
     assert page.inner_text("#concertFormat") == "FLAC · 96 kHz · 24 bit · 2304 kbps"
     page.keyboard.press("Escape")
     page.wait_for_selector("#concert", state="hidden")
+
+
+def test_concert_mode_shows_the_cover_of_the_header_display(page, api):
+    """Also when the playing track isn't one the library knows (radio, TIDAL, started on the device)."""
+    open_app(page)
+    art = "data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2210%22 height=%2210%22><rect width=%2210%22 height=%2210%22 fill=%22red%22/></svg>"
+    page.evaluate("""art => { $('#playing').textContent = 'Some Station'; $('#playingSub').textContent = 'Live'; setNowCover(art) }""", art)
+    page.keyboard.press("Control+k")
+    page.wait_for_selector("#concert:not(.hidden)")
+    page.wait_for_timeout(400)
+    assert page.inner_text("#concertTitle") == "Some Station"
+    assert "svg+xml" in page.evaluate("getComputedStyle($('#concertCover')).backgroundImage")
+    assert page.evaluate("$('#concertCover').classList.contains('nocover')") is False
