@@ -18,6 +18,8 @@ All notable changes to Flou Player are documented here. The format follows
   searches by the one you pick, also combined and with words. Streams can
   be filtered by minimum bit rate and format (FLAC = lossless). The search
   bar can be folded away to leave more room for the list.
+- The toolbar (tabs, devices, search) can be folded away with the **▴** next to
+  the tabs; the tabs and a line with the chosen devices stay.
 - **TIDAL** (header icon): log in to TIDAL (open the link shown, confirm the
   code), search artists, albums and tracks, open albums and artists, and play
   or queue them on the Linn/OpenHome output device. The device streams TIDAL
@@ -31,6 +33,8 @@ All notable changes to Flou Player are documented here. The format follows
   square handle. The time grid on the bar is gone.
 
 ### Fixed
+- The toolbar's content now lines up with the panels below it (same side
+  padding) instead of sticking out 8 px on each side.
 - **Searching for devices can no longer hang** (e.g. after a network outage, when
   a device still answered the search but not its description): the devices'
   descriptions are read in parallel and given up on after 15 seconds, and

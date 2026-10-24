@@ -1,7 +1,7 @@
 // Keyboard shortcuts: search/jump shortcuts and keyboard control of playback.
 // (Classic script: shares one global scope with the other files, loaded in the order given in index.html.)
 
-document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key==='f'){e.preventDefault();$('#search').focus()}});
+document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key==='f'){e.preventDefault();toolbarFold(false);$('#search').focus()}});
 document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key==='l'&&state.nowPlayingId){e.preventDefault();jumpToNowPlaying()}});
 
 // ---------- Keyboard control ----------

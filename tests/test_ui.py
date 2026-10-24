@@ -38,6 +38,21 @@ def select_renderer(page):
 
 # ---------- devices ----------
 
+def test_the_device_and_search_bar_can_be_folded_away(page, api):
+    api.routes.update({"devices/restore": {"devices": [SERVER, PLAYER]}, "browse": browse({"0": [{"type": "container", "id": "a", "title": "Albums"}]})})
+    open_app(page)
+    pick(page, "server", 2); pick(page, "renderer", 3)
+    page.wait_for_selector("[data-cid=a]")
+    page.click("#toolbarFold")
+    assert page.is_hidden("#search") and page.is_hidden("#discover") and page.is_visible("#tabLibrary")   # the tabs stay
+    assert page.text_content("#toolbarSummary") == "Music Server · MinimServer  →  Linn · Majik"
+    page.reload()
+    page.wait_for_selector("[data-cid=a]")
+    assert page.is_hidden("#search")                                                                       # remembered
+    page.keyboard.press("Control+f")                                                                       # the search shortcut unfolds it
+    assert page.is_visible("#search") and page.evaluate("document.activeElement.id") == "search"
+
+
 def test_the_chosen_devices_are_remembered_and_shown(page, api):
     api.routes.update({"devices/restore": lambda r: {"devices": restored[0]}, "discover": {"devices": [SERVER, SERVER2, PLAYER]},
                        "browse": browse({"0": [{"type": "container", "id": "a", "title": "Albums"}]})})

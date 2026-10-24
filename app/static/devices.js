@@ -97,3 +97,26 @@ $('#discover').onclick=async()=>{
   }catch(e){ if(ctl.signal.aborted) log('Device search cancelled'); else logErr(e.message) }
   finally{ discoverAbort=null; btn.textContent=btn._label; btn.style.minWidth=''; btn.title='' }
 };
+
+// Fold the whole device/search bar away to leave the room to the list; the tabs stay.
+function toolbarSummary(){
+  const label=id=>{ const b=document.querySelector(`#${id} + .picker .picker-btn`); return b&&!b.classList.contains('placeholder')?b.textContent.trim():'' };
+  return [label('server'),label('renderer')].filter(Boolean).join('  →  ');
+}
+function toolbarFold(fold,save=true){
+  const bar=document.querySelector('.toolbar'), b=$('#toolbarFold'), sum=$('#toolbarSummary');
+  bar.classList.toggle('folded',fold);
+  b.textContent=fold?'▾':'▴'; b.setAttribute('aria-expanded',String(!fold));
+  const text=fold?'Show the device and search bar':'Hide the device and search bar (keeps the tabs)';
+  b.title=text; b.setAttribute('aria-label',text);
+  sum.textContent=toolbarSummary(); sum.classList.toggle('hidden',!fold);
+  if(save) try{ localStorage.setItem('flou_toolbar_folded',fold?'1':'0') }catch(e){}
+}
+$('#toolbarFold').onclick=()=>toolbarFold(!document.querySelector('.toolbar').classList.contains('folded'));
+// The summary follows device changes while folded (the pickers redraw their labels).
+new MutationObserver(()=>{
+  const sum=$('#toolbarSummary'), t=toolbarSummary();
+  if(document.querySelector('.toolbar').classList.contains('folded')&&sum.textContent!==t) sum.textContent=t;   // (writing it is a change too: only when it differs)
+})
+  .observe(document.querySelector('.toolbar'),{subtree:true,childList:true,characterData:true});
+try{ if(localStorage.getItem('flou_toolbar_folded')==='1') toolbarFold(true,false) }catch(e){}
