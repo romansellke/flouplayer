@@ -935,3 +935,27 @@ def test_radio_needs_a_linn_output_device(page, api):
     page.dblclick("tr[data-rs='0']")
     page.wait_for_selector("#toast:not(.hidden)")
     assert not [p for p in api.posts if p.get("action")]
+
+
+def test_concert_mode_shows_the_playing_track_and_closes_with_escape(page, api):
+    api.routes.update({"control": {"ok": True}})
+    open_app(page)
+    select_renderer(page)
+    page.evaluate("""() => { const t = {id: 'c1', title: 'Blue in Green', artist: 'Miles Davis', album: 'Kind of Blue', date: '1959-08-17', album_art: '', resources: []};
+                            state.tracks.push(t); state.nowPlayingId = 'c1';
+                            $('#npQuality').textContent = 'FLAC · 96 kHz · 24 bit · 2304 kbps'; $('#npQuality').classList.remove('hidden');
+                            setVolumeLabel(42, -19.5); setProgress(30, 120, true, true) }""")
+    page.keyboard.press("Control+k")
+    page.wait_for_selector("#concert:not(.hidden)")
+    page.wait_for_timeout(400)
+    assert page.inner_text("#concertTitle") == "Blue in Green"
+    assert page.inner_text("#concertArtist") == "Miles Davis"
+    assert page.inner_text("#concertAlbum") == "Kind of Blue · 1959"
+    assert page.text_content("#concertGrade") == "Hi-Res"
+    assert page.inner_text("#concertFormat") == "96 kHz · 24 bit"            # compact by default
+    assert page.inner_text("#concertVolStep") == "42" and page.inner_text("#concertVolDb") == "-19.5 dB"
+    page.click("#concertDetails")
+    page.wait_for_timeout(100)
+    assert page.inner_text("#concertFormat") == "FLAC · 96 kHz · 24 bit · 2304 kbps"
+    page.keyboard.press("Escape")
+    page.wait_for_selector("#concert", state="hidden")

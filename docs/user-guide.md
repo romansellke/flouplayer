@@ -183,6 +183,27 @@ HTML5 audio. No UPnP renderer is needed, which is handy for testing.
 - If the server offers several variants of a track, the app picks one it can
   play directly. Auto-advance skips tracks it can't play at all.
 
+## Concert mode
+
+For a TV or a screen across the room: the **Concert mode** icon (first icon in
+the status line, or **Ctrl/⌘+K**) shows only what matters about the playing
+track, large and calm:
+
+- the **cover**, big, and the title, artist, album and year next to it, on a
+  soft blurred backdrop of the cover;
+- the **stream quality** the device reports -- sample rate and bit depth, with a
+  **Hi-Res** or **Lossless** badge where it applies. The **i** button at the top
+  right adds the format details (codec, bit rate, genre, track number); the
+  choice is remembered;
+- the elapsed and remaining time with a thin progress line, and **Next** at the
+  bottom (the following track of the queue or list), the **volume** (the device's
+  step and the dB it works out to, or *Muted*) and the output device;
+- previous / play-pause / next buttons. Like the pointer, they fade away after
+  a few seconds without movement and come back when you move the mouse.
+
+Space, Ctrl/⌘+arrows and the other playback keys work as usual. **Esc** (or ×)
+leaves the mode; it also fills the whole screen where the window allows it.
+
 ## Library health
 
 ![Library health](screenshot-health.png)
@@ -390,6 +411,7 @@ for the column type-ahead.
 | Ctrl/⌘+L | Jump to the playing track |
 | Ctrl/⌘+B | Show / hide the column browser |
 | Ctrl/⌘+Q | Switch between Library and Queue |
+| Ctrl/⌘+K | Concert mode: the playing track full screen, for a TV (Esc leaves it) |
 | Backspace / Alt+← | One folder up (Live mode) |
 | Esc | Close a dialog or the full-size cover |
 | A-Z in a column | Type-ahead in the column browser (Enter selects, Esc clears) |

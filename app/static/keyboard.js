@@ -76,6 +76,7 @@ const SHORTCUTS=[
     ['Ctrl/⌘+L','Jump to the playing track'],
     ['Ctrl/⌘+B','Show / hide the column browser'],
     ['Ctrl/⌘+Q','Switch between Library and Queue'],
+    ['Ctrl/⌘+K','Concert mode: the playing track full screen, for a TV (Esc leaves it)'],
     ['Backspace / Alt+←','One folder up (Live mode)'],
     ['A-Z in a column','Type-ahead in the column browser (Enter selects, Esc clears)'],
   ]],
