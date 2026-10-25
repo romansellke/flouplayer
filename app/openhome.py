@@ -4,6 +4,7 @@ import json
 
 from fastapi import APIRouter, HTTPException
 
+from app.didl import parse_didl
 from app.state import devices
 from app.upnp import _openhome_service, peer_service
 
@@ -58,6 +59,23 @@ def list_pins(device_id:str):
             out.append({"slot":i,"title":p.get("title") or "","artwork":p.get("artworkUri") or ""})
     return {"supported":True,"pins":out}
 
+def _now_playing(info):
+    """Title/artist/cover of what the device plays right now (Info.Track), e.g. a radio
+    station started from a pin. Live radio's current song (Info.Metatext) wins when present.
+    None when the device reports nothing."""
+    try:
+        item=(parse_didl(info.Track().get("Metadata")) or [{}])[0]
+    except Exception:
+        return None
+    title,artist=item.get("title") or "",item.get("artist") or ""
+    try:
+        meta=(parse_didl(info.Metatext().get("Value")) or [{}])[0]
+        if meta.get("title"): artist,title=(meta.get("artist") or item.get("title") or ""),meta["title"]
+    except Exception:
+        pass
+    if not title: return None
+    return {"title":title,"artist":artist,"album":item.get("album") or "","art":item.get("album_art") or ""}
+
 @router.get("/api/devices/{device_id}/stream")
 def stream_details(device_id:str):
     """What the device itself reports about the stream it is playing
@@ -72,7 +90,8 @@ def stream_details(device_id:str):
     except Exception as e:
         raise HTTPException(502,f"Could not read stream details: {e}")
     num=lambda k:int(r.get(k) or 0)
-    return {"supported":True,"codec":(r.get("CodecName") or "").strip(),"sample_rate":num("SampleRate"),"bit_depth":num("BitDepth"),"bit_rate":num("BitRate"),"lossless":bool(r.get("Lossless"))}
+    now=_now_playing(info)
+    return {"supported":True,"now":now,"codec":(r.get("CodecName") or "").strip(),"sample_rate":num("SampleRate"),"bit_depth":num("BitDepth"),"bit_rate":num("BitRate"),"lossless":bool(r.get("Lossless"))}
 
 @router.get("/api/devices/{device_id}/capabilities")
 def capabilities(device_id:str):

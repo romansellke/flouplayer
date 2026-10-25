@@ -76,7 +76,7 @@ $('#pinList').addEventListener('click',async e=>{
   try{
     await api('/api/control',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({device_id:d,action:'invoke_pin',value:+b.dataset.slot})});
     showToast(`Playing pin: ${b.title}`); log(`Pin: ${b.title}`);
-    setTimeout(()=>{pollSource(); if(typeof pollQueue==='function') pollQueue(true)},1500);
+    setTimeout(()=>{pollSource(); pollStream(); if(typeof pollQueue==='function') pollQueue(true)},1500);
   }catch(x){ notify(x.message) }
 });
 
@@ -89,6 +89,12 @@ async function pollStream(){
     const r=await api(`/api/devices/${encodeURIComponent(d)}/stream`);
     const parts=r.supported?[r.codec,r.sample_rate&&fmtKhz(r.sample_rate),r.bit_depth&&`${r.bit_depth} bit`,r.bit_rate&&`${Math.round(r.bit_rate/1000)} kbps`].filter(Boolean):[];
     el.textContent=parts.join(' · '); el.classList.toggle('hidden',!parts.length);
+    // Playback the device started itself (a pin, radio, another controller): the queue poll doesn't cover it, so follow the device's own title.
+    const n=r.supported&&r.now;
+    if(n&&!isLocal()&&!(queue.supported&&queue.active)){
+      $('#playing').textContent=n.title; $('#playingSub').textContent=[n.artist,n.album].filter(Boolean).join(' · ');
+      setNowCover(n.art);
+    }
   }catch(e){ el.classList.add('hidden') }
 }
 
