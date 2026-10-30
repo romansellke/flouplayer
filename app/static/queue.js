@@ -147,4 +147,4 @@ async function pollQueue(force=false){
   finally{ queueBusy=false }
 }
 $('#renderer').addEventListener('change',()=>{queue.token=null;queue.entries=[];pollQueue(true)});
-setInterval(()=>pollQueue(),2000);
+poll(()=>pollQueue(),2000);

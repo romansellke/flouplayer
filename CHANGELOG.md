@@ -16,6 +16,10 @@ All notable changes to Flou Player are documented here. The format follows
 ### Changed
 - New app icon in graphite grey: a light grey ring with a gap where the blue stroke (the
   default theme's highlight) crosses it, instead of the blue background with the gold stroke.
+- Lower idle load (fewer CPU wakeups): the position display redraws once per second instead of four
+  times, Concert mode only ticks while it is open, media-key state is sent when something changes
+  instead of every second, and the background polls of the output device wait for a slow answer
+  and slow down while the window is hidden (they refresh at once when it comes back).
 - Docs: new screenshots of Live and Library mode with the new header and
   toolbar, plus new ones of the Radio and TIDAL views, in the README, the
   feature list and the user guide.

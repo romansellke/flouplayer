@@ -218,7 +218,7 @@ $('#volume').oninput=e=>{
   setVolumeTarget(+e.target.value);
 };
 // Keep the slider in sync with changes made elsewhere (remote, Linn app).
-setInterval(()=>{ if(!isLocal() && !volDragging && volTimer===null) refreshVolume() },4000);
+poll(()=>{ if(!isLocal() && !volDragging && volTimer===null) return refreshVolume() },4000);
 // Mouse wheel: one step at a time (shift = 5), instead of the browser default.
 $('#volume').addEventListener('wheel',e=>{
   e.preventDefault();
@@ -235,6 +235,8 @@ const prog={base:0,at:0,dur:0,playing:false,seeking:false,seekable:false};
 function setProgress(sec,dur,playing=true,seekable=true){
   Object.assign(prog,{base:sec||0,at:performance.now(),dur:dur||0,playing,seekable});
   drawProgress();
+  scheduleProgress();
+  pushMediaSoon();
 }
 const PROG_MAX_EXTRAPOLATE_S=6;   // longest the clock runs on its own between readings
 function curPos(){
@@ -273,10 +275,22 @@ function drawProgress(){
   setPixelText($('#elapsedR'),prog.dur?'-'+fmtClock(prog.dur-pos):'');
   seek.disabled=!(prog.dur&&prog.seekable);
   if(!prog.seeking) seek.value=prog.dur?Math.round(pos/prog.dur*1000):0;
-  seek.style.setProperty('--pct',(+seek.value/10)+'%');   // the fill follows the handle
+  const pct=(+seek.value/10)+'%';
+  if(seek._pct!==pct){ seek._pct=pct; seek.style.setProperty('--pct',pct) }   // the fill follows the handle
 }
 function clearProgress(){ setProgress(0,0,false,false) }
-setInterval(()=>{ if(prog.playing&&!prog.seeking) drawProgress() },250);
+// The clock shows whole seconds, so wake up once per second, just after the display would change (fmtClock rounds),
+// and not at all while nothing runs (the position stops extrapolating after PROG_MAX_EXTRAPOLATE_S anyway).
+let progTimer=null;
+function scheduleProgress(){
+  clearTimeout(progTimer); progTimer=null;
+  if(!prog.playing||document.hidden) return;
+  const age=(performance.now()-prog.at)/1000;
+  if(age>PROG_MAX_EXTRAPOLATE_S) return;
+  const pos=prog.base+age;
+  progTimer=setTimeout(()=>{ progTimer=null; if(!prog.seeking) drawProgress(); scheduleProgress() },(1-(pos+.5)%1)*1000+20);
+}
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden){ drawProgress(); scheduleProgress() } });
 $('#seek').addEventListener('pointerdown',()=>{prog.seeking=true});
 $('#seek').addEventListener('input',drawProgress);
 $('#seek').addEventListener('change',async e=>{
@@ -299,6 +313,7 @@ function fmtClock(sec){sec=Math.max(0,Math.round(sec||0));const h=Math.floor(sec
 const localAudioEl=$('#localAudio');
 localAudioEl.addEventListener('timeupdate',()=>{
   if(!isLocal()) return;
+  if(prog.playing&&!localAudioEl.paused&&performance.now()-prog.at<900) return;   // the browser reports ~4x/s; the clock shows whole seconds
   const d=localAudioEl.duration, dur=Number.isFinite(d)&&d>0?d:state.localDurationHint;
   // Transcoded streams (no known length / not seekable) just show the clock.
   setProgress(localAudioEl.currentTime,dur,!localAudioEl.paused,Number.isFinite(d)&&d>0&&localAudioEl.seekable.length>0);
@@ -331,4 +346,4 @@ async function pollTransport(){
     lastPoll={state:t.state,relSec,durSec};
   }catch(e){/* the output device may not support position queries -- ignore */}
 }
-setInterval(pollTransport,1500);
+poll(pollTransport,1500,1);
