@@ -508,6 +508,20 @@ def test_double_click_on_an_openhome_device_plays_the_album_through_the_device_q
     assert not [p for p in api.posts if p.get("action") == "set_uri"]
 
 
+def test_repeated_double_clicks_do_not_start_a_second_replace_while_the_first_runs(page, api):
+    api.routes["/queue"] = queue_api()
+    start_cached_with_player(page, api, [dict(track(i, album_artist="Band"), id=f"c{i}") for i in (1, 2, 3)])
+    page.wait_for_function("queue.supported")
+    page.evaluate("""() => { const f = window.fetch;                        // a slow device: filling the queue takes 0.6 s
+        window.fetch = (u, o) => String(u).endsWith('/queue') && o && o.method === 'POST' ? new Promise(r => setTimeout(r, 600)).then(() => f(u, o)) : f(u, o) }""")
+    page.dblclick("[data-item=c2]"); page.wait_for_timeout(100)
+    page.dblclick("[data-item=c2]"); page.wait_for_timeout(100)    # impatient: nothing seems to happen
+    page.dblclick("[data-item=c3]")                                 # another track meanwhile: this one wins, after the first
+    page.wait_for_function("queuePlaying===null && queuePlayNext===null", timeout=8000)
+    replace = [p for p in api.posts if p.get("action") == "replace"]
+    assert [p["start"] for p in replace] == [1, 2]                 # never two at once, the same track is not repeated
+
+
 def test_if_the_device_queue_fails_double_click_falls_back_to_the_single_track(page, api):
     api.routes["/queue"] = queue_api(fail=True)
     start_cached_with_player(page, api, [dict(track(i, album_artist="Band"), id=f"c{i}") for i in (1, 2)])
