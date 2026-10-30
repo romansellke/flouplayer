@@ -611,7 +611,7 @@ kbd{display:inline-block;min-width:20px;padding:1px 6px;border:1px solid var(--l
 .c-grade{padding:.1em .6em;border:1px solid var(--highlight);border-radius:999px;color:var(--highlight);text-transform:uppercase;font-size:.8em;letter-spacing:.12em}
 .c-prog{display:flex;align-items:center;gap:1.6vmin;margin-top:3vh;font-size:clamp(14px,2vmin + .3vw,32px);color:var(--dim);font-variant-numeric:tabular-nums}
 .c-track{flex:1;height:max(3px,.5vmin);border-radius:99px;background:var(--line-strong);overflow:hidden}
-.c-track div{height:100%;background:var(--text);border-radius:99px;transition:width 1s linear}
+.c-track div{height:100%;background:var(--text);border-radius:99px;transition:width .25s linear}
 .c-ctl{display:flex;gap:3vmin;margin-top:2vh;transition:opacity .6s}
 .c-ctl button{width:7vmin;height:7vmin;min-width:44px;min-height:44px;padding:0;border-radius:50%;border:1px solid var(--line-strong);background:transparent;color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center}
 .c-ctl button:hover{background:var(--hover)}

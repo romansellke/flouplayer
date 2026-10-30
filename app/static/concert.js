@@ -83,9 +83,7 @@ function drawConcert(){
   $('#concertBar').style.width=prog.dur?Math.min(100,pos/prog.dur*100)+'%':'0';
   concertEl.classList.toggle('paused',!isPlayingNow());
 }
-let concertTimer=null;
-function concertTick(){ clearTimeout(concertTimer); concertTimer=null; if(!isConcert()||document.hidden) return; drawConcert(); concertTimer=setTimeout(concertTick,1000) }
-document.addEventListener('visibilitychange',()=>{ if(!document.hidden) concertTick() });
+setInterval(drawConcert,250);
 
 // The pointer and the controls fade away after a few seconds, so nothing but the music stays on the TV.
 function concertWake(){
@@ -98,10 +96,10 @@ function setConcert(on=!isConcert()){
   concertEl.classList.toggle('hidden',!on);
   document.activeElement?.blur?.();   // Space must play/pause, not press a button that still has the focus
   if(on){
-    concertKey=''; concertTick(); concertWake();
+    concertKey=''; drawConcert(); concertWake();
     concertEl.requestFullscreen?.().catch(()=>{});   // best effort: the app window may not allow it
   }else{
-    clearTimeout(concertIdleTimer); clearTimeout(concertTimer); concertTimer=null;
+    clearTimeout(concertIdleTimer);
     if(document.fullscreenElement) document.exitFullscreen().catch(()=>{});
   }
   try{ localStorage.setItem('concert',on?'1':'') }catch(e){}
