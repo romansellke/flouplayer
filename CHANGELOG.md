@@ -13,6 +13,12 @@ All notable changes to Flou Player are documented here. The format follows
   can be switched on with the "i" button. Set in Inter (bundled, SIL Open Font License). Controls and
   pointer fade away when idle; Esc leaves it.
 
+### Fixed
+- Double-clicking a track again while the album was still being sent to the Linn/OpenHome device no longer
+  fails with "Playlist action failed: (800, 'Id not found')". Changes to the device's queue now run one at a
+  time, a repeated double-click waits instead of starting a second one (the last click wins), and a toast
+  says that the tracks are on their way. The Diagnostics log shows how long the device needed.
+
 ### Changed
 - New app icon in graphite grey: a light grey ring with a gap where the blue stroke (the
   default theme's highlight) crosses it, instead of the blue background with the gold stroke.
