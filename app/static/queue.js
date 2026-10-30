@@ -30,26 +30,14 @@ $('#content').addEventListener('click',e=>{
 // and plays from that track. The device then plays on by itself -- gapless, and also when Flou
 // Player is closed. Falls back to playing the single track if the queue can't be used.
 const useDeviceQueue=()=>!isLocal()&&queue.supported;
-// Filling the queue takes a while on the device (one Insert per track). Another double-click meanwhile does not
-// start a second replace: the last one is remembered and runs when the first is through.
-let queuePlaying=null, queuePlayNext=null;
 async function playViaQueue(t){
-  if(queuePlaying){ if(t.id!==queuePlaying) queuePlayNext=t; return }
   const album=tracksOfAlbum(albumKey(t));
   const start=album.findIndex(x=>x.id===t.id);
   if(start<0) return playItem(t);
-  queuePlaying=t.id; const began=performance.now();
-  showToast(`Sending ${album.length} track${album.length>1?'s':''} to the device ...`);
   try{
     await queueApi({action:'replace',items:album.map(queueItem),start});
-    log(`Device queue: ${album.length} tracks in ${((performance.now()-began)/1000).toFixed(1)} s`);
     pollQueue(true);
   }catch(e){ logErr(`Playing through the device queue failed (${e.message}); playing the single track instead.`); playItem(t) }
-  finally{
-    queuePlaying=null;
-    const next=queuePlayNext; queuePlayNext=null;
-    if(next) playViaQueue(next);
-  }
 }
 const shownTracks=()=>state.currentPlaylist.filter(t=>t.resources?.[0]);
 $('#qAddAll').onclick=()=>queueAdd(shownTracks(),!queue.entries.length||!queue.active);

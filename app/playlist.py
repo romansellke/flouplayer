@@ -1,6 +1,5 @@
 """The device-side queue (OpenHome Playlist service): reading and changing it."""
 from __future__ import annotations
-import threading
 import xml.etree.ElementTree as ET
 from typing import Optional
 
@@ -109,23 +108,12 @@ class QueueReq(BaseModel):
     action:str; id:Optional[int]=None; items:list[QueueItem]=[]; play:bool=False
     value:Optional[bool]=None; seconds:Optional[int]=None; start:int=0
 
-# One change of a device's queue at a time. A "replace" is DeleteAll plus one Insert per track, which takes
-# seconds for an album; a second one starting meanwhile (a repeated double-click) would delete the ids the
-# first still works with, and the device answers "800 Id not found". The second now waits, then replaces.
-_queue_locks:dict[str,threading.Lock]={}
-_queue_locks_guard=threading.Lock()
-def _queue_lock(device_id):
-    with _queue_locks_guard: return _queue_locks.setdefault(device_id,threading.Lock())
-
 @router.post("/api/devices/{device_id}/queue")
 def queue_action(device_id:str,req:QueueReq):
     d=devices.get(device_id)
     if not d: raise HTTPException(404,"Device not found")
     pl=find_playlist_service(d)
     if not pl: raise _no_playlist(d)
-    with _queue_lock(device_id): return _run_queue_action(d,pl,req)
-
-def _run_queue_action(d,pl,req):
     a=req.action
     try:
         if a=="insert":
