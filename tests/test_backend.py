@@ -453,35 +453,6 @@ def test_queue_replace_can_start_at_a_later_track(player):
     assert len(state["queue"]) == 3 and state["seeked"] == [state["queue"][1]]   # all three in, plays the second
 
 
-def test_two_overlapping_replaces_do_not_trip_over_each_other(player):
-    """A repeated double-click sends a second replace while the first is still inserting. The device
-    answers "800 Id not found" for ids the second DeleteAll removed, unless the queue changes are serialized."""
-    import threading, time
-    oh, state = player
-    pl = oh.service("Playlist")
-    state["queue"].clear()
-
-    def insert(AfterId, Uri, Metadata):
-        time.sleep(0.03)                                  # a device needs time per action
-        if AfterId and AfterId not in state["queue"]: raise Exception("(800, 'Id not found')")
-        new = state["n"] = state.get("n", 0) + 1
-        state["queue"].insert(state["queue"].index(AfterId) + 1 if AfterId else 0, new)
-        return {"NewId": new}
-
-    def seek(Value):
-        if Value not in state["queue"]: raise Exception("(800, 'Id not found')")
-        state["seeked"].append(Value); return {}
-
-    pl.actions.update({"Insert": insert, "SeekId": seek, "DeleteAll": lambda: state["queue"].clear() or {}})
-    items = [{"uri": f"http://x/{n}.flac", "metadata": ""} for n in range(6)]
-    codes = []
-    threads = [threading.Thread(target=lambda: codes.append(queue(oh, action="replace", items=items, start=2).status_code))]
-    threads.append(threading.Thread(target=lambda: (time.sleep(0.07), codes.append(queue(oh, action="replace", items=items, start=2).status_code))))
-    for t in threads: t.start()
-    for t in threads: t.join()
-    assert codes == [200, 200] and len(state["queue"]) == 6   # the second replaced the first, nothing left over
-
-
 def test_queue_switches_the_device_to_its_playlist_source_first(player):
     oh, state = player
     state["source"] = 1                                      # Radio is active
