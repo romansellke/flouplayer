@@ -42,7 +42,7 @@ $('#loadLibrary').onclick=async()=>{
   $('#cancelScan').classList.remove('hidden');
   $('#content').innerHTML='<div class="empty">Loading library ...</div>';
 
-  const scanPoll=setInterval(async()=>{
+  const poll=setInterval(async()=>{
     try{
       const p=await api('/api/scan/progress');
       if(p.running){
@@ -66,7 +66,7 @@ $('#loadLibrary').onclick=async()=>{
     else $('#content').innerHTML=`<div class="empty">${cancelled?'Scan cancelled.':'Failed to load: '+esc(e.message)}</div>`;
     if(!cancelled) logErr(e.message);
   }finally{
-    clearInterval(scanPoll);
+    clearInterval(poll);
     $('#cancelScan').classList.add('hidden');
     cancelled=false;
     setBusy(btn,false);
@@ -341,7 +341,6 @@ function ensureTrackRendered(id){
 
 // Moves the ▶ marker between rows without re-rendering the list.
 function markNowPlaying(prevId,newId){
-  if(typeof pushMediaSoon==='function') pushMediaSoon();
   const row=id=>id&&document.querySelector(`#content [data-item="${CSS.escape(id)}"]`);
   const prev=row(prevId), next=row(newId);
   if(prev){prev.classList.remove('playing');const n=prev.querySelector('td.n');n.textContent=n.dataset.n}
@@ -398,7 +397,7 @@ $('#libChangedDismiss').onclick=()=>{
   $('#libChanged').classList.add('hidden');
 };
 $('#server').addEventListener('change',()=>checkLibraryChanged());
-poll(checkLibraryChanged,5*60*1000);
+setInterval(checkLibraryChanged,5*60*1000);
 
 async function initFromCache(){
   if(state.tracks.length){ render(); checkLibraryChanged(); return }

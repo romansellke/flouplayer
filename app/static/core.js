@@ -9,21 +9,6 @@ const FACET_ORDER=['album_artist','artist','album','year'];
 const ALBUM_CHUNK=40;
 const LOCAL_RENDERER_ID='__local__';
 
-// Background polling: runs fn every `ms`, waits for a slow answer instead of piling up requests, and slows down
-// by `hiddenFactor` while the window is hidden (minimized, other workspace) -- the music keeps playing, nobody watches the display.
-// hiddenFactor=1 for polls the app logic depends on. On becoming visible again every poll runs at once, so the display is current.
-const pollers=[];
-function poll(fn,ms,hiddenFactor=4){
-  const p={fn,t:null};
-  const run=async()=>{
-    clearTimeout(p.t);
-    try{ await fn() }catch(e){}
-    p.t=setTimeout(run,document.hidden?ms*hiddenFactor:ms);
-  };
-  p.run=run; p.t=setTimeout(run,ms); pollers.push(p);
-}
-document.addEventListener('visibilitychange',()=>{ if(!document.hidden) pollers.forEach(p=>p.run()) });
-
 // ---------- Diagnostics log ----------
 // Keeps the last LOG_MAX entries (timestamp, level, text) instead of only
 // the latest message; the Diagnostics dialog shows them, can copy a
