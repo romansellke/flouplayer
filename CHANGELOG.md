@@ -6,6 +6,8 @@ All notable changes to Flou Player are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.21.0] - 2026-11-01
+
 ### Added
 - **Concert mode** (status line icon, Ctrl/⌘+K) for a TV: the playing track full screen with a big
   cover, title, artist, album and year, the stream quality with a Hi-Res / Lossless badge, the position,
@@ -481,7 +483,8 @@ the OpenHome queue tab; a position/seek bar and a live dB volume readout; a
 Diagnostics log and About dialog; 17 colour themes; installable Linux app
 packaging; and the GPL-3.0-or-later license.
 
-[Unreleased]: https://github.com/romansellke/flouplayer/compare/v0.20.0...HEAD
+[Unreleased]: https://github.com/romansellke/flouplayer/compare/v0.21.0...HEAD
+[0.21.0]: https://github.com/romansellke/flouplayer/compare/v0.20.0...v0.21.0
 [0.20.0]: https://github.com/romansellke/flouplayer/compare/v0.19.0...v0.20.0
 [0.19.0]: https://github.com/romansellke/flouplayer/compare/v0.18.0...v0.19.0
 [0.18.0]: https://github.com/romansellke/flouplayer/compare/v0.17.0...v0.18.0
