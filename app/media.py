@@ -13,6 +13,7 @@ import asyncio
 import collections
 import logging
 import sys
+import time
 from typing import Optional
 
 from fastapi import APIRouter
@@ -35,6 +36,7 @@ class Bridge:
     """Current state + pending commands, shared by the page and the MPRIS service (one asyncio loop)."""
     def __init__(self):
         self.state=MediaState()
+        self.at=time.monotonic()    # when `state` arrived: the position runs on from there while playing
         self.commands=collections.deque(maxlen=20)
         self.waiters:list[asyncio.Future]=[]
         self.listeners=[]           # called with the changed property names after a state update
@@ -56,11 +58,17 @@ class Bridge:
             if fut in self.waiters: self.waiters.remove(fut)
 
     def update(self,new:MediaState):
-        old=self.state; self.state=new
+        old=self.state; self.state=new; self.at=time.monotonic()
         changed=[k for k in MediaState.model_fields if getattr(old,k)!=getattr(new,k)]
         for fn in self.listeners:
             try: fn(changed)
             except Exception as e: log.debug("media listener failed: %s",e)
+
+    def position(self)->float:
+        """The position now: the page reports it only every few seconds, so it runs on while playing."""
+        s=self.state
+        p=s.position+(time.monotonic()-self.at if s.status=="Playing" else 0)
+        return min(p,s.length) if s.length else p
 
 bridge=Bridge()
 
@@ -154,7 +162,7 @@ def build_interfaces(b:Bridge):
         @dbus_property(access=PropertyAccess.READ)
         def Volume(self)->"d": return 1.0
         @dbus_property(access=PropertyAccess.READ)
-        def Position(self)->"x": return int(b.state.position*1_000_000)
+        def Position(self)->"x": return int(b.position()*1_000_000)
         @dbus_property(access=PropertyAccess.READ)
         def CanGoNext(self)->"b": return b.state.can_next
         @dbus_property(access=PropertyAccess.READ)

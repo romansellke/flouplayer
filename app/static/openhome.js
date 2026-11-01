@@ -145,9 +145,9 @@ async function firmwareLine(d){
 }
 
 function refreshDeviceExtras(){ loadSources(); loadPins(); pollStream(); pollStandby(); pollCaps(); if(!dev2()) drawMute(null) }
-setInterval(pollSource,5000);
-setInterval(loadPins,60000);
-setInterval(pollStream,4000);
-setInterval(pollStandby,6000);
-setInterval(pollCaps,3000);
+poll(pollSource,5000);
+poll(loadPins,60000);
+poll(pollStream,4000);
+poll(pollStandby,6000);
+poll(pollCaps,3000);
 refreshDeviceExtras();

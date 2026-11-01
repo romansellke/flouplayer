@@ -23,7 +23,11 @@ async function pushMediaState(){
   mediaSent=key; mediaSentAt=performance.now();
   try{ await api('/api/media/state',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(s)}) }catch(e){ mediaSent='' }
 }
-setInterval(pushMediaState,1000);
+// Sent soon after something changes (setProgress and markNowPlaying call pushMediaSoon), plus a slow safety net
+// for changes that don't pass there. The backend runs the position on by itself for the panel (see media.py).
+let mediaSoonTimer=null;
+function pushMediaSoon(){ if(mediaSoonTimer===null) mediaSoonTimer=setTimeout(()=>{ mediaSoonTimer=null; pushMediaState() },150) }
+poll(pushMediaState,5000,2);
 
 function runMediaCommand(cmd){
   if(!$('#renderer').value) return;

@@ -975,3 +975,55 @@ def test_concert_mode_shows_the_cover_of_the_header_display(page, api):
     assert page.evaluate("$('#concertCover').classList.contains('nocover')") is False
     box = page.evaluate("(() => { const r = $('#concertCover').getBoundingClientRect(); return [r.width, r.height] })()")
     assert box[0] > 100 and box[0] == box[1]   # a square with a real height of its own (older Qt WebEngine has no aspect-ratio)
+
+
+# ---------- idle load (fewer CPU wakeups) ----------
+
+def set_hidden(page, hidden):
+    page.evaluate("""h => { Object.defineProperty(document, 'hidden', {configurable: true, get: () => h});
+                            document.dispatchEvent(new Event('visibilitychange')) }""", hidden)
+
+
+def test_background_polls_slow_down_while_hidden_and_are_never_doubled(page, api):
+    api.routes.update({"/capabilities": {"supported": False}})
+    open_app(page)
+    select_renderer(page)
+    page.wait_for_timeout(300)
+    page.evaluate("""() => { for (let i = 0; i < 5; i++) for (const h of [true, false]) {   // minimize / restore while the polls run:
+                               Object.defineProperty(document, 'hidden', {configurable: true, get: () => h});   // each runs at once, but only once
+                               document.dispatchEvent(new Event('visibilitychange')) } }""")
+    page.wait_for_timeout(100)
+    api.requests.clear()
+    page.wait_for_timeout(3400)
+    assert sum("/capabilities" in r for r in api.requests) == 1   # every 3 s, not 6 loops side by side
+    set_hidden(page, True)
+    page.wait_for_timeout(100)
+    api.requests.clear()
+    page.wait_for_timeout(7000)
+    assert sum("/capabilities" in r for r in api.requests) <= 1   # 12 s while hidden (one may still have been due)
+    api.requests.clear()
+    set_hidden(page, False)
+    page.wait_for_timeout(200)
+    assert sum("/capabilities" in r for r in api.requests) == 1   # back: brought up to date at once
+
+
+def test_concert_mode_and_the_clock_only_tick_when_someone_can_see_them(page, api):
+    open_app(page)
+    page.evaluate("""() => { window.__ticks = {concert: 0, clock: 0};
+                            const c = drawConcert; drawConcert = () => { __ticks.concert++; c() };
+                            const d = drawProgress; drawProgress = () => { __ticks.clock++; d() } }""")
+    page.wait_for_timeout(1200)
+    assert page.evaluate("__ticks") == {"concert": 0, "clock": 0}   # closed, nothing playing: no wakeups at all
+    page.evaluate("setProgress(30, 120, true, true)")
+    page.keyboard.press("Control+k")
+    page.wait_for_selector("#concert:not(.hidden)")
+    page.evaluate("__ticks = {concert: 0, clock: 0}")
+    page.wait_for_timeout(2100)
+    t = page.evaluate("__ticks")
+    assert 1 <= t["concert"] <= 3 and 1 <= t["clock"] <= 3           # once a second, not four times
+    assert page.text_content("#concertPos") in ("0:32", "0:33")
+    page.keyboard.press("Escape")
+    page.wait_for_selector("#concert", state="hidden")
+    page.evaluate("setProgress(30, 120, false, true); __ticks = {concert: 0, clock: 0}")   # paused
+    page.wait_for_timeout(1200)
+    assert page.evaluate("__ticks") == {"concert": 0, "clock": 0}

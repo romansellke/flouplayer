@@ -16,6 +16,14 @@ All notable changes to Flou Player are documented here. The format follows
 ### Changed
 - New app icon in graphite grey: a light grey ring with a gap where the blue stroke (the
   default theme's highlight) crosses it, instead of the blue background with the gold stroke.
+- Lower idle load: about a third of the CPU wakeups with the window open and a seventh while it is
+  minimized (measured with a simulated Linn playing its queue). The position display redraws once per second
+  instead of four times and not at all while nothing plays; Concert mode only ticks while it is open; the
+  media-key state is sent when something changes instead of every second (the panel's position runs on by
+  itself); the background polls of the output device wait for a slow answer instead of piling up, and run
+  slower while the window is hidden (they catch up at once when it comes back). The queue poll no longer reads
+  the device's whole source list every 2 seconds, nor the volume slider its fixed characteristics every 4.
+  Changing the queue works exactly as before.
 - Docs: new screenshots of Live and Library mode with the new header and
   toolbar, plus new ones of the Radio and TIDAL views, in the README, the
   feature list and the user guide.

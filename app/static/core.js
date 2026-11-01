@@ -9,6 +9,28 @@ const FACET_ORDER=['album_artist','artist','album','year'];
 const ALBUM_CHUNK=40;
 const LOCAL_RENDERER_ID='__local__';
 
+// ---------- Background polling ----------
+// poll(fn, ms) runs fn every `ms`, the next run only once the previous answer is in (a slow device never gets a
+// pile of overlapping requests), and `hiddenFactor` times slower while the window is hidden (minimized, another
+// workspace): the music plays on, but nobody looks at the display. When the window comes back every poll runs
+// at once, so the display is current. A poll is never doubled: kick() while one runs just lets that one finish.
+const pollers=[];
+function poll(fn,ms,hiddenFactor=4){
+  const p={timer:null,busy:false};
+  p.kick=async()=>{
+    clearTimeout(p.timer); p.timer=null;
+    if(p.busy) return;              // the running one schedules the next
+    p.busy=true;
+    try{ await fn() }catch(e){}
+    finally{ p.busy=false }
+    p.timer=setTimeout(p.kick,document.hidden?ms*hiddenFactor:ms);
+  };
+  p.timer=setTimeout(p.kick,ms);
+  pollers.push(p);
+  return p;
+}
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden) pollers.forEach(p=>p.kick()) });
+
 // ---------- Diagnostics log ----------
 // Keeps the last LOG_MAX entries (timestamp, level, text) instead of only
 // the latest message; the Diagnostics dialog shows them, can copy a
