@@ -371,15 +371,20 @@ Nord, Catppuccin Mocha, Tokyo Night, ...). The choice is remembered.
 
 ## Media keys and the panel's player controls
 
-On Linux, Flou Player shows up as a media player in the desktop (MPRIS): the
+This is **off by default**. Switch it on in the keyboard shortcuts overview
+(Ctrl/⌘+/ or F1, or the keyboard button in the status line), under *Media keys*;
+the choice is remembered.
+
+When it is on, Flou Player shows up as a media player in the Linux desktop (MPRIS): the
 **media keys** on the keyboard (play/pause, next, previous, stop), the sound
 menu or player widget in the panel (Linux Mint, GNOME, KDE) and headset
 buttons control it, also while the window is in the background. The panel
 shows the current title, artist, album and cover. This works for every
-output device, including the device queue and "This computer".
+output device, including the device queue and "This computer". While it is
+off, the app doesn't report the playing track or wait for key presses at all.
 
-It needs a desktop session (D-Bus); without one, Flou Player just runs
-without it.
+It needs a desktop session (D-Bus); without one the overview says that it is
+not available right now, and Flou Player just runs without it.
 
 ## Keyboard shortcuts
 

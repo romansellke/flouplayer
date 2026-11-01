@@ -43,7 +43,7 @@ Linux).
 - Device controls for Linn/OpenHome: mute, source selection, pins and the
   stream quality the device reports
 - Keyboard control (Space, arrows, volume, mute) with a built-in shortcut overview (Ctrl/⌘+/ or F1),
-  plus the keyboard's **media keys** and the panel's player controls (MPRIS)
+  plus, if you switch them on, the keyboard's **media keys** and the panel's player controls (MPRIS)
 - **Radio**: search internet radio stations, keep favourites or add your own
   stream URLs, and play them on the Linn device
 - **TIDAL**: search TIDAL and play it on the Linn device, which streams it

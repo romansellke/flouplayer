@@ -3,6 +3,7 @@ from __future__ import annotations
 import concurrent.futures as cf
 import json
 import os
+import time
 
 import upnpclient
 from fastapi import APIRouter, HTTPException
@@ -111,6 +112,17 @@ def services(device_id:str):
     out["peers"]=[{"name":getattr(x,"friendly_name",""),"location":getattr(x,"location",""),"service_types":sorted(getattr(sv,"service_type","") for sv in x.services)} for x in peer_devices(d)]
     return out
 
+# The OpenHome volume characteristics (maximum, unity, dB per step) are fixed for a device; the slider's poll
+# (every 4 s) reads them from the service object for a while instead of asking each time.
+CHARACTERISTICS_TTL=600
+def _characteristics(vol):
+    hit=getattr(vol,"_flou_characteristics",None)
+    if hit and time.monotonic()-hit[0]<CHARACTERISTICS_TTL: return hit[1]
+    ch=vol.Characteristics()
+    try: vol._flou_characteristics=(time.monotonic(),ch)
+    except Exception: pass
+    return ch
+
 @router.get("/api/devices/{device_id}/volume")
 def get_volume(device_id:str):
     """Read current volume. For Linn/OpenHome devices (kind 'openhome')
@@ -125,7 +137,7 @@ def get_volume(device_id:str):
     if not vol: raise HTTPException(400,"No volume service on this device")
     try:
         if kind=="openhome":
-            ch=vol.Characteristics()
+            ch=_characteristics(vol)
             raw=int(vol.Volume().get("Value",0))
             vmax=int(ch.get("VolumeMax",100)) or 100
             unity=int(ch.get("VolumeUnity",0))

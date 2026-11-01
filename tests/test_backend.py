@@ -460,6 +460,29 @@ def test_queue_switches_the_device_to_its_playlist_source_first(player):
     assert state["source"] == 0
 
 
+def test_the_queue_poll_remembers_which_source_is_the_playlist_but_changes_read_it_afresh(player):
+    """The 2 s poll only needs "is the Playlist active?"; reading the source list each time cost a call per source."""
+    oh, state = player
+    prod = oh.service("Product")
+    for _ in range(3):
+        assert get(f"/api/devices/{oh.udn}/queue").json()["active"] is True
+    assert sum(name == "SourceCount" for name, _ in prod.calls) == 1
+    state["source"] = 1                                       # another controller switched to Radio
+    assert get(f"/api/devices/{oh.udn}/queue").json()["active"] is False
+    prod.calls.clear()
+    assert queue(oh, action="insert", items=[{"uri": "http://x/a.flac", "metadata": ""}]).status_code == 200
+    assert any(name == "SourceCount" for name, _ in prod.calls) and state["source"] == 0
+
+
+def test_the_volume_poll_reads_the_fixed_characteristics_only_once(player):
+    oh, state = player
+    vol = oh.service("Volume")
+    state["volume"] = 70
+    assert [get(f"/api/devices/{oh.udn}/volume").json()["db"] for _ in range(3)] == [-5.0] * 3
+    assert sum(name == "Characteristics" for name, _ in vol.calls) == 1
+    assert sum(name == "Volume" for name, _ in vol.calls) == 3   # the volume itself is read every time
+
+
 def test_queue_unknown_action_and_missing_service(player):
     oh, _ = player
     assert queue(oh, action="nope").status_code == 400
@@ -538,6 +561,52 @@ def test_mpris_player_forwards_keys_and_shows_the_current_track():
     emitted.clear()
     b.update(media.MediaState(status="Playing", title="Song", artist="Artist", album="Album", length=180, track_id="t/1", can_next=False, position=42))
     assert emitted == []                                                             # the position alone is polled, not signalled
+
+
+@pytest.fixture
+def media_settings(monkeypatch, tmp_path):
+    calls = []
+    async def start(): calls.append("start")
+    async def stop(): calls.append("stop")
+    monkeypatch.setattr(media, "SETTINGS_FILE", tmp_path / "media.json")
+    monkeypatch.setattr(media, "start_mpris", start)
+    monkeypatch.setattr(media, "stop_mpris", stop)
+    return calls
+
+
+def test_mpris_is_off_by_default_and_not_started_with_the_app(media_settings):
+    assert media.mpris_enabled() is False
+    assert client.get("/api/media/settings").json()["mpris"] is False
+    with TestClient(m.app, base_url="http://127.0.0.1:8765"):   # runs the app's startup and shutdown
+        pass
+    assert "start" not in media_settings                                             # (stopping at the end is a no-op)
+
+
+def test_mpris_can_be_switched_on_and_off_and_the_choice_is_kept(media_settings, tmp_path):
+    assert client.post("/api/media/settings", json={"mpris": True}).json()["mpris"] is True
+    assert media_settings == ["start"] and media.mpris_enabled() is True
+    media_settings.clear()
+    with TestClient(m.app, base_url="http://127.0.0.1:8765"):   # next start: published right away
+        assert media_settings == ["start"]
+    assert client.post("/api/media/settings", json={"mpris": False}).json()["mpris"] is False
+    assert media_settings[-1] == "stop" and media.mpris_enabled() is False
+    (tmp_path / "media.json").write_text("{broken")
+    assert media.mpris_enabled() is False                                            # a broken file means off
+
+
+def test_the_mpris_position_runs_on_between_the_pages_reports(monkeypatch):
+    """The page reports every few seconds; a panel asking in between gets the position as it is now."""
+    now = [1000.0]
+    monkeypatch.setattr(media.time, "monotonic", lambda: now[0])
+    b = media.Bridge()
+    b.update(media.MediaState(status="Playing", length=180, position=42))
+    now[0] += 3.5
+    assert b.position() == 45.5
+    now[0] += 500
+    assert b.position() == 180                                                       # never past the end
+    b.update(media.MediaState(status="Paused", length=180, position=60))
+    now[0] += 10
+    assert b.position() == 60                                                        # paused: stands still
 
 
 # ---------- server-wide search (Live mode) ----------

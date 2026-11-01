@@ -520,6 +520,7 @@ def test_media_keys_control_playback_and_the_panel_sees_the_track(page, api):
     reported, keys = [], []
     api.routes["media/state"] = lambda req: reported.append(__import__("json").loads(req.post_data)) or {"ok": True}
     api.routes["media/command"] = lambda req: {"command": keys.pop(0) if keys else None}
+    api.routes["media/settings"] = {"mpris": True, "active": True, "available": True, "error": ""}
     start_cached_with_player(page, api, [dict(track(i, album_artist="Band"), id=f"c{i}") for i in (1, 2)])
     page.dblclick("[data-item=c1]"); page.wait_for_timeout(200)
     keys.append("next")                                                                     # media key "next"
@@ -975,3 +976,98 @@ def test_concert_mode_shows_the_cover_of_the_header_display(page, api):
     assert page.evaluate("$('#concertCover').classList.contains('nocover')") is False
     box = page.evaluate("(() => { const r = $('#concertCover').getBoundingClientRect(); return [r.width, r.height] })()")
     assert box[0] > 100 and box[0] == box[1]   # a square with a real height of its own (older Qt WebEngine has no aspect-ratio)
+
+
+# ---------- idle load (fewer CPU wakeups) ----------
+
+def set_hidden(page, hidden):
+    page.evaluate("""h => { Object.defineProperty(document, 'hidden', {configurable: true, get: () => h});
+                            document.dispatchEvent(new Event('visibilitychange')) }""", hidden)
+
+
+def test_background_polls_slow_down_while_hidden_and_are_never_doubled(page, api):
+    api.routes.update({"/capabilities": {"supported": False}})
+    open_app(page)
+    select_renderer(page)
+    page.wait_for_timeout(300)
+    page.evaluate("""() => { for (let i = 0; i < 5; i++) for (const h of [true, false]) {   // minimize / restore while the polls run:
+                               Object.defineProperty(document, 'hidden', {configurable: true, get: () => h});   // each runs at once, but only once
+                               document.dispatchEvent(new Event('visibilitychange')) } }""")
+    page.wait_for_timeout(100)
+    api.requests.clear()
+    page.wait_for_timeout(3400)
+    assert sum("/capabilities" in r for r in api.requests) == 1   # every 3 s, not 6 loops side by side
+    set_hidden(page, True)
+    page.wait_for_timeout(100)
+    api.requests.clear()
+    page.wait_for_timeout(7000)
+    assert sum("/capabilities" in r for r in api.requests) <= 1   # 12 s while hidden (one may still have been due)
+    api.requests.clear()
+    set_hidden(page, False)
+    page.wait_for_timeout(200)
+    assert sum("/capabilities" in r for r in api.requests) == 1   # back: brought up to date at once
+
+
+def test_concert_mode_and_the_clock_only_tick_when_someone_can_see_them(page, api):
+    open_app(page)
+    page.evaluate("""() => { window.__ticks = {concert: 0, clock: 0};
+                            const c = drawConcert; drawConcert = () => { __ticks.concert++; c() };
+                            const d = drawProgress; drawProgress = () => { __ticks.clock++; d() } }""")
+    page.wait_for_timeout(1200)
+    assert page.evaluate("__ticks") == {"concert": 0, "clock": 0}   # closed, nothing playing: no wakeups at all
+    page.evaluate("setProgress(30, 120, true, true)")
+    page.keyboard.press("Control+k")
+    page.wait_for_selector("#concert:not(.hidden)")
+    page.evaluate("__ticks = {concert: 0, clock: 0}")
+    page.wait_for_timeout(2100)
+    t = page.evaluate("__ticks")
+    assert 1 <= t["concert"] <= 3 and 1 <= t["clock"] <= 3           # once a second, not four times
+    assert page.text_content("#concertPos") in ("0:32", "0:33")
+    page.keyboard.press("Escape")
+    page.wait_for_selector("#concert", state="hidden")
+    page.evaluate("setProgress(30, 120, false, true); __ticks = {concert: 0, clock: 0}")   # paused
+    page.wait_for_timeout(1200)
+    assert page.evaluate("__ticks") == {"concert": 0, "clock": 0}
+
+
+def test_media_keys_are_off_by_default_and_cost_nothing_then(page, api):
+    api.routes["media/settings"] = {"mpris": False, "active": False, "available": True, "error": ""}
+    start_cached_with_player(page, api, [dict(track(i, album_artist="Band"), id=f"c{i}") for i in (1, 2)])
+    page.dblclick("[data-item=c1]")
+    page.wait_for_timeout(1500)
+    assert not [r for r in api.requests if "media/state" in r or "media/command" in r]
+    page.keyboard.press("F1")
+    assert page.is_checked("#mprisToggle") is False
+
+
+def test_media_keys_can_be_switched_on_and_off_in_the_shortcuts_dialog(page, api):
+    settings = {"mpris": False, "active": False, "available": True, "error": ""}
+    def answer(req):
+        if req.method == "POST":
+            on = __import__("json").loads(req.post_data)["mpris"]
+            settings.update(mpris=on, active=on)
+        return settings
+    api.routes.update({"media/settings": answer, "media/command": {"command": None}})
+    open_app(page)
+    page.wait_for_timeout(300)
+    page.keyboard.press("F1")
+    page.check("#mprisToggle")
+    page.wait_for_function("mediaOn")
+    assert settings["mpris"] is True                              # saved in the backend
+    page.wait_for_timeout(400)
+    assert any("media/command" in r for r in api.requests)       # asks for commands now
+    page.uncheck("#mprisToggle")
+    page.wait_for_function("!mediaOn")
+    assert settings["mpris"] is False
+    page.wait_for_timeout(700)
+    api.requests.clear()
+    page.wait_for_timeout(1500)
+    assert not [r for r in api.requests if r.startswith("GET media/command")]   # and stops again
+
+
+def test_the_media_key_setting_says_when_the_desktop_has_no_player_service(page, api):
+    api.routes["media/settings"] = {"mpris": True, "active": False, "available": True, "error": "no session bus"}
+    open_app(page)
+    page.keyboard.press("F1")
+    page.wait_for_function("document.querySelector('#mprisNote').textContent.includes('no session bus')")
+    assert page.is_checked("#mprisToggle")

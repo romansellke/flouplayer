@@ -1,5 +1,6 @@
 """The device-side queue (OpenHome Playlist service): reading and changing it."""
 from __future__ import annotations
+import time
 import xml.etree.ElementTree as ET
 from typing import Optional
 
@@ -55,7 +56,20 @@ def _read_entries(pl,ids):
         by_id[eid]={"id":eid,"uri":child_text(e,"Uri"),"title":m.get("title") or child_text(e,"Uri"),"artist":m.get("artist",""),"album":m.get("album",""),"album_art":m.get("album_art",""),"duration":(m.get("resources") or [{}])[0].get("duration","")}
     return [by_id[i] for i in ids if i in by_id]
 
-def _playlist_source_index(prod):
+# Which source is the Playlist hardly ever changes, but reading it costs a SourceCount plus a Source per entry.
+# The queue poll (every 2 s) only asks "is the Playlist the active source?", so it uses the index remembered on the
+# service for a while. Changing the queue always reads it afresh (_activate_playlist).
+PLAYLIST_INDEX_TTL=300
+
+def _playlist_source_index(prod,cached=False):
+    hit=getattr(prod,"_flou_playlist_index",None)
+    if cached and hit and time.monotonic()-hit[0]<PLAYLIST_INDEX_TTL: return hit[1]
+    idx=_read_playlist_source_index(prod)
+    try: prod._flou_playlist_index=(time.monotonic(),idx)
+    except Exception: pass
+    return idx
+
+def _read_playlist_source_index(prod):
     count=int(prod.SourceCount().get("Value",0))
     for i in range(count):
         try:
@@ -67,7 +81,7 @@ def _playlist_active(d):
     prod=peer_service(d,["product"])
     if not prod: return True  # no Product service: assume the Playlist is usable directly
     try:
-        return int(prod.SourceIndex().get("Value",-1))==_playlist_source_index(prod)
+        return int(prod.SourceIndex().get("Value",-1))==_playlist_source_index(prod,cached=True)
     except Exception:
         return False
 

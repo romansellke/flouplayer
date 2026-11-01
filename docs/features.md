@@ -110,6 +110,7 @@ explains each point in detail.
   `./packaging/install.sh`; only one instance runs at a time
 - **Media keys** and the panel's player controls / sound menu (MPRIS, Linux),
   also with the window in the background; the panel shows track and cover
+  (off by default, switched on in the keyboard shortcuts overview)
 - Remembers the chosen media server and output device and reconnects at start
 - **Keyboard shortcuts** for playback, volume, seeking, navigation, with a
   built-in overview (Ctrl/⌘+/ or F1)

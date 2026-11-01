@@ -37,6 +37,7 @@ on other hardware.
 | Library cache (Library mode) | `~/.cache/flou_player/library.json` |
 | Known media servers and players (for reconnecting at startup) | `~/.cache/flou_player/devices.json` |
 | TIDAL login (access and refresh token, readable by your user only) | `~/.cache/flou_player/tidal.json` |
+| Media keys / panel player controls (MPRIS) on or off | `~/.cache/flou_player/media.json` |
 | Crash log | `~/.cache/flou_player/crash.log` |
 | Installed app | `~/.local/share/flou-player` |
 | Window settings (theme, visible columns, cover size, Live/Library choice, collapsed browser, folded Radio search bar, chosen media server and output device) | the app window's web profile under `~/.local/share/flou-player/webview` |

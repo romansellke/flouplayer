@@ -49,7 +49,7 @@ app and includes one router per topic; the rest is split like this:
 | `playlist.py` | The device queue (OpenHome Playlist) |
 | `tidal.py` | TIDAL: login (tidalapi), search, albums, artists, the device's TIDAL login (OpenHome Credentials) |
 | `radio.py` | Radio: station search (radio-browser.info), favourites and own URLs (`radio.json`), DIDL for live items |
-| `media.py` | Media keys: the MPRIS player on the session D-Bus (Linux) and the state/command bridge to the page |
+| `media.py` | Media keys: the MPRIS player on the session D-Bus (Linux, off unless switched on), its on/off setting, and the state/command bridge to the page |
 
 Modules share the device list through `app.state.devices`; change it in place
 (never rebind it), because other modules hold a reference to the same dict.
