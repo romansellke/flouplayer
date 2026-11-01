@@ -24,7 +24,7 @@ from app import __version__, control, devices as devices_api, library, media, op
 STATIC_DIR=Path(__file__).resolve().parent/"static"
 @contextlib.asynccontextmanager
 async def lifespan(_app):
-    await media.start_mpris()   # media keys / panel player controls (Linux, if a session D-Bus is there)
+    if media.mpris_enabled(): await media.start_mpris()   # media keys / panel player controls: off unless switched on
     yield
     await media.stop_mpris()
 

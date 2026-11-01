@@ -563,6 +563,37 @@ def test_mpris_player_forwards_keys_and_shows_the_current_track():
     assert emitted == []                                                             # the position alone is polled, not signalled
 
 
+@pytest.fixture
+def media_settings(monkeypatch, tmp_path):
+    calls = []
+    async def start(): calls.append("start")
+    async def stop(): calls.append("stop")
+    monkeypatch.setattr(media, "SETTINGS_FILE", tmp_path / "media.json")
+    monkeypatch.setattr(media, "start_mpris", start)
+    monkeypatch.setattr(media, "stop_mpris", stop)
+    return calls
+
+
+def test_mpris_is_off_by_default_and_not_started_with_the_app(media_settings):
+    assert media.mpris_enabled() is False
+    assert client.get("/api/media/settings").json()["mpris"] is False
+    with TestClient(m.app, base_url="http://127.0.0.1:8765"):   # runs the app's startup and shutdown
+        pass
+    assert "start" not in media_settings                                             # (stopping at the end is a no-op)
+
+
+def test_mpris_can_be_switched_on_and_off_and_the_choice_is_kept(media_settings, tmp_path):
+    assert client.post("/api/media/settings", json={"mpris": True}).json()["mpris"] is True
+    assert media_settings == ["start"] and media.mpris_enabled() is True
+    media_settings.clear()
+    with TestClient(m.app, base_url="http://127.0.0.1:8765"):   # next start: published right away
+        assert media_settings == ["start"]
+    assert client.post("/api/media/settings", json={"mpris": False}).json()["mpris"] is False
+    assert media_settings[-1] == "stop" and media.mpris_enabled() is False
+    (tmp_path / "media.json").write_text("{broken")
+    assert media.mpris_enabled() is False                                            # a broken file means off
+
+
 def test_the_mpris_position_runs_on_between_the_pages_reports(monkeypatch):
     """The page reports every few seconds; a panel asking in between gets the position as it is now."""
     now = [1000.0]

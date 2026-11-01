@@ -14,18 +14,21 @@ const LOCAL_RENDERER_ID='__local__';
 // pile of overlapping requests), and `hiddenFactor` times slower while the window is hidden (minimized, another
 // workspace): the music plays on, but nobody looks at the display. When the window comes back every poll runs
 // at once, so the display is current. A poll is never doubled: kick() while one runs just lets that one finish.
+// stop() ends a poll (no timer left at all), start() runs it again at once; {on:false} creates it stopped.
 const pollers=[];
-function poll(fn,ms,hiddenFactor=4){
-  const p={timer:null,busy:false};
+function poll(fn,ms,hiddenFactor=4,{on=true}={}){
+  const p={timer:null,busy:false,on};
   p.kick=async()=>{
     clearTimeout(p.timer); p.timer=null;
-    if(p.busy) return;              // the running one schedules the next
+    if(p.busy||!p.on) return;       // the running one schedules the next
     p.busy=true;
     try{ await fn() }catch(e){}
     finally{ p.busy=false }
-    p.timer=setTimeout(p.kick,document.hidden?ms*hiddenFactor:ms);
+    if(p.on) p.timer=setTimeout(p.kick,document.hidden?ms*hiddenFactor:ms);
   };
-  p.timer=setTimeout(p.kick,ms);
+  p.stop=()=>{ p.on=false; clearTimeout(p.timer); p.timer=null };
+  p.start=()=>{ p.on=true; p.kick() };
+  if(on) p.timer=setTimeout(p.kick,ms);
   pollers.push(p);
   return p;
 }

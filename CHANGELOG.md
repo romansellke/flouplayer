@@ -14,6 +14,10 @@ All notable changes to Flou Player are documented here. The format follows
   pointer fade away when idle; Esc leaves it.
 
 ### Changed
+- **Media keys and the panel's player controls (MPRIS) are now off by default.** Switch them on in the
+  keyboard shortcuts overview (Ctrl/⌘+/ or F1) under *Media keys*; the choice is kept in
+  `~/.cache/flou_player/media.json` and takes effect at once, without a restart. While it is off the app
+  doesn't publish a player on D-Bus, report the playing track or wait for key presses.
 - New app icon in graphite grey: a light grey ring with a gap where the blue stroke (the
   default theme's highlight) crosses it, instead of the blue background with the gold stroke.
 - Lower idle load: about a third of the CPU wakeups with the window open and a seventh while it is

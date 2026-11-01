@@ -7,10 +7,15 @@ track to /api/media/state, and picks up commands (play/pause, next, ...) from
 the session D-Bus, which is what the media keys, the panel's sound menu and
 GNOME/Cinnamon/KDE player widgets talk to. Without D-Bus (or dbus-fast) the
 endpoints still work, there is just nobody to send commands.
+
+It is off unless switched on (Keyboard shortcuts dialog): the setting is kept
+in media.json, and while it is off the page reports nothing and asks for no
+commands, so it costs nothing.
 """
 from __future__ import annotations
 import asyncio
 import collections
+import json
 import logging
 import sys
 import time
@@ -18,6 +23,8 @@ from typing import Optional
 
 from fastapi import APIRouter
 from pydantic import BaseModel
+
+from app.state import CACHE_DIR
 
 router=APIRouter()
 log=logging.getLogger("flou.media")
@@ -72,6 +79,37 @@ class Bridge:
 
 bridge=Bridge()
 
+# ---------- On / off (off by default) ----------
+SETTINGS_FILE=CACHE_DIR/"media.json"
+
+def mpris_enabled()->bool:
+    try: return json.loads(SETTINGS_FILE.read_text(encoding="utf-8")).get("mpris") is True
+    except (OSError,ValueError,AttributeError): return False
+
+def _save_enabled(on:bool):
+    SETTINGS_FILE.parent.mkdir(parents=True,exist_ok=True)
+    tmp=SETTINGS_FILE.with_suffix(".tmp")
+    tmp.write_text(json.dumps({"mpris":on}),encoding="utf-8")
+    tmp.replace(SETTINGS_FILE)
+
+def _settings():
+    return {"mpris":mpris_enabled(),"active":_bus is not None,"available":sys.platform.startswith("linux"),"error":_error}
+
+class MediaSettings(BaseModel): mpris:bool
+
+@router.get("/api/media/settings")
+def get_settings():
+    """Whether the media keys / panel player (MPRIS) are switched on, and whether the player is published."""
+    return _settings()
+
+@router.post("/api/media/settings")
+async def set_settings(s:MediaSettings):   # async: the D-Bus connection lives on the server's loop
+    try: _save_enabled(s.mpris)
+    except OSError as e: log.warning("Could not save the media key setting: %s",e)
+    if s.mpris: await start_mpris()
+    else: await stop_mpris()
+    return _settings()
+
 @router.post("/api/media/state")
 async def set_state(s:MediaState):   # async: runs on the loop the D-Bus connection lives on
     bridge.update(s)
@@ -92,6 +130,7 @@ async def post_command(cmd:str):
 BUS_NAME="org.mpris.MediaPlayer2.flouplayer"
 OBJ_PATH="/org/mpris/MediaPlayer2"
 _bus=None
+_error=""                   # why the player could not be published, for the settings dialog
 
 def build_interfaces(b:Bridge):
     """The two MPRIS interfaces, bound to the bridge. Separate from the bus so tests can call them directly."""
@@ -188,8 +227,9 @@ def build_interfaces(b:Bridge):
 
 async def start_mpris():
     """Publish the MPRIS player; quietly does nothing where that isn't possible."""
-    global _bus
+    global _bus, _error
     if not sys.platform.startswith("linux") or _bus is not None: return
+    _error=""; bus=None
     try:
         from dbus_fast.aio import MessageBus
         from dbus_fast import BusType
@@ -201,10 +241,18 @@ async def start_mpris():
         log.info("MPRIS player published as %s",BUS_NAME)
     except Exception as e:      # no dbus-fast, no session bus (e.g. over SSH), ...
         log.info("MPRIS not available: %s",e)
+        _error=str(e) or e.__class__.__name__
+        bridge.listeners.clear()
+        if bus is not None:
+            try: bus.disconnect()
+            except Exception: pass
 
 async def stop_mpris():
+    """Take the player off the bus again (switched off, or the app quits)."""
     global _bus
+    bridge.listeners.clear()    # the signals of the old player object go nowhere now
     if _bus is not None:
         try: _bus.disconnect()
         except Exception: pass
         _bus=None
+        log.info("MPRIS player removed")
