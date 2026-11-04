@@ -474,6 +474,25 @@ def test_the_queue_poll_remembers_which_source_is_the_playlist_but_changes_read_
     assert any(name == "SourceCount" for name, _ in prod.calls) and state["source"] == 0
 
 
+def test_the_queue_poll_reads_repeat_and_shuffle_only_now_and_then(player):
+    oh, state = player
+    pl = oh.service("Playlist")
+    reads = lambda: sum(name == "Repeat" for name, _ in pl.calls)
+    first = get(f"/api/devices/{oh.udn}/queue").json()                      # no token: asks the device
+    assert (first["repeat"], first["shuffle"], reads()) == (False, False, 1)
+    state["repeat"] = True                                                  # somebody pressed Repeat elsewhere
+    assert get(f"/api/devices/{oh.udn}/queue?token={first['token']}").json()["repeat"] is False and reads() == 1
+    assert get(f"/api/devices/{oh.udn}/queue").json()["repeat"] is True and reads() == 2   # the app's own reads are fresh
+
+
+def test_the_queue_answer_carries_the_current_source(player):
+    oh, state = player
+    assert get(f"/api/devices/{oh.udn}/queue").json()["source"] == 0
+    state["source"] = 1
+    r = get(f"/api/devices/{oh.udn}/queue").json()
+    assert (r["source"], r["active"]) == (1, False)
+
+
 def test_the_volume_poll_reads_the_fixed_characteristics_only_once(player):
     oh, state = player
     vol = oh.service("Volume")
