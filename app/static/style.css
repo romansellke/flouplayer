@@ -602,7 +602,7 @@ kbd{display:inline-block;min-width:20px;padding:1px 6px;border:1px solid var(--l
 .concert{font-family:"Inter Variable",Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;position:fixed;inset:0;z-index:120;background:var(--bg);color:var(--text);display:flex;flex-direction:column;overflow:hidden;cursor:default}
 .concert.hidden{display:none}
 .concert.calm{cursor:none}
-.c-ambient{position:absolute;inset:-8%;background:center/cover no-repeat;filter:blur(70px) saturate(1.2);opacity:.35;transform:scale(1.1)}
+.c-ambient{position:absolute;inset:-8%;background:center/cover no-repeat;filter:blur(70px) saturate(1.2);opacity:.35;transform:scale(1.1);will-change:transform}   /* own layer: the blur (software-rendered without GPU) isn't redrawn when the clock beside it changes */
 .c-stage{position:relative;flex:1;min-height:0;display:flex;align-items:center;justify-content:center;gap:6vw;padding:5vh 6vw 2vh}
 .c-cover{--s:min(46vw,76vh);flex:0 0 auto;width:var(--s);height:var(--s);   /* explicit height: aspect-ratio isn't known to older Qt WebEngine */
   border-radius:calc(var(--radius)*1.5);background:var(--card) center/cover no-repeat;box-shadow:0 3vh 8vh rgba(0,0,0,.55)}

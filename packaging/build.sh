@@ -52,6 +52,11 @@ pyinstaller --noconfirm --clean \
   --copy-metadata dbus-fast --collect-submodules dbus_fast \
   --exclude-module PyQt5.QtQml --exclude-module PyQt5.QtQuick \
   --exclude-module PyQt5.QtQuickWidgets --exclude-module PyQt5.QtPositioning \
+  --exclude-module PyQt5.QtSql --exclude-module PyQt5.QtBluetooth --exclude-module PyQt5.QtNfc \
+  --exclude-module PyQt5.QtSensors --exclude-module PyQt5.QtSerialPort --exclude-module PyQt5.QtTest \
+  --exclude-module PyQt5.QtDesigner --exclude-module PyQt5.QtHelp --exclude-module PyQt5.QtXmlPatterns \
+  --exclude-module PyQt5.QtMultimedia --exclude-module PyQt5.QtMultimediaWidgets \
+  --exclude-module PyQt5.QtWebSockets --exclude-module PyQt5.QtRemoteObjects --exclude-module PyQt5.QtLocation \
   "$ROOT/desktop.py"
 
 echo

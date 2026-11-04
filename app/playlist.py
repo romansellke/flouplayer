@@ -78,12 +78,14 @@ def _read_playlist_source_index(prod):
     return None
 
 def _playlist_active(d):
+    """(is the Playlist the active source, index of the active source or None). One SourceIndex read serves both."""
     prod=peer_service(d,["product"])
-    if not prod: return True  # no Product service: assume the Playlist is usable directly
+    if not prod: return True,None  # no Product service: assume the Playlist is usable directly
     try:
-        return int(prod.SourceIndex().get("Value",-1))==_playlist_source_index(prod,cached=True)
+        now=int(prod.SourceIndex().get("Value",-1))
+        return now==_playlist_source_index(prod,cached=True),now
     except Exception:
-        return False
+        return False,None
 
 def _activate_playlist(d):
     prod=peer_service(d,["product"])
@@ -91,6 +93,18 @@ def _activate_playlist(d):
     idx=_playlist_source_index(prod)
     if idx is None: raise HTTPException(400,"This device has no Playlist source")
     if int(prod.SourceIndex().get("Value",-1))!=idx: prod.SetSourceIndex(Value=idx)
+
+# Repeat and shuffle change when somebody presses them, not with the track: the queue poll (every 2 s) reads them
+# again only after this long. A request without a token (the app's own changes and its first read) always asks the device.
+MODES_TTL=10
+
+def _modes(pl,fresh=False):
+    hit=getattr(pl,"_flou_modes",None)
+    if hit and not fresh and time.monotonic()-hit[0]<MODES_TTL: return hit[1]
+    modes=(bool(_val(pl.Repeat())),bool(_val(pl.Shuffle())))
+    try: pl._flou_modes=(time.monotonic(),modes)
+    except Exception: pass
+    return modes
 
 @router.get("/api/devices/{device_id}/queue")
 def get_queue(device_id:str,token:Optional[int]=None):
@@ -102,9 +116,10 @@ def get_queue(device_id:str,token:Optional[int]=None):
     if not pl: raise _no_playlist(d)
     try:
         ids,tok=_id_array(pl)
-        out={"supported":True,"token":tok,"active":_playlist_active(d),"state":_val(pl.TransportState()),"current_id":int(_val(pl.Id()) or 0)}
+        active,source=_playlist_active(d)
+        out={"supported":True,"token":tok,"active":active,"source":source,"state":_val(pl.TransportState()),"current_id":int(_val(pl.Id()) or 0)}
         try:
-            out["repeat"]=bool(_val(pl.Repeat())); out["shuffle"]=bool(_val(pl.Shuffle()))
+            out["repeat"],out["shuffle"]=_modes(pl,fresh=token is None)
         except Exception: pass
         tm=peer_service(d,["time"])
         if tm:

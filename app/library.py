@@ -6,6 +6,7 @@ import os
 import time
 
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from app.didl import browse_all, is_audio, parse_didl, pick_scan_root, track_key
@@ -23,6 +24,35 @@ def load_cached_library():
     except Exception:
         return None
 
+def _meta_file():
+    return CACHE_FILE.with_name("library.meta.json")
+
+def _write_meta(data):
+    """The few fields /api/library/changed needs, next to the library, so that check (every 5 minutes) doesn't
+    have to parse the whole library. It records the library file's mtime: a meta file that doesn't match the
+    library file (an older version, a crash between the two writes) is ignored."""
+    meta=_meta_file(); tmp=meta.with_suffix(".tmp")
+    try:
+        tmp.write_text(json.dumps({"device_id":data.get("device_id"),"system_update_id":data.get("system_update_id"),
+                                   "mtime_ns":CACHE_FILE.stat().st_mtime_ns}),encoding="utf-8")
+        os.replace(tmp,meta)
+    except Exception:
+        try: tmp.unlink(missing_ok=True)
+        except Exception: pass
+
+def load_cached_meta():
+    """device_id and system_update_id of the saved library, or None if there is none. Reads the small meta file;
+    only without a matching one (first start after an update) the library itself is read once and the meta written."""
+    try:
+        meta=json.loads(_meta_file().read_text(encoding="utf-8"))
+        if meta.get("mtime_ns")==CACHE_FILE.stat().st_mtime_ns: return meta
+    except Exception:
+        pass
+    data=load_cached_library()
+    if not data: return None
+    _write_meta(data)
+    return {"device_id":data.get("device_id"),"system_update_id":data.get("system_update_id")}
+
 def save_cached_library(data):
     # Caching is a convenience, never a reason to fail the request that
     # produced the data -- swallow any disk error.
@@ -37,19 +67,22 @@ def save_cached_library(data):
     except Exception:
         try: tmp.unlink(missing_ok=True)
         except Exception: pass
+        return
+    _write_meta(data)
 
 @router.get("/api/library/cached")
 def get_cached_library():
     """Returns the last scanned library from disk, if any -- lets the app
-    show the library again right after starting, without a fresh scan."""
-    cached=load_cached_library()
-    if not cached: raise HTTPException(404,"No cached library yet")
-    return cached
+    show the library again right after starting, without a fresh scan.
+    The file is sent as it is: parsing and re-serialising a large library would only cost time and memory."""
+    if not CACHE_FILE.is_file(): raise HTTPException(404,"No cached library yet")
+    return FileResponse(CACHE_FILE,media_type="application/json",headers={"Cache-Control":"no-cache"})
 
 @router.delete("/api/library/cached")
 def clear_cached_library():
     try:
         CACHE_FILE.unlink(missing_ok=True)
+        _meta_file().unlink(missing_ok=True)
     except Exception as e:
         raise HTTPException(500,f"Could not clear cache: {e}")
     return {"ok":True}
@@ -72,7 +105,7 @@ def system_update_id(s):
 def library_changed(device_id:str):
     """Whether the media server's content changed since the saved library was scanned,
     so the app can offer a fresh scan instead of the user guessing."""
-    cached=load_cached_library()
+    cached=load_cached_meta()
     if not cached or cached.get("system_update_id") is None: return {"known":False}
     if cached.get("device_id") not in (None,device_id): return {"known":False}   # scanned from another server
     d=devices.get(device_id)

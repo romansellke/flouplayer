@@ -6,6 +6,16 @@ All notable changes to Flou Player are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+- Less work in the background, no change in what you see:
+  - The check whether the media server changed (every 5 minutes) reads a small `library.meta.json` next to
+    the saved library instead of parsing the whole library; the library is sent to the window as the file it is.
+  - The queue poll looks the playing track up in the library only when the track or the list shown changes,
+    and reads repeat/shuffle from the device every 10 seconds (at once after your own changes).
+  - While the queue plays, the stream details and capabilities of the device are asked for when the track or
+    source changes (and every 20 seconds), and the source poll rests while the queue poll reports the source.
+  - Plain `uvicorn` instead of `uvicorn[standard]`; the packaged app leaves out more unused Qt modules.
+
 ## [0.21.0] - 2026-11-01
 
 ### Added

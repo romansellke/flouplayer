@@ -474,6 +474,25 @@ def test_the_queue_poll_remembers_which_source_is_the_playlist_but_changes_read_
     assert any(name == "SourceCount" for name, _ in prod.calls) and state["source"] == 0
 
 
+def test_the_queue_poll_reads_repeat_and_shuffle_only_now_and_then(player):
+    oh, state = player
+    pl = oh.service("Playlist")
+    reads = lambda: sum(name == "Repeat" for name, _ in pl.calls)
+    first = get(f"/api/devices/{oh.udn}/queue").json()                      # no token: asks the device
+    assert (first["repeat"], first["shuffle"], reads()) == (False, False, 1)
+    state["repeat"] = True                                                  # somebody pressed Repeat elsewhere
+    assert get(f"/api/devices/{oh.udn}/queue?token={first['token']}").json()["repeat"] is False and reads() == 1
+    assert get(f"/api/devices/{oh.udn}/queue").json()["repeat"] is True and reads() == 2   # the app's own reads are fresh
+
+
+def test_the_queue_answer_carries_the_current_source(player):
+    oh, state = player
+    assert get(f"/api/devices/{oh.udn}/queue").json()["source"] == 0
+    state["source"] = 1
+    r = get(f"/api/devices/{oh.udn}/queue").json()
+    assert (r["source"], r["active"]) == (1, False)
+
+
 def test_the_volume_poll_reads_the_fixed_characteristics_only_once(player):
     oh, state = player
     vol = oh.service("Volume")
@@ -663,6 +682,33 @@ def test_the_app_notices_when_the_server_content_changed_since_the_scan():
     update_id[0] = 8                                                    # e.g. MinimServer rescanned new music
     assert changed() == {"known": True, "changed": True, "update_id": 8}
     assert client.get("/api/library/changed?device_id=uuid:other").json() == {"known": False}   # another server: can't tell
+    app_state.devices.clear()
+
+
+def test_the_changed_check_reads_the_small_meta_file_not_the_whole_library(monkeypatch):
+    from app import library
+    srv = media_server(tree={"0": [TRACK]}, update_id=[7])
+    devices_api._publish_devices({srv.udn: srv})
+    client.post("/api/scan", json={"device_id": srv.udn, "object_id": "0"})
+    assert json.loads(library._meta_file().read_text())["system_update_id"] == 7
+    monkeypatch.setattr(library, "load_cached_library", lambda: pytest.fail("the whole library was parsed"))
+    assert client.get(f"/api/library/changed?device_id={srv.udn}").json() == {"known": True, "changed": False, "update_id": 7}
+    client.delete("/api/library/cached")
+    assert not library._meta_file().exists()
+    app_state.devices.clear()
+
+
+def test_a_missing_or_outdated_meta_file_is_rebuilt_from_the_library():
+    from app import library
+    srv = media_server(tree={"0": [TRACK]}, update_id=[7])
+    devices_api._publish_devices({srv.udn: srv})
+    client.post("/api/scan", json={"device_id": srv.udn, "object_id": "0"})
+    url = f"/api/library/changed?device_id={srv.udn}"
+    library._meta_file().unlink()                                       # a cache written before the meta file existed
+    assert client.get(url).json()["known"] is True and library._meta_file().exists()
+    library._meta_file().write_text(json.dumps({"device_id": srv.udn, "system_update_id": 1, "mtime_ns": 0}))   # doesn't match the library file
+    assert client.get(url).json() == {"known": True, "changed": False, "update_id": 7}
+    client.delete("/api/library/cached")
     app_state.devices.clear()
 
 
