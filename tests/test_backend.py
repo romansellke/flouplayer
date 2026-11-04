@@ -685,6 +685,33 @@ def test_the_app_notices_when_the_server_content_changed_since_the_scan():
     app_state.devices.clear()
 
 
+def test_the_changed_check_reads_the_small_meta_file_not_the_whole_library(monkeypatch):
+    from app import library
+    srv = media_server(tree={"0": [TRACK]}, update_id=[7])
+    devices_api._publish_devices({srv.udn: srv})
+    client.post("/api/scan", json={"device_id": srv.udn, "object_id": "0"})
+    assert json.loads(library._meta_file().read_text())["system_update_id"] == 7
+    monkeypatch.setattr(library, "load_cached_library", lambda: pytest.fail("the whole library was parsed"))
+    assert client.get(f"/api/library/changed?device_id={srv.udn}").json() == {"known": True, "changed": False, "update_id": 7}
+    client.delete("/api/library/cached")
+    assert not library._meta_file().exists()
+    app_state.devices.clear()
+
+
+def test_a_missing_or_outdated_meta_file_is_rebuilt_from_the_library():
+    from app import library
+    srv = media_server(tree={"0": [TRACK]}, update_id=[7])
+    devices_api._publish_devices({srv.udn: srv})
+    client.post("/api/scan", json={"device_id": srv.udn, "object_id": "0"})
+    url = f"/api/library/changed?device_id={srv.udn}"
+    library._meta_file().unlink()                                       # a cache written before the meta file existed
+    assert client.get(url).json()["known"] is True and library._meta_file().exists()
+    library._meta_file().write_text(json.dumps({"device_id": srv.udn, "system_update_id": 1, "mtime_ns": 0}))   # doesn't match the library file
+    assert client.get(url).json() == {"known": True, "changed": False, "update_id": 7}
+    client.delete("/api/library/cached")
+    app_state.devices.clear()
+
+
 def test_without_an_update_id_nothing_is_claimed():
     srv = media_server(tree={"0": [TRACK]})                                 # server doesn't offer GetSystemUpdateID
     devices_api._publish_devices({srv.udn: srv})

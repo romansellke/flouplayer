@@ -114,10 +114,17 @@ $('#qRepeat').onclick=async()=>{try{await queueApi({action:'repeat',value:!queue
 let queueBusy=false;
 // Playback started from the device queue (▶ Play all, + Queue ...) never goes through playItem:
 // find the library track by its URI so the ▶ marker and the Now Playing button work too.
+// The lookup walks the whole library, so its answer is kept per URI until the list shown or the library changes
+// (the queue poll asks every 2 seconds, nearly always about the same track).
+let queueSync={uri:'',view:null,tracks:null,live:0,t:null};
 function syncNowPlayingFromQueue(cur){
   if(!cur.uri) return;
-  const hit=t=>t.resources?.some(r=>r.uri===cur.uri);
-  const t=[...state.view.byId.values()].find(hit)||state.tracks.find(hit)||liveSeen.byUri.get(cur.uri)?.t;
+  if(queueSync.uri!==cur.uri||queueSync.view!==state.view||queueSync.tracks!==state.tracks||queueSync.live!==liveSeen.byUri.size){
+    const hit=t=>t.resources?.some(r=>r.uri===cur.uri);
+    const t=[...state.view.byId.values()].find(hit)||state.tracks.find(hit)||liveSeen.byUri.get(cur.uri)?.t||null;
+    queueSync={uri:cur.uri,view:state.view,tracks:state.tracks,live:liveSeen.byUri.size,t};
+  }
+  const t=queueSync.t;
   if(!t||t.id===state.nowPlayingId) return;
   const prev=state.nowPlayingId; state.nowPlayingId=t.id;
   $('#jumpNowPlaying').disabled=false;
@@ -130,6 +137,7 @@ async function pollQueue(force=false){
     const r=await api(`/api/devices/${dev()}/queue`+(!force&&queue.token!=null?`?token=${encodeURIComponent(queue.token)}`:''));
     queue.supported=true; queue.active=r.active; queue.token=r.token;
     queue.currentId=r.current_id; queue.state=r.state||''; queue.repeat=!!r.repeat; queue.shuffle=!!r.shuffle;
+    reportSourceFromQueue(r.source);
     if(r.entries) queue.entries=r.entries;
     renderQueue();
     const cur=queue.entries.find(en=>en.id===queue.currentId);

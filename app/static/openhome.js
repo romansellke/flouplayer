@@ -48,8 +48,16 @@ $('#sourceSel').onchange=async e=>{
     if(typeof pollQueue==='function') pollQueue(true);
   }catch(x){ notify(x.message); loadSources() }
 };
+// The queue poll reads the device's current source anyway (to know whether the Playlist is active) and passes it on,
+// so the source poll can stay quiet for a few seconds after each queue answer.
+let queueSourceAt=0;
+function reportSourceFromQueue(idx){
+  if(idx==null||!sourceCount||document.activeElement===$('#sourceSel')||Date.now()-sourceChangedAt<2500) return;
+  queueSourceAt=Date.now(); sourceNow=idx; $('#sourceSel').value=String(idx);
+}
 async function pollSource(){   // follow changes made from other controllers
   const d=dev2(); if(!d||!sourceCount||document.activeElement===$('#sourceSel')||Date.now()-sourceChangedAt<2500) return;
+  if(Date.now()-queueSourceAt<6000) return;   // the queue poll reports the source as well, and is more frequent
   try{ const r=await api(`/api/devices/${encodeURIComponent(d)}/sources?light=true`); $('#sourceSel').value=String(r.current); sourceNow=r.current }catch(e){}
 }
 
@@ -82,9 +90,18 @@ $('#pinList').addEventListener('click',async e=>{
 
 // What the device really plays: codec / sample rate / bit depth / bit rate.
 const fmtKhz=hz=>`${+(hz/1000).toFixed(1)} kHz`;
-async function pollStream(){
+// The device's stream details and capabilities change when the track or the source does. While the queue is
+// playing, the background polls therefore ask only then (and now and then, in case something else changed them);
+// without an active queue (radio, pins, other controllers) they ask every time. `force` skips the check.
+const DEV_QUIET_MS=20000;
+const devSig=()=>[dev2(),sourceNow,queue.supported&&queue.active,queue.currentId,queue.state].join('|');
+const devQuiet=(last,force)=>!force&&queue.supported&&queue.active&&last.sig===devSig()&&Date.now()-last.at<DEV_QUIET_MS;
+const streamLast={sig:'',at:0}, capsLast={sig:'',at:0};
+async function pollStream(force=true){
   const d=dev2(), el=$('#npQuality');
   if(!d){ el.classList.add('hidden'); return }
+  if(devQuiet(streamLast,force)) return;
+  streamLast.sig=devSig(); streamLast.at=Date.now();
   try{
     const r=await api(`/api/devices/${encodeURIComponent(d)}/stream`);
     const parts=r.supported?[r.codec,r.sample_rate&&fmtKhz(r.sample_rate),r.bit_depth&&`${r.bit_depth} bit`,r.bit_rate&&`${Math.round(r.bit_rate/1000)} kbps`].filter(Boolean):[];
@@ -122,10 +139,12 @@ $('#powerBtn').onclick=async()=>{
 
 // Grey out what the active source can't do (e.g. pause / skip on live radio). Unknown stays enabled.
 // Next/previous only count when the device does the skipping, not our own track list.
-async function pollCaps(){
+async function pollCaps(force=true){
   const d=dev2(); const el=s=>document.querySelector(`.transport [data-action=${s}]`);
   const set=(s,off)=>el(s).classList.toggle('nocap',!!off);
   if(!d){ ['pause','next','previous'].forEach(s=>set(s,false)); return }
+  if(devQuiet(capsLast,force)) return;
+  capsLast.sig=devSig(); capsLast.at=Date.now();
   try{
     const c=await api(`/api/devices/${encodeURIComponent(d)}/capabilities`);
     const device=deviceOwnsPlayback()||(queue.supported&&queue.active);
@@ -147,7 +166,7 @@ async function firmwareLine(d){
 function refreshDeviceExtras(){ loadSources(); loadPins(); pollStream(); pollStandby(); pollCaps(); if(!dev2()) drawMute(null) }
 poll(pollSource,5000);
 poll(loadPins,60000);
-poll(pollStream,4000);
+poll(()=>pollStream(false),4000);
 poll(pollStandby,6000);
-poll(pollCaps,3000);
+poll(()=>pollCaps(false),3000);
 refreshDeviceExtras();
