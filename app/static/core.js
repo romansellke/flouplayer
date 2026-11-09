@@ -189,7 +189,7 @@ async function api(url, opt) {
     r = await fetch(url, opt);
   } catch (e) {
     if (e.name === 'AbortError') throw e;
-    throw Error('Lost connection to the Flou Player background service -- please restart Flou Player.');
+    throw Error('Lost connection to the Flou Player background service -- please restart Flou Player.', { cause: e });
   }
   // A crash in the backend answers with plain text ("Internal Server Error"), not JSON: report that, not a JSON parse error.
   const text = await r.text();
@@ -199,6 +199,7 @@ async function api(url, opt) {
   } catch (e) {
     throw Error(
       `The background service answered ${[r.status, r.statusText].filter(Boolean).join(' ')}: ${text.trim().slice(0, 200) || '(empty)'} (${url})`,
+      { cause: e },
     );
   }
   if (!r.ok) {
