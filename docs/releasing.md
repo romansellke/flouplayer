@@ -46,3 +46,17 @@ the pull request that makes it.
 4. Publish: `git push origin HEAD vX.Y.Z`. Optionally create a GitHub
    release from the tag, using the changelog section as release notes.
 5. Users update with `git pull` and `./packaging/install.sh --rebuild`.
+
+### Releasing through a pull request
+
+When the release is prepared on a branch (so CI runs on it before it reaches
+`main`), steps 2 and 3 happen there: `release.sh` makes the "Release vX.Y.Z"
+commit on the branch. Delete the tag it creates (`git tag -d vX.Y.Z`) and
+don't push it -- the tag belongs on `main`. Merge the pull request with a
+merge commit, then tag and publish on `main`:
+
+```
+git checkout main && git pull
+git tag -a vX.Y.Z -m "Flou Player X.Y.Z"
+git push origin vX.Y.Z
+```

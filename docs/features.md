@@ -29,7 +29,8 @@ explains each point in detail.
 - **Instant search** across title, artist, album artist, album, genre and year
 - Albums sorted by Album Artist, then title; grouped by album *and* album artist
 - Duplicate tracks merged (same URL, or same title/album/duration across a
-  server's views); scans stop on looping folder trees
+  server's views -- only where the server reports the duration); scans stop
+  on looping folder trees
 - **Load library** (parallel scan with live count), **Cancel**, **Clear library**;
   reloaded automatically on the next start
 - Notices when the music on the server has **changed since the scan** and
