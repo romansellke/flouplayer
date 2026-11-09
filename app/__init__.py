@@ -5,4 +5,4 @@ __version__ is the single source of truth for the version number
 packaging/release.sh, never by hand.
 """
 
-__version__ = "0.21.0"
+__version__ = "0.21.1"
