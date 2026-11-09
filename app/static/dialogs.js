@@ -105,4 +105,4 @@ $('#content').addEventListener('click',e=>{
 });
 $('#npCover').onclick=()=>openCover($('#npCover'),`${$('#playing').textContent} · ${$('#playingSub').textContent}`);
 // The cover thumbnail in the title display: hidden while there is no cover.
-function setNowCover(uri){ const c=$('#npCover'); c.style.backgroundImage=uri?`url('${uri}')`:''; c.classList.toggle('hidden',!uri) }
+function setNowCover(uri){ const c=$('#npCover'); c.style.backgroundImage=uri?`url('${cssUrl(uri)}')`:''; c.classList.toggle('hidden',!uri) }

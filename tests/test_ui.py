@@ -1071,3 +1071,23 @@ def test_the_media_key_setting_says_when_the_desktop_has_no_player_service(page,
     page.keyboard.press("F1")
     page.wait_for_function("document.querySelector('#mprisNote').textContent.includes('no session bus')")
     assert page.is_checked("#mprisToggle")
+
+
+def test_a_cover_address_cannot_add_css_of_its_own(page, api):
+    """Radio logos come from a public directory: quotes and brackets in the address must stay part of the address."""
+    evil = "http://img/a.png');position:fixed;inset:0;z-index:9999;background:url('http://img/b"
+    api.routes.update({"radio/search": {"stations": [dict(radio_station(1), logo=evil)]},
+                       "radio/favourites": {"stations": []}, "/queue": queue_api()})
+    open_app(page)
+    page.click("#radioBtn")
+    page.fill("#radioSearch", "jazz"); page.press("#radioSearch", "Enter")
+    page.wait_for_selector("tr[data-rs='0']")
+    position, z, image = page.evaluate("""() => { const s = getComputedStyle(document.querySelector("tr[data-rs='0'] .rlogo div"));
+                                                  return [s.position, s.zIndex, s.backgroundImage] }""")
+    assert position != "fixed" and z != "9999"
+    assert image == 'url("http://img/a.png%27%29;position:fixed;inset:0;z-index:9999;background:url%28%27http://img/b")'
+    assert page.evaluate("cssUrl(`a b'\"\\\\(c)\n`)") == "a%20b%27%22%5c%28c%29%0a"
+    page.evaluate(f"setNowCover({evil!r})")
+    assert page.evaluate("getComputedStyle(document.querySelector('#npCover')).position") != "fixed"
+    assert "a.png%27%29" in page.evaluate("document.querySelector('#npCover').style.backgroundImage")
+

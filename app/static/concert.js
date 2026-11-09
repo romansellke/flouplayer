@@ -57,7 +57,7 @@ function drawConcert(){
     $('#concertTitle').textContent=m?m.title:'Flou Player';
     $('#concertArtist').textContent=m?m.artist:'Nothing is playing';
     $('#concertAlbum').textContent=m?[m.album,(full?.date||'').slice(0,4)].filter(Boolean).join(' · '):'';
-    for(const id of ['concertCover','concertAmbient']) $('#'+id).style.backgroundImage=art?`url("${art.replace(/"/g,'%22')}")`:'';
+    for(const id of ['concertCover','concertAmbient']) $('#'+id).style.backgroundImage=art?`url("${cssUrl(art)}")`:'';
     $('#concertCover').classList.toggle('nocover',!art);
     const grade=concertGrade(q);
     $('#concertQuality').classList.toggle('hidden',!q);
