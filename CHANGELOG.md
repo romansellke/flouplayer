@@ -15,6 +15,13 @@ All notable changes to Flou Player are documented here. The format follows
   - While the queue plays, the stream details and capabilities of the device are asked for when the track or
     source changes (and every 20 seconds), and the source poll rests while the queue poll reports the source.
   - Plain `uvicorn` instead of `uvicorn[standard]`; the packaged app leaves out more unused Qt modules.
+- Development: the Python code is checked with Ruff (`ruff check .`, rules in `ruff.toml`), also in CI.
+
+### Fixed
+- A cover or radio logo address with quotes or brackets in it could add CSS of its own to the page (radio
+  logos come from the public station directory). Such characters are now encoded in every cover address.
+- Library scan: tracks with the same title and album are no longer taken for the same track when the
+  media server reports no length for them (for example two "Intro" on two "Greatest Hits").
 
 ## [0.21.0] - 2026-11-01
 

@@ -95,7 +95,8 @@ SOURCE_INFO=_source_info()
 
 @app.get("/api/app/about")
 def about():
-    import platform, importlib.metadata as md
+    import platform
+    import importlib.metadata as md
     deps={}
     for name in ["fastapi","uvicorn","upnpclient","av","tidalapi","pywebview","PyQt5","dbus-fast"]:
         try: deps[name]=md.version(name)

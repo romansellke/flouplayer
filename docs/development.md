@@ -110,5 +110,20 @@ else answers 404. If Chromium is installed elsewhere, point
 
 ### Continuous integration
 
-`.github/workflows/tests.yml` runs the whole suite on every pull request and
-on pushes to `main`.
+`.github/workflows/tests.yml` runs the lint check and the whole suite on every
+pull request and on pushes to `main`.
+
+## Lint
+
+```
+ruff check .          # what CI runs
+ruff check --fix .    # also repairs what it safely can (unused imports, ...)
+```
+
+[Ruff](https://docs.astral.sh/ruff/) checks the Python code for mistakes:
+undefined names, unused imports and variables, misplaced imports and the
+likely bugs flake8-bugbear knows. The rules are in `ruff.toml`, with the reason
+next to every exception. Only rules that point at mistakes are on; the compact
+layout of the code is left as it is and the formatter (`ruff format`) is not
+used. The JavaScript has no lint step: the browser tests fail on any error the
+page throws.

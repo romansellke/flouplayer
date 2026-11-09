@@ -219,7 +219,11 @@ function setBusy(btn,on,label){
 function albumKey(t){return (t.album||'Unknown Album')+'\u0001'+(t.album_artist||'')}
 
 function esc(v=''){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function cover(uri){return uri?`style="background-image:url('${esc(uri)}')"`:''}
+// A URL inside a CSS url('...'): quotes, brackets, backslashes and whitespace are percent-encoded, so a cover or
+// logo address (radio logos come from a public directory) can never end the string and add CSS of its own.
+// esc() alone doesn't do that: the browser turns &#39; back into ' before it reads the style.
+function cssUrl(uri){return String(uri).replace(/['"\\()\s]/g,c=>'%'+c.charCodeAt(0).toString(16).padStart(2,'0'))}
+function cover(uri){return uri?`style="background-image:url('${esc(cssUrl(uri))}')"`:''}
 
 // ---------- Interface zoom ----------
 // The whole page can be scaled (Ctrl/⌘ + / - / 0, remembered), for screens where the desktop's own scaling

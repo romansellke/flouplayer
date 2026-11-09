@@ -71,7 +71,8 @@ def test_restore_reconnects_by_url_and_skips_dead_devices(monkeypatch):
 def test_discover_does_not_wait_for_a_device_that_answers_ssdp_but_not_http(monkeypatch):
     """After a network outage a device can still answer the SSDP search while its description never
     arrives; the search must return the others in time instead of hanging for minutes."""
-    import threading, time
+    import threading
+    import time
     from types import SimpleNamespace
     oh, av, _ = linn_player()
     release = threading.Event()
@@ -333,6 +334,16 @@ def test_scan_merges_a_track_whose_views_differ_in_artist_number_and_duration_fo
     srv = media_server(tree={"0": [folder("a", "Genres"), folder("b", "Composers")],
                              "a": [t("1", "Band", "1", "0:03:00")], "b": [t("2", "Band feat. X", "", "0:03:00.000")]})
     assert scan(srv).json()["count"] == 1
+
+
+def test_scan_keeps_same_named_tracks_when_the_server_gives_no_length():
+    """Title and album alone don't make two tracks the same one: without a length nothing is merged by tags."""
+    srv = media_server(tree={"0": [folder("a", "Folders")],
+                             "a": [audio("t1", title="Intro", album="Greatest Hits", duration="", uri="u1"),
+                                   audio("t2", title="Intro", album="Greatest Hits", duration="", uri="u2"),
+                                   audio("t3", title="Intro", album="Greatest Hits", duration="", uri="u1")]})   # the same file again
+    r = scan(srv).json()
+    assert r["count"] == 2 and r["stats"]["merged_by_tags"] == 0 and r["stats"]["duplicates"] == 1
 
 
 def test_scan_prefers_a_flat_songs_view_or_the_album_view_over_walking_every_view():

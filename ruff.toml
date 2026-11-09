@@ -1,0 +1,21 @@
+# Lint rules for `ruff check .` (see docs/development.md). Only rules that point at mistakes are on:
+# the code's compact layout (several statements on a line, long lines) is left alone, and the formatter
+# (`ruff format`) is not used.
+
+[lint]
+select = [
+    "F",    # pyflakes: undefined names, unused imports and variables
+    "E4",   # imports: several on one line, or below other code without a reason
+    "E9",   # syntax errors
+    "B",    # bugbear: likely bugs (mutable default arguments, loop variables caught by a closure, ...)
+    "PLE",  # pylint errors
+]
+ignore = [
+    "B904",  # `raise HTTPException(...)` inside `except`: the message already carries the cause
+]
+
+[lint.per-file-ignores]
+# dbus-fast reads the annotations as D-Bus type signatures ("s", "as", "a{sv}"), not as Python types.
+"app/media.py" = ["F821", "F722"]
+# The imports come after HOME is pointed at a temporary directory, on purpose.
+"tests/conftest.py" = ["E402"]

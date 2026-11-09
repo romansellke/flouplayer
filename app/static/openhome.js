@@ -66,7 +66,7 @@ async function loadPins(){
   if(!d){ box.classList.add('hidden'); updateDevTools(); return }
   try{
     const r=await api(`/api/devices/${encodeURIComponent(d)}/pins`);
-    const art=u=>/^https?:/i.test(u||'')?` style="background-image:url('${esc(u)}')"`:'';
+    const art=u=>/^https?:/i.test(u||'')?` style="background-image:url('${esc(cssUrl(u))}')"`:'';
     $('#pinList').innerHTML=r.pins.map(p=>`<button type="button" class="pin" data-slot="${p.slot}" title="${esc(p.title)}"><span class="pinart"${art(p.artwork)}></span><span class="pintitle">${esc(p.title)}</span></button>`).join('');
     box.classList.toggle('hidden',!(r.supported&&r.pins.length));
   }catch(e){ box.classList.add('hidden') }

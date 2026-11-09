@@ -98,7 +98,8 @@ def track_key(item):
     """Identity of a track independent of where the server lists it. Servers
     that show the same file under several views (or give each view its own
     object id / stream URL) would otherwise deliver every track many times.
-    None when the tags are too thin to tell tracks apart safely."""
+    None when the tags are too thin to tell tracks apart safely -- also without a length: title and album
+    alone would merge different tracks (two "Intro" on two "Greatest Hits", movements of a box set)."""
     title=(item.get("title") or "").strip().lower()
     album=(item.get("album") or "").strip().lower()
     artist=(item.get("album_artist") or item.get("artist") or "").strip().lower()
@@ -106,7 +107,9 @@ def track_key(item):
     duration=(item["resources"][0].get("duration") or "") if item.get("resources") else ""
     # Not the artist or track number: views of the same server often deliver them differently
     # (artist vs. album artist, a missing number), which would let every view's copy through.
-    return (title,album,"" if album else artist,duration_seconds(duration))
+    seconds=duration_seconds(duration)
+    if seconds is None: return None
+    return (title,album,"" if album else artist,seconds)
 
 def browse_all(s, object_id):
     """Fetch all children of a container (with pagination). A blocking
