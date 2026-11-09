@@ -157,9 +157,28 @@ def stop_old_instance() -> bool:
 
 @app.post("/api/app/quit")
 def quit_app():
-    """Called by a newer launch to replace this (outdated) instance."""
-    threading.Timer(0.3, shutdown_and_exit).start()
+    """Called by a newer launch to replace this (outdated) instance.
+
+    Closes the window: webview.start() in main() then returns and main() shuts down on the main thread, the
+    only one that may touch Qt (see shutdown_and_exit). Without a window (browser fallback), or if the window
+    doesn't close, the process is simply ended."""
+    threading.Timer(0.3, _close_or_exit).start()
     return {"ok": True}
+
+
+QUIT_GRACE_SECONDS = 3.0  # less than a new launch waits for the port (stop_old_instance)
+
+
+def _close_or_exit():
+    windows = list(webview.windows)
+    if not windows:
+        os._exit(0)
+    threading.Timer(QUIT_GRACE_SECONDS, os._exit, args=(0,)).start()
+    for w in windows:
+        try:
+            w.destroy()
+        except Exception:
+            pass
 
 
 @app.post("/api/app/focus")

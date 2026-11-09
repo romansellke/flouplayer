@@ -204,13 +204,15 @@ async function api(url, opt) {
   }
   if (!r.ok) {
     const d = j?.detail; // a string, or FastAPI's list of validation errors
-    throw Error(
+    const err = Error(
       typeof d === 'string'
         ? d
         : Array.isArray(d)
           ? d.map((x) => x?.msg || JSON.stringify(x)).join('; ')
           : `${r.status} ${r.statusText}`,
     );
+    err.status = r.status; // lets a caller tell "the device can't do this" (4xx) from "didn't answer this time" (502)
+    throw err;
   }
   return j;
 }
@@ -221,15 +223,24 @@ function isLocal() {
 function deviceOption(d) {
   return `<option value="${esc(d.id)}" data-icon="${esc(d.icon || '')}">${esc(d.name)}${d.model ? ' · ' + esc(d.model) : ''}</option>`;
 }
+// Filling a device list again (a new search) keeps the device that is selected, if it is still there, without a
+// 'change' event: nothing changed, so the open folder, the queue and the device readings stay as they are.
+function fillDeviceSelect(sel, html) {
+  const chosen = sel.value;
+  sel.innerHTML = html;
+  if (chosen && [...sel.options].some((o) => o.value === chosen)) sel.value = chosen;
+}
 function populateRendererSelect(devs) {
-  $('#renderer').innerHTML =
+  fillDeviceSelect(
+    $('#renderer'),
     '<option value="">Select output device</option>' +
-    `<option value="${LOCAL_RENDERER_ID}" data-icon="${ICON_LOCAL}">This computer (local speakers)</option>` +
-    devs.map(deviceOption).join('');
+      `<option value="${LOCAL_RENDERER_ID}" data-icon="${ICON_LOCAL}">This computer (local speakers)</option>` +
+      devs.map(deviceOption).join(''),
+  );
   rendererPicker.refresh();
 }
 function populateServerSelect(devs) {
-  $('#server').innerHTML = '<option value="">Select media server</option>' + devs.map(deviceOption).join('');
+  fillDeviceSelect($('#server'), '<option value="">Select media server</option>' + devs.map(deviceOption).join(''));
   serverPicker.refresh();
 }
 

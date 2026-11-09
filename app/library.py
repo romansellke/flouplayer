@@ -397,7 +397,7 @@ def browse(req: Browse):
         raise HTTPException(502, f"Browse failed: {e}")
     return {
         "items": parse_didl(r.get("Result", "")),
-        "number_returned": int(r.get("NumberReturned", 0)),
-        "total_matches": int(r.get("TotalMatches", 0)),
+        "number_returned": int(r.get("NumberReturned", 0) or 0),
+        "total_matches": int(r.get("TotalMatches", 0) or 0),
         "update_id": r.get("UpdateID"),
     }

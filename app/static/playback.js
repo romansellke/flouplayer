@@ -250,7 +250,7 @@ async function refreshVolume() {
     return;
   }
   try {
-    const v = await api(`/api/devices/${$('#renderer').value}/volume`);
+    const v = await api(`/api/devices/${encodeURIComponent($('#renderer').value)}/volume`);
     $('#volume').max = v.max;
     volCur = v.raw;
     volInfo = v.db != null ? { unity: v.unity, dbPerStep: v.db_per_step } : null;
@@ -515,7 +515,7 @@ let lastPoll = { state: null, relSec: 0, durSec: 0 };
 async function pollTransport() {
   if (!$('#renderer').value || isLocal() || (queue.supported && queue.active)) return; // an active device queue advances and reports by itself
   try {
-    const t = await api(`/api/devices/${$('#renderer').value}/transport`);
+    const t = await api(`/api/devices/${encodeURIComponent($('#renderer').value)}/transport`);
     const relSec = parseClock(t.rel_time),
       durSec = parseClock(t.duration);
     if (durSec) setProgress(relSec, durSec, t.state === 'PLAYING');

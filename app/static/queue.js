@@ -14,7 +14,7 @@ const queue = {
 };
 const dev = () => $('#renderer').value;
 async function queueApi(body) {
-  return api(`/api/devices/${dev()}/queue`, {
+  return api(`/api/devices/${encodeURIComponent(dev())}/queue`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -242,6 +242,8 @@ function syncNowPlayingFromQueue(cur) {
   $('#jumpNowPlaying').disabled = false;
   markNowPlaying(prev, t.id);
 }
+const QUEUE_MAX_MISSES = 3;
+let queueMisses = 0; // polls in a row that failed without the device saying it has no queue
 async function pollQueue(force = false) {
   if (!dev() || isLocal()) {
     queue.supported = false;
@@ -251,12 +253,15 @@ async function pollQueue(force = false) {
   }
   if (queueBusy) return;
   queueBusy = true;
+  const asked = dev();
   try {
     const r = await api(
-      `/api/devices/${dev()}/queue` +
+      `/api/devices/${encodeURIComponent(dev())}/queue` +
         (!force && queue.token != null ? `?token=${encodeURIComponent(queue.token)}` : ''),
     );
+    if (dev() !== asked) return; // another device was chosen meanwhile: this answer is about the old one
     queue.supported = true;
+    queueMisses = 0;
     queue.active = r.active;
     queue.token = r.token;
     queue.currentId = r.current_id;
@@ -279,6 +284,13 @@ async function pollQueue(force = false) {
       clearProgress();
     }
   } catch (e) {
+    // "No playlist on this device" (400) or "device not found" (404) is an answer: there is no queue.
+    // Anything else (the device didn't answer this once, a network hiccup) is not: the queue stays as it is,
+    // and only after QUEUE_MAX_MISSES in a row it counts as gone.
+    if (dev() !== asked) return;
+    const gone = e.status === 400 || e.status === 404;
+    if (!gone && queue.supported && ++queueMisses < QUEUE_MAX_MISSES) return;
+    queueMisses = 0;
     queue.supported = false;
     queue.active = false;
     queue.entries = [];
@@ -290,6 +302,10 @@ async function pollQueue(force = false) {
   }
 }
 $('#renderer').addEventListener('change', () => {
+  // another device: nothing is known about its queue yet
+  queue.supported = false;
+  queue.active = false;
+  queueMisses = 0;
   queue.token = null;
   queue.entries = [];
   pollQueue(true);

@@ -109,6 +109,16 @@ def test_discover_does_not_wait_for_a_device_that_answers_ssdp_but_not_http(monk
     assert time.time() - t0 < 5 and [d["name"] for d in r] == ["Linn Majik DSM"]
 
 
+def test_a_device_without_a_udn_gets_an_id_that_fits_into_the_api_addresses(monkeypatch):
+    srv = media_server()
+    srv.udn = None
+    monkeypatch.setattr(devices_api, "_find", lambda timeout: [srv])
+    (found,) = client.get("/api/discover").json()["devices"]
+    assert found["id"].startswith("location-") and "/" not in found["id"]
+    assert client.get(f"/api/devices/{found['id']}/services").json()["name"] == srv.friendly_name
+    assert client.get("/api/discover").json()["devices"][0]["id"] == found["id"]  # the same id on every search
+
+
 def test_restore_without_saved_devices_is_empty():
     app_state.KNOWN_DEVICES_FILE.unlink(missing_ok=True)
     assert client.post("/api/devices/restore").json() == {"devices": []}
@@ -345,6 +355,41 @@ def test_browse_pages_through_a_folder():
     t = tracks["items"][0]
     assert (t["title"], t["artist"], t["album"]) == ("Song", "Artist", "Album")
     assert t["resources"][0]["uri"] == "http://x/t1.flac"
+
+
+def test_browsing_a_folder_ends_when_the_server_ignores_the_starting_index():
+    """No TotalMatches and the same page whatever the start: without a guard the scan would page for ever."""
+    from types import SimpleNamespace
+
+    from app.didl import browse_all
+
+    xml = (
+        '<DIDL-Lite xmlns="urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/" xmlns:dc="http://purl.org/dc/elements/1.1/" '
+        'xmlns:upnp="urn:schemas-upnp-org:metadata-1-0/upnp/">'
+        + audio("t1")
+        + audio("t2", title="Other")
+        + "</DIDL-Lite>"
+    )
+    calls = []
+
+    def browse(**kw):
+        calls.append(kw["StartingIndex"])
+        assert len(calls) < 10, "browse_all keeps asking"
+        return {"Result": xml, "NumberReturned": 2, "TotalMatches": 0}
+
+    assert [i["id"] for i in browse_all(SimpleNamespace(Browse=browse), "0")] == ["t1", "t2"]
+    assert calls == [0, 2]
+
+
+def test_browse_accepts_a_server_that_leaves_the_counts_empty():
+    srv = media_server(tree={"0": [audio("t1")]})
+    cd = srv.services[0]
+    full = cd.actions["Browse"]
+    cd.actions["Browse"] = lambda **kw: dict(full(**kw), NumberReturned=None, TotalMatches=None)
+    devices_api._publish_devices({srv.udn: srv})
+    r = client.post("/api/browse", json={"device_id": srv.udn, "object_id": "0"})
+    assert r.status_code == 200 and (r.json()["number_returned"], r.json()["total_matches"]) == (0, 0)
+    assert [i["id"] for i in r.json()["items"]] == ["t1"]
 
 
 def test_scan_collects_all_tracks_and_caches_them():
@@ -635,6 +680,17 @@ def test_the_volume_poll_reads_the_fixed_characteristics_only_once(player):
     assert sum(name == "Volume" for name, _ in vol.calls) == 3  # the volume itself is read every time
 
 
+def test_setting_the_volume_reads_the_fixed_characteristics_only_once(player):
+    """The slider sends a step every 80 ms while it moves: the device's maximum is not asked for each time."""
+    oh, state = player
+    vol = oh.service("Volume")
+    for value in (40, 42, 44):
+        assert control(oh, "volume", value).status_code == 200
+    assert state["volume"] == 44
+    assert sum(name == "Characteristics" for name, _ in vol.calls) == 1
+    assert sum(name == "SetVolume" for name, _ in vol.calls) == 3
+
+
 def test_queue_unknown_action_and_missing_service(player):
     oh, _ = player
     assert queue(oh, action="nope").status_code == 400
@@ -699,6 +755,25 @@ def test_media_commands_wait_in_line_for_the_page():
     assert client.post("/api/media/command/rm -rf").json() == {"ok": False}  # unknown commands are dropped
     assert client.get("/api/media/command?wait=0").json() == {"command": "next"}
     assert client.get("/api/media/command?wait=0").json() == {"command": None}
+
+
+def test_a_media_key_goes_to_the_page_that_asked_last():
+    """After a reload the old page's long poll is still open for a while; the command must reach the new page."""
+    import asyncio
+
+    async def run():
+        b = media.Bridge()
+        old = asyncio.ensure_future(b.next_command(5))
+        await asyncio.sleep(0)
+        new = asyncio.ensure_future(b.next_command(5))
+        await asyncio.sleep(0)
+        b.send("next")
+        assert await asyncio.wait_for(new, 1) == "next"
+        assert not old.done()
+        b.send("pause")  # with the new page busy, the next one still reaches a page that waits
+        assert await asyncio.wait_for(old, 1) == "pause"
+
+    asyncio.run(run())
 
 
 def test_mpris_player_forwards_keys_and_shows_the_current_track():

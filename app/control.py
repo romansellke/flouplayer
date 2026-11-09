@@ -8,6 +8,7 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
+from app.devices import _characteristics
 from app.didl import parse_didl
 from app.state import devices
 from app.upnp import _openhome_service, _wake, av_transport, find_volume_service
@@ -153,7 +154,8 @@ def control(req: Control):
             if not vol:
                 raise HTTPException(400, "No volume service on this device")
             if kind == "openhome":
-                vmax = int(vol.Characteristics().get("VolumeMax", 100)) or 100
+                # cached: the slider sends a step every 80 ms while it moves, and the maximum never changes
+                vmax = int(_characteristics(vol).get("VolumeMax", 100)) or 100
                 vol.SetVolume(Value=max(0, min(vmax, req.value or 0)))
             else:
                 vol.SetVolume(InstanceID=0, Channel="Master", DesiredVolume=max(0, min(100, req.value or 0)))
