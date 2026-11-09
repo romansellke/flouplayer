@@ -1,6 +1,7 @@
 """The media server library: browsing a folder, scanning everything, and the on-disk cache of the last scan."""
 
 from __future__ import annotations
+
 import concurrent.futures as cf
 import json
 import os
@@ -35,7 +36,7 @@ class Browse(BaseModel):
 
 def load_cached_library():
     try:
-        with open(CACHE_FILE, "r", encoding="utf-8") as f:
+        with open(CACHE_FILE, encoding="utf-8") as f:
             return json.load(f)
     except Exception:
         return None

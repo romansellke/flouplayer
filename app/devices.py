@@ -1,6 +1,7 @@
 """Device discovery, reconnecting to known devices, and per-device readings (services, volume, transport position)."""
 
 from __future__ import annotations
+
 import concurrent.futures as cf
 import json
 import os
@@ -10,7 +11,7 @@ import upnpclient
 from fastapi import APIRouter, HTTPException
 
 from app.state import CACHE_DIR, KNOWN_DEVICES_FILE, _merged_primary, devices, lock
-from app.upnp import _has_openhome_product, _host, device_json, av_transport, find_volume_service, peer_devices
+from app.upnp import _has_openhome_product, _host, av_transport, device_json, find_volume_service, peer_devices
 
 router = APIRouter()
 

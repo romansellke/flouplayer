@@ -1,6 +1,7 @@
 """The device-side queue (OpenHome Playlist service): reading and changing it."""
 
 from __future__ import annotations
+
 import time
 import xml.etree.ElementTree as ET
 from typing import Optional

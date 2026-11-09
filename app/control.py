@@ -1,14 +1,15 @@
 """Transport, volume, mute, standby, source and pin commands (POST /api/control)."""
 
 from __future__ import annotations
+
 import time
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from app.state import devices
 from app.didl import parse_didl
+from app.state import devices
 from app.upnp import _openhome_service, _wake, av_transport, find_volume_service
 
 router = APIRouter()
@@ -45,7 +46,10 @@ def minimal_didl(metadata):
     res = (item.get("resources") or [{}])[0]
     if not res.get("uri"):
         return ""
-    esc = lambda v: (v or "").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
+
+    def esc(v):
+        return (v or "").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
+
     return (
         '<DIDL-Lite xmlns="urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/" xmlns:dc="http://purl.org/dc/elements/1.1/" '
         'xmlns:upnp="urn:schemas-upnp-org:metadata-1-0/upnp/"><item id="0" parentID="-1" restricted="1">'

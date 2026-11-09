@@ -14,6 +14,7 @@ commands, so it costs nothing.
 """
 
 from __future__ import annotations
+
 import asyncio
 import collections
 import json
@@ -178,8 +179,8 @@ _error = ""  # why the player could not be published, for the settings dialog
 
 def build_interfaces(b: Bridge):
     """The two MPRIS interfaces, bound to the bridge. Separate from the bus so tests can call them directly."""
-    from dbus_fast.service import ServiceInterface, method, dbus_property, PropertyAccess
     from dbus_fast import Variant
+    from dbus_fast.service import PropertyAccess, ServiceInterface, dbus_property, method
 
     class Root(ServiceInterface):
         def __init__(self):
@@ -355,8 +356,8 @@ async def start_mpris():
     _error = ""
     bus = None
     try:
-        from dbus_fast.aio import MessageBus
         from dbus_fast import BusType
+        from dbus_fast.aio import MessageBus
 
         bus = await MessageBus(bus_type=BusType.SESSION).connect()
         root, player = build_interfaces(bridge)

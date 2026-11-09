@@ -2,21 +2,28 @@
 #   ruff format .     lays the code out
 #   ruff check .      looks for mistakes
 line-length = 120
+target-version = "py39"   # the oldest Python the dependencies run on
 
 [lint]
 select = [
     "F",    # pyflakes: undefined names, unused imports and variables
-    "E4",   # imports: several on one line, or below other code without a reason
-    "E9",   # syntax errors
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "I",    # import order
     "B",    # bugbear: likely bugs (mutable default arguments, loop variables caught by a closure, ...)
+    "UP",   # pyupgrade: outdated syntax
+    "SIM",  # simpler ways to write the same thing
     "PLE",  # pylint errors
 ]
 ignore = [
-    "B904",  # `raise HTTPException(...)` inside `except`: the message already carries the cause
+    "E501",    # line length is the formatter's business; what it can't wrap (long strings, comments) stays
+    "B904",    # `raise HTTPException(...)` inside `except`: the message already carries the cause
+    "UP045",   # Optional[int] stays: pydantic reads the annotations at run time, and `int | None` needs Python 3.10
+    "SIM105",  # try/except/pass reads as well as contextlib.suppress
 ]
 
 [lint.per-file-ignores]
 # dbus-fast reads the annotations as D-Bus type signatures ("s", "as", "a{sv}"), not as Python types.
-"app/media.py" = ["F821", "F722"]
+"app/media.py" = ["F821", "F722", "UP037"]
 # The imports come after HOME is pointed at a temporary directory, on purpose.
 "tests/conftest.py" = ["E402"]

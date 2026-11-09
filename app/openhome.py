@@ -1,6 +1,7 @@
 """OpenHome device features: sources, pins, stream details, capabilities, standby and firmware."""
 
 from __future__ import annotations
+
 import json
 
 from fastapi import APIRouter, HTTPException
@@ -104,7 +105,10 @@ def stream_details(device_id: str):
         r = info.Details()
     except Exception as e:
         raise HTTPException(502, f"Could not read stream details: {e}")
-    num = lambda k: int(r.get(k) or 0)
+
+    def num(k):
+        return int(r.get(k) or 0)
+
     now = _now_playing(info)
     return {
         "supported": True,

@@ -33,7 +33,7 @@ def enable_crash_log():
         CRASH_LOG.parent.mkdir(parents=True, exist_ok=True)
         if CRASH_LOG.exists() and CRASH_LOG.stat().st_size > CRASH_LOG_MAX_BYTES:
             CRASH_LOG.unlink()
-        f = open(CRASH_LOG, "a", buffering=1, encoding="utf-8")
+        f = open(CRASH_LOG, "a", buffering=1, encoding="utf-8")  # noqa: SIM115 -- stays open for the crash handler
         f.write(f"\n=== Flou Player started {time.strftime('%Y-%m-%d %H:%M:%S')} (pid {os.getpid()}) ===\n")
         faulthandler.enable(file=f, all_threads=True)
         return f  # keep the file object alive for the whole process lifetime

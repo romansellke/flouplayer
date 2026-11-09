@@ -11,6 +11,7 @@ The login is TIDAL's device login (open a link, confirm, done) via the
 """
 
 from __future__ import annotations
+
 import json
 import os
 import threading

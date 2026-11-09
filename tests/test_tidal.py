@@ -7,7 +7,9 @@ import pytest
 from fastapi.testclient import TestClient
 
 import app.main as m
-from app import devices as devices_api, state as app_state, tidal
+from app import devices as devices_api
+from app import state as app_state
+from app import tidal
 from app.didl import parse_didl
 from tests.fakes import linn_player, oh
 
@@ -171,6 +173,7 @@ def test_a_device_without_credentials_service():
 
 def test_device_login_shows_link_and_code_then_logs_in(monkeypatch):
     import concurrent.futures
+
     import tidalapi
 
     fut = concurrent.futures.Future()
@@ -209,6 +212,7 @@ def test_device_login_shows_link_and_code_then_logs_in(monkeypatch):
 
 def test_an_expired_device_login_reports_the_error(monkeypatch):
     import concurrent.futures
+
     import tidalapi
 
     fut = concurrent.futures.Future()

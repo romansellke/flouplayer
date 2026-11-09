@@ -9,6 +9,7 @@ device) and media (media keys / MPRIS).
 """
 
 from __future__ import annotations
+
 import contextlib
 import json
 from pathlib import Path
@@ -21,7 +22,6 @@ from fastapi.staticfiles import StaticFiles
 from app import (
     __version__,
     control,
-    devices as devices_api,
     library,
     media,
     openhome,
@@ -29,6 +29,9 @@ from app import (
     radio,
     tidal,
     transcode,
+)
+from app import (
+    devices as devices_api,
 )
 
 # Resolve static files relative to this module, not the current working
@@ -141,8 +144,8 @@ SOURCE_INFO = _source_info()
 
 @app.get("/api/app/about")
 def about():
-    import platform
     import importlib.metadata as md
+    import platform
 
     deps = {}
     for name in ["fastapi", "uvicorn", "upnpclient", "av", "tidalapi", "pywebview", "PyQt5", "dbus-fast"]:

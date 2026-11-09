@@ -9,6 +9,7 @@ Favourites and own URLs are kept in ~/.cache/flou_player/radio.json.
 """
 
 from __future__ import annotations
+
 import hashlib
 import json
 import threading

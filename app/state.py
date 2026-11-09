@@ -1,6 +1,7 @@
 """Shared state of the backend: the discovered devices, locks, and where the app keeps its files."""
 
 from __future__ import annotations
+
 import threading
 from pathlib import Path
 from typing import Any

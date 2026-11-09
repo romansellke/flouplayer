@@ -197,7 +197,7 @@ def test_the_cover_shows_the_album_artist_and_the_artist_column_is_optional(page
     labels = page.eval_on_selector_all(
         "#colMenu label", "ls => ls.map(l => l.textContent.trim() + ':' + l.querySelector('input').checked)"
     )
-    assert "Artist:false" in labels and not any(l.startswith("Album Artist") for l in labels)
+    assert "Artist:false" in labels and not any(label.startswith("Album Artist") for label in labels)
     page.check("#colMenu input[data-col=artist]")
     assert page.query_selector("td.artist") is not None
 
@@ -444,7 +444,10 @@ def test_backend_errors_read_as_messages_not_json_parse_errors(page, api):
         "**/api/crash", lambda route: route.fulfill(status=500, body="Internal Server Error", content_type="text/plain")
     )
     open_app(page)
-    msg = lambda url: page.evaluate("u => api(u).then(() => 'ok', e => e.message)", url)
+
+    def msg(url):
+        return page.evaluate("u => api(u).then(() => 'ok', e => e.message)", url)
+
     assert (
         msg("/api/crash")
         == "The background service answered 500 Internal Server Error: Internal Server Error (/api/crash)"
@@ -653,7 +656,10 @@ def test_ctrl_arrows_step_through_the_displayed_tracks_in_the_cached_library(pag
     start_cached_with_player(page, api, [dict(track(i, album_artist="Band"), id=f"c{i}") for i in (1, 2, 3)])
     page.dblclick("[data-item=c1]")
     page.wait_for_timeout(150)
-    uris = lambda: [p["uri"] for p in api.posts if p.get("action") == "set_uri"]
+
+    def uris():
+        return [p["uri"] for p in api.posts if p.get("action") == "set_uri"]
+
     assert uris() == ["u1"]
     page.keyboard.press("Control+ArrowRight")
     page.wait_for_timeout(200)
@@ -973,7 +979,10 @@ def test_the_health_icon_toggles_the_view_and_is_highlighted_while_open(page, ap
 
 def test_zoom_keys_scale_the_interface_and_the_level_is_remembered(page, api):
     open_app(page)
-    zoom = lambda: page.evaluate("uiZoom")
+
+    def zoom():
+        return page.evaluate("uiZoom")
+
     assert zoom() == 1
     page.keyboard.press("Control+=")
     assert zoom() == 1.1

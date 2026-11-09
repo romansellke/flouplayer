@@ -1,9 +1,10 @@
 """Helpers for talking to UPnP devices: finding services (also on a player's sibling devices), icons, device JSON."""
 
 from __future__ import annotations
+
 from urllib.parse import urljoin, urlparse
 
-from app.state import devices, _merged_primary
+from app.state import _merged_primary, devices
 
 
 def service(device, needles):

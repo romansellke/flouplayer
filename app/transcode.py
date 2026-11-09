@@ -1,6 +1,7 @@
 """Transcoding for local playback (formats the built-in web engine can't decode are re-encoded to FLAC)."""
 
 from __future__ import annotations
+
 import io
 import os
 import tempfile

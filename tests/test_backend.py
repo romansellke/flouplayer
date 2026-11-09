@@ -8,7 +8,8 @@ from fastapi.testclient import TestClient
 
 import app as app_pkg
 import app.main as m
-from app import devices as devices_api, state as app_state
+from app import devices as devices_api
+from app import state as app_state
 from tests.fakes import linn_player, media_server
 
 client = TestClient(m.app, base_url="http://127.0.0.1:8765")  # the backend only answers local requests
@@ -94,7 +95,7 @@ def test_discover_does_not_wait_for_a_device_that_answers_ssdp_but_not_http(monk
         upnpclient.ssdp,
         "scan",
         lambda timeout=5: [
-            SimpleNamespace(location=l) for l in (oh.location, "http://192.168.1.77/stuck.xml", av.location)
+            SimpleNamespace(location=loc) for loc in (oh.location, "http://192.168.1.77/stuck.xml", av.location)
         ],
     )
     monkeypatch.setattr(upnpclient, "Device", fake_device)
@@ -604,7 +605,10 @@ def test_the_queue_poll_remembers_which_source_is_the_playlist_but_changes_read_
 def test_the_queue_poll_reads_repeat_and_shuffle_only_now_and_then(player):
     oh, state = player
     pl = oh.service("Playlist")
-    reads = lambda: sum(name == "Repeat" for name, _ in pl.calls)
+
+    def reads():
+        return sum(name == "Repeat" for name, _ in pl.calls)
+
     first = get(f"/api/devices/{oh.udn}/queue").json()  # no token: asks the device
     assert (first["repeat"], first["shuffle"], reads()) == (False, False, 1)
     state["repeat"] = True  # somebody pressed Repeat elsewhere
@@ -845,7 +849,10 @@ def test_the_app_notices_when_the_server_content_changed_since_the_scan():
     srv = media_server(tree={"0": [TRACK]}, update_id=update_id)
     devices_api._publish_devices({srv.udn: srv})
     assert client.post("/api/scan", json={"device_id": srv.udn, "object_id": "0"}).json()["system_update_id"] == 7
-    changed = lambda: client.get(f"/api/library/changed?device_id={srv.udn}").json()
+
+    def changed():
+        return client.get(f"/api/library/changed?device_id={srv.udn}").json()
+
     assert changed() == {"known": True, "changed": False, "update_id": 7}
     update_id[0] = 8  # e.g. MinimServer rescanned new music
     assert changed() == {"known": True, "changed": True, "update_id": 8}

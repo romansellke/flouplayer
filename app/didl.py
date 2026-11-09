@@ -1,6 +1,7 @@
 """DIDL-Lite parsing and walking a media server's ContentDirectory."""
 
 from __future__ import annotations
+
 import copy
 import re
 import xml.etree.ElementTree as ET
