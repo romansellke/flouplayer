@@ -335,6 +335,16 @@ def test_scan_merges_a_track_whose_views_differ_in_artist_number_and_duration_fo
     assert scan(srv).json()["count"] == 1
 
 
+def test_scan_keeps_same_named_tracks_when_the_server_gives_no_length():
+    """Title and album alone don't make two tracks the same one: without a length nothing is merged by tags."""
+    srv = media_server(tree={"0": [folder("a", "Folders")],
+                             "a": [audio("t1", title="Intro", album="Greatest Hits", duration="", uri="u1"),
+                                   audio("t2", title="Intro", album="Greatest Hits", duration="", uri="u2"),
+                                   audio("t3", title="Intro", album="Greatest Hits", duration="", uri="u1")]})   # the same file again
+    r = scan(srv).json()
+    assert r["count"] == 2 and r["stats"]["merged_by_tags"] == 0 and r["stats"]["duplicates"] == 1
+
+
 def test_scan_prefers_a_flat_songs_view_or_the_album_view_over_walking_every_view():
     srv = media_server(tree={"0": [folder("g", "Genres"), folder("s", "Songs"), folder("r", "Artists")],
                              "g": [audio("g1", title="Only in genre", uri="g")], "r": [audio("r1", title="Only in artist", uri="r")],
