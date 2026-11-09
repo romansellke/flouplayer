@@ -24,6 +24,16 @@ All notable changes to Flou Player are documented here. The format follows
   logos come from the public station directory). Such characters are now encoded in every cover address.
 - Library scan: tracks with the same title and album are no longer taken for the same track when the
   media server reports no length for them (for example two "Intro" on two "Greatest Hits").
+- The queue no longer disappears (and the Queue view no longer closes) when the output device fails to answer
+  a single poll: it takes three misses in a row, or the device saying it has no playlist.
+- Moving the volume slider asks the device half as much: its volume range is no longer read again for every step.
+- A new device search keeps the open folder in Live mode and the chosen devices instead of going back to "Home".
+- A media key pressed shortly after the window reloaded is no longer lost.
+- Browsing or scanning a media server that ignores the paging position and reports no total no longer runs
+  for ever, and a server that leaves the counts empty no longer fails to browse.
+- Device ids are encoded in every request; a device without a UDN gets an id that works in them.
+- Replacing an outdated running instance closes its window properly instead of touching the window toolkit
+  from a background thread.
 
 ## [0.21.0] - 2026-11-01
 
