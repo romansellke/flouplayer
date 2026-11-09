@@ -1,5 +1,7 @@
 """DIDL-Lite parsing and walking a media server's ContentDirectory."""
+
 from __future__ import annotations
+
 import copy
 import re
 import xml.etree.ElementTree as ET
@@ -9,20 +11,44 @@ from app.upnp import local_name
 # Common names for a plain "by folder/file" view, which contains each track
 # only ONCE -- unlike the parallel views by artist/album/genre/composer,
 # where the same track shows up multiple times.
-CANONICAL_CONTAINER_NAMES_RAW={"folder","folders","by folder","files","ordner","dateien","verzeichnis","musikordner"}
+CANONICAL_CONTAINER_NAMES_RAW = {
+    "folder",
+    "folders",
+    "by folder",
+    "files",
+    "ordner",
+    "dateien",
+    "verzeichnis",
+    "musikordner",
+}
 
 # Next best when there is no folder view: one flat list of all songs, or the album
 # view -- both contain each track once, unlike walking Artist, Genre, Composer ... too.
-FLAT_VIEW_NAMES_RAW={"songs","all songs","tracks","all tracks","titel","alle titel","alle songs","alle lieder","lieder"}
-ALBUM_VIEW_NAMES_RAW={"albums","album","all albums","alben","alle alben"}
+FLAT_VIEW_NAMES_RAW = {
+    "songs",
+    "all songs",
+    "tracks",
+    "all tracks",
+    "titel",
+    "alle titel",
+    "alle songs",
+    "alle lieder",
+    "lieder",
+}
+ALBUM_VIEW_NAMES_RAW = {"albums", "album", "all albums", "alben", "alle alben"}
 
-CANONICAL_CONTAINER_NAMES={re.sub(r"[^\w]+","",n) for n in CANONICAL_CONTAINER_NAMES_RAW}
-FLAT_VIEW_NAMES={re.sub(r"[^\w]+","",n) for n in FLAT_VIEW_NAMES_RAW}
-ALBUM_VIEW_NAMES={re.sub(r"[^\w]+","",n) for n in ALBUM_VIEW_NAMES_RAW}
+CANONICAL_CONTAINER_NAMES = {re.sub(r"[^\w]+", "", n) for n in CANONICAL_CONTAINER_NAMES_RAW}
+FLAT_VIEW_NAMES = {re.sub(r"[^\w]+", "", n) for n in FLAT_VIEW_NAMES_RAW}
+ALBUM_VIEW_NAMES = {re.sub(r"[^\w]+", "", n) for n in ALBUM_VIEW_NAMES_RAW}
 
-DIDL_NS="urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/"
-for _prefix,_uri in {"dc":"http://purl.org/dc/elements/1.1/","upnp":"urn:schemas-upnp-org:metadata-1-0/upnp/","dlna":"urn:schemas-dlna-org:metadata-1-0/"}.items():
-    ET.register_namespace(_prefix,_uri)
+DIDL_NS = "urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/"
+for _prefix, _uri in {
+    "dc": "http://purl.org/dc/elements/1.1/",
+    "upnp": "urn:schemas-upnp-org:metadata-1-0/upnp/",
+    "dlna": "urn:schemas-dlna-org:metadata-1-0/",
+}.items():
+    ET.register_namespace(_prefix, _uri)
+
 
 def didl_document(node):
     """Wraps a single parsed <item> back into a complete DIDL-Lite
@@ -30,15 +56,21 @@ def didl_document(node):
     the bare element instead yields no <DIDL-Lite> root and
     ElementTree's generic ns0:/ns2: prefixes, which many renderers
     (Linn/OpenHome among them) don't accept."""
-    node=copy.deepcopy(node)
+    node = copy.deepcopy(node)
     for el in node.iter():
-        if el.tag.startswith("{"+DIDL_NS+"}"): el.tag=local_name(el.tag)
-    root=ET.Element("DIDL-Lite",{"xmlns":DIDL_NS}); root.append(node)
-    return ET.tostring(root,encoding="unicode")
-def child_text(node,name):
+        if el.tag.startswith("{" + DIDL_NS + "}"):
+            el.tag = local_name(el.tag)
+    root = ET.Element("DIDL-Lite", {"xmlns": DIDL_NS})
+    root.append(node)
+    return ET.tostring(root, encoding="unicode")
+
+
+def child_text(node, name):
     for c in node.iter():
-        if local_name(c.tag)==name: return c.text or ""
+        if local_name(c.tag) == name:
+            return c.text or ""
     return ""
+
 
 def artist_fields(node):
     """upnp:artist can legitimately appear more than once per item, each
@@ -47,52 +79,93 @@ def artist_fields(node):
     as) a dedicated <upnp:albumArtist> element. Looking only for an
     element literally named "albumArtist" misses the role-based
     convention entirely and silently returns nothing for every track."""
-    plain_artist=""; album_artist=""
+    plain_artist = ""
+    album_artist = ""
     for c in node.iter():
-        name=local_name(c.tag)
-        if name=="artist":
-            role=(c.attrib.get("role") or "").strip().lower()
-            if role in ("albumartist","album artist"):
-                if not album_artist: album_artist=c.text or ""
+        name = local_name(c.tag)
+        if name == "artist":
+            role = (c.attrib.get("role") or "").strip().lower()
+            if role in ("albumartist", "album artist"):
+                if not album_artist:
+                    album_artist = c.text or ""
             else:
-                if not plain_artist: plain_artist=c.text or ""
-        elif name=="albumArtist" and not album_artist:
-            album_artist=c.text or ""
+                if not plain_artist:
+                    plain_artist = c.text or ""
+        elif name == "albumArtist" and not album_artist:
+            album_artist = c.text or ""
     return plain_artist, album_artist
 
+
 def parse_didl(xml):
-    if not xml: return []
-    try: root=ET.fromstring(xml)
-    except ET.ParseError: return []
-    out=[]
+    if not xml:
+        return []
+    try:
+        root = ET.fromstring(xml)
+    except ET.ParseError:
+        return []
+    out = []
     for n in list(root):
-        typ=local_name(n.tag); resources=[]
+        typ = local_name(n.tag)
+        resources = []
         for c in n:
-            if local_name(c.tag)=="res": resources.append({"uri":c.text or "","protocol":c.attrib.get("protocolInfo",""),"duration":c.attrib.get("duration",""),"sample_rate":c.attrib.get("sampleFrequency",""),"bits_per_sample":c.attrib.get("bitsPerSample",""),"bitrate":c.attrib.get("bitrate","")})
-        artist,album_artist=artist_fields(n)
-        out.append({"type":typ,"id":n.attrib.get("id",""),"parent_id":n.attrib.get("parentID",""),"title":child_text(n,"title"),"artist":artist,"album_artist":album_artist,"album":child_text(n,"album"),"genre":child_text(n,"genre"),"date":child_text(n,"date"),"track_number":child_text(n,"originalTrackNumber"),"album_art":child_text(n,"albumArtURI"),"class":child_text(n,"class"),"resources":resources,"metadata":didl_document(n)})
+            if local_name(c.tag) == "res":
+                resources.append(
+                    {
+                        "uri": c.text or "",
+                        "protocol": c.attrib.get("protocolInfo", ""),
+                        "duration": c.attrib.get("duration", ""),
+                        "sample_rate": c.attrib.get("sampleFrequency", ""),
+                        "bits_per_sample": c.attrib.get("bitsPerSample", ""),
+                        "bitrate": c.attrib.get("bitrate", ""),
+                    }
+                )
+        artist, album_artist = artist_fields(n)
+        out.append(
+            {
+                "type": typ,
+                "id": n.attrib.get("id", ""),
+                "parent_id": n.attrib.get("parentID", ""),
+                "title": child_text(n, "title"),
+                "artist": artist,
+                "album_artist": album_artist,
+                "album": child_text(n, "album"),
+                "genre": child_text(n, "genre"),
+                "date": child_text(n, "date"),
+                "track_number": child_text(n, "originalTrackNumber"),
+                "album_art": child_text(n, "albumArtURI"),
+                "class": child_text(n, "class"),
+                "resources": resources,
+                "metadata": didl_document(n),
+            }
+        )
     return out
+
 
 def is_audio(item):
     """Servers like Jellyfin put videos and photos into the same tree; only
     audio belongs in the music library. An item without a class counts as audio."""
-    cls=(item.get("class") or "").lower()
+    cls = (item.get("class") or "").lower()
     return not (cls.startswith("object.item.videoitem") or cls.startswith("object.item.imageitem"))
 
+
 def view_name(title):
-    """"[Folders]", "Folders " and "folders" are the same view name."""
-    return re.sub(r"[^\w]+","",(title or "").lower())
+    """ "[Folders]", "Folders " and "folders" are the same view name."""
+    return re.sub(r"[^\w]+", "", (title or "").lower())
+
 
 def duration_seconds(text):
-    """"0:03:00.000" and "0:03:00" are the same length; None when unreadable."""
+    """ "0:03:00.000" and "0:03:00" are the same length; None when unreadable."""
     try:
-        parts=[float(p) for p in (text or "").strip().split(":")]
+        parts = [float(p) for p in (text or "").strip().split(":")]
     except ValueError:
         return None
-    if not parts: return None
-    total=0.0
-    for p in parts: total=total*60+p
+    if not parts:
+        return None
+    total = 0.0
+    for p in parts:
+        total = total * 60 + p
     return int(round(total))
+
 
 def track_key(item):
     """Identity of a track independent of where the server lists it. Servers
@@ -100,34 +173,47 @@ def track_key(item):
     object id / stream URL) would otherwise deliver every track many times.
     None when the tags are too thin to tell tracks apart safely -- also without a length: title and album
     alone would merge different tracks (two "Intro" on two "Greatest Hits", movements of a box set)."""
-    title=(item.get("title") or "").strip().lower()
-    album=(item.get("album") or "").strip().lower()
-    artist=(item.get("album_artist") or item.get("artist") or "").strip().lower()
-    if not title or not (album or artist): return None
-    duration=(item["resources"][0].get("duration") or "") if item.get("resources") else ""
+    title = (item.get("title") or "").strip().lower()
+    album = (item.get("album") or "").strip().lower()
+    artist = (item.get("album_artist") or item.get("artist") or "").strip().lower()
+    if not title or not (album or artist):
+        return None
+    duration = (item["resources"][0].get("duration") or "") if item.get("resources") else ""
     # Not the artist or track number: views of the same server often deliver them differently
     # (artist vs. album artist, a missing number), which would let every view's copy through.
-    seconds=duration_seconds(duration)
-    if seconds is None: return None
-    return (title,album,"" if album else artist,seconds)
+    seconds = duration_seconds(duration)
+    if seconds is None:
+        return None
+    return (title, album, "" if album else artist, seconds)
+
 
 def browse_all(s, object_id):
     """Fetch all children of a container (with pagination). A blocking
     network call -- parallelised across a thread pool during a scan."""
-    items=[]; start=0
+    items = []
+    start = 0
     while True:
         try:
-            r=s.Browse(ObjectID=object_id,BrowseFlag="BrowseDirectChildren",Filter="*",StartingIndex=start,RequestedCount=200,SortCriteria="")
+            r = s.Browse(
+                ObjectID=object_id,
+                BrowseFlag="BrowseDirectChildren",
+                Filter="*",
+                StartingIndex=start,
+                RequestedCount=200,
+                SortCriteria="",
+            )
         except Exception as e:
             raise RuntimeError(f"Browse failed (ObjectID={object_id}): {e}")
-        items.extend(parse_didl(r.get("Result","")))
-        number_returned=int(r.get("NumberReturned",0) or 0)
-        total_matches=int(r.get("TotalMatches",0) or 0)
-        start+=number_returned
+        items.extend(parse_didl(r.get("Result", "")))
+        number_returned = int(r.get("NumberReturned", 0) or 0)
+        total_matches = int(r.get("TotalMatches", 0) or 0)
+        start += number_returned
         # TotalMatches may legitimately be 0 when the server can't compute
         # it -- then keep paging until a page comes back empty.
-        if number_returned==0 or (total_matches>0 and start>=total_matches): break
+        if number_returned == 0 or (total_matches > 0 and start >= total_matches):
+            break
     return items
+
 
 def pick_scan_root(s, root_object_id):
     """Looks for ONE view that contains each track only once and scans only that, which saves most
@@ -137,20 +223,24 @@ def pick_scan_root(s, root_object_id):
     all songs, the album view -- directly under the root or one level down (Jellyfin: Music > Folders).
     Returns (object id, name or None, titles of the root's folders for the diagnostics log)."""
     try:
-        items=browse_all(s, root_object_id)
+        items = browse_all(s, root_object_id)
     except Exception:
         return root_object_id, None, []
-    containers=[i for i in items if i["type"]=="container"]
-    levels=[("",containers)]
+    containers = [i for i in items if i["type"] == "container"]
+    levels = [("", containers)]
     for parent in containers[:10]:
         try:
-            children=[i for i in browse_all(s, parent["id"]) if i["type"]=="container"]
+            children = [i for i in browse_all(s, parent["id"]) if i["type"] == "container"]
         except Exception:
             continue
-        levels.append((parent["title"],children))
-    for names in (CANONICAL_CONTAINER_NAMES,FLAT_VIEW_NAMES,ALBUM_VIEW_NAMES):
-        for parent_title,group in levels:
+        levels.append((parent["title"], children))
+    for names in (CANONICAL_CONTAINER_NAMES, FLAT_VIEW_NAMES, ALBUM_VIEW_NAMES):
+        for parent_title, group in levels:
             for i in group:
                 if view_name(i["title"]) in names:
-                    return i["id"], f"{parent_title} / {i['title']}" if parent_title else i["title"], [c["title"] for c in containers]
+                    return (
+                        i["id"],
+                        f"{parent_title} / {i['title']}" if parent_title else i["title"],
+                        [c["title"] for c in containers],
+                    )
     return root_object_id, None, [c["title"] for c in containers]

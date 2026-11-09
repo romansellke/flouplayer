@@ -1,0 +1,17 @@
+{
+  "name": "flouplayer-dev",
+  "private": true,
+  "description": "Development tools for the frontend (formatter and linter). The app itself needs no Node and has no build step.",
+  "type": "module",
+  "scripts": {
+    "lint": "eslint app/static",
+    "format": "prettier --write app/static",
+    "format:check": "prettier --check app/static"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.14.0",
+    "globals": "^17.14.0",
+    "prettier": "^3.9.10"
+  }
+}

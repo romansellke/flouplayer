@@ -97,10 +97,10 @@ service definitions, as the features themselves do.
 
 ```python
 def test_something(page, api):
-    api.routes["/standby"] = {"supported": True, "standby": False}   # URL substring -> JSON
+    api.routes["/standby"] = {"supported": True, "standby": False}  # URL substring -> JSON
     open_app(page)
     page.click("#powerBtn")
-    assert api.actions() == ["standby:1"]     # control requests the page sent
+    assert api.actions() == ["standby:1"]  # control requests the page sent
 ```
 
 Route keys are substrings of the request path after `/api/` (for example
@@ -110,20 +110,33 @@ else answers 404. If Chromium is installed elsewhere, point
 
 ### Continuous integration
 
-`.github/workflows/tests.yml` runs the lint check and the whole suite on every
-pull request and on pushes to `main`.
+`.github/workflows/tests.yml` checks the layout, runs the linters and then the
+whole suite on every pull request and on pushes to `main`.
 
-## Lint
+## Code style and lint
+
+The layout of the code is not a matter of taste here: a formatter decides it,
+and a linter looks for mistakes. CI refuses code that isn't formatted or has
+lint findings, so run these before you commit:
 
 ```
-ruff check .          # what CI runs
-ruff check --fix .    # also repairs what it safely can (unused imports, ...)
+ruff format .         # Python: layout
+ruff check --fix .    # Python: lint, repairing what it safely can
+npm run format        # JavaScript and CSS: layout (Prettier)
+npm run lint          # JavaScript: lint (ESLint)
 ```
 
-[Ruff](https://docs.astral.sh/ruff/) checks the Python code for mistakes:
-undefined names, unused imports and variables, misplaced imports and the
-likely bugs flake8-bugbear knows. The rules are in `ruff.toml`, with the reason
-next to every exception. Only rules that point at mistakes are on; the compact
-layout of the code is left as it is and the formatter (`ruff format`) is not
-used. The JavaScript has no lint step: the browser tests fail on any error the
-page throws.
+- **Python** uses [Ruff](https://docs.astral.sh/ruff/) for both (installed with
+  `requirements-dev.txt`). The settings are in `ruff.toml`, with the reason next
+  to every rule that is switched off.
+- **JavaScript and CSS** use [Prettier](https://prettier.io) and
+  [ESLint](https://eslint.org). They need Node.js, once: `npm install`. This is
+  for development only -- the app itself still needs no Node and has no build
+  step. `index.html` is laid out by hand (`.prettierignore`).
+- The scripts share one global scope, and ESLint looks at one file at a time.
+  So that it still catches a misspelled name, `eslint.config.js` collects the
+  names every file declares at its top level and makes them known to all files.
+- The two commits that only changed the layout are listed in
+  `.git-blame-ignore-revs`, so `git blame` looks through them. GitHub does that
+  by itself; locally, once:
+  `git config blame.ignoreRevsFile .git-blame-ignore-revs`.

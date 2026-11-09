@@ -4,14 +4,17 @@ HOME is pointed at a temporary directory *before* the app is imported, so the
 tests never read or write the real ~/.cache/flou_player (library cache, known
 devices).
 """
+
 import os
 import sys
 import tempfile
 
 # Playwright looks for its browsers under HOME: keep pointing it at the real
 # download folder, or the UI tests would silently skip.
-os.environ.setdefault("PLAYWRIGHT_BROWSERS_PATH", os.path.expanduser(
-    "~/Library/Caches/ms-playwright" if sys.platform == "darwin" else "~/.cache/ms-playwright"))
+os.environ.setdefault(
+    "PLAYWRIGHT_BROWSERS_PATH",
+    os.path.expanduser("~/Library/Caches/ms-playwright" if sys.platform == "darwin" else "~/.cache/ms-playwright"),
+)
 _HOME = tempfile.mkdtemp(prefix="flou-test-home-")
 os.environ["HOME"] = _HOME
 
@@ -24,7 +27,7 @@ import threading
 
 import pytest
 
-STATIC_ROOT = pathlib.Path(__file__).resolve().parent.parent / "app"   # serves /static/index.html
+STATIC_ROOT = pathlib.Path(__file__).resolve().parent.parent / "app"  # serves /static/index.html
 
 
 @pytest.fixture(scope="session")
@@ -42,11 +45,11 @@ def base_url():
 def _browser():
     sync_playwright = pytest.importorskip("playwright.sync_api").sync_playwright
     with sync_playwright() as p:
-        exe = os.environ.get("FLOU_TEST_CHROMIUM")   # optional: use an existing Chromium
+        exe = os.environ.get("FLOU_TEST_CHROMIUM")  # optional: use an existing Chromium
         try:
             b = p.chromium.launch(executable_path=exe) if exe else p.chromium.launch()
-        except Exception as e:                        # browser not installed
-            if os.environ.get("CI"):                  # in CI a missing browser is an error, not a reason to skip
+        except Exception as e:  # browser not installed
+            if os.environ.get("CI"):  # in CI a missing browser is an error, not a reason to skip
                 raise
             pytest.skip(f"Chromium not available for the UI tests: {e}")
         yield b
@@ -66,7 +69,9 @@ class MockApi:
         req = route.request
         url = req.url.split("/api/", 1)[1]
         self.requests.append(f"{req.method} {url}")
-        if req.method == "POST" and req.post_data and not url.startswith("media/"):   # media/state: background reporting, not a user action
+        if (
+            req.method == "POST" and req.post_data and not url.startswith("media/")
+        ):  # media/state: background reporting, not a user action
             try:
                 self.posts.append(json.loads(req.post_data))
             except ValueError:
@@ -74,14 +79,16 @@ class MockApi:
         for needle, answer in self.routes.items():
             if needle in url:
                 body = answer(req) if callable(answer) else answer
-                if isinstance(body, tuple):                   # (status, json): an error answer
+                if isinstance(body, tuple):  # (status, json): an error answer
                     return route.fulfill(status=body[0], json=body[1])
                 return route.fulfill(json=body)
         route.fulfill(status=404, json={"detail": "not mocked"})
 
     def actions(self):
         """The control actions posted so far, e.g. ['play', 'seek:40'], and clear them."""
-        out = [p["action"] + (f":{p['value']}" if p.get("value") is not None else "") for p in self.posts if "action" in p]
+        out = [
+            p["action"] + (f":{p['value']}" if p.get("value") is not None else "") for p in self.posts if "action" in p
+        ]
         self.posts.clear()
         return out
 

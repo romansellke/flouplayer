@@ -15,7 +15,9 @@ All notable changes to Flou Player are documented here. The format follows
   - While the queue plays, the stream details and capabilities of the device are asked for when the track or
     source changes (and every 20 seconds), and the source poll rests while the queue poll reports the source.
   - Plain `uvicorn` instead of `uvicorn[standard]`; the packaged app leaves out more unused Qt modules.
-- Development: the Python code is checked with Ruff (`ruff check .`, rules in `ruff.toml`), also in CI.
+- Development: the code is laid out by formatters and checked by linters, also in CI -- Ruff for Python,
+  Prettier and ESLint for JavaScript and CSS (see [Development](docs/development.md#code-style-and-lint)).
+  No change in what the app does.
 
 ### Fixed
 - A cover or radio logo address with quotes or brackets in it could add CSS of its own to the page (radio

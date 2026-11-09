@@ -4,3 +4,4 @@ __pycache__/
 build/
 app/_buildinfo.json
 .pytest_cache/
+node_modules/

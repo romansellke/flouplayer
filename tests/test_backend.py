@@ -1,4 +1,5 @@
 """Backend tests: the FastAPI endpoints against fake UPnP devices (no network, no hardware)."""
+
 import json
 
 import pytest
@@ -7,14 +8,17 @@ from fastapi.testclient import TestClient
 
 import app as app_pkg
 import app.main as m
-from app import devices as devices_api, state as app_state
+from app import devices as devices_api
+from app import state as app_state
 from tests.fakes import linn_player, media_server
 
-client = TestClient(m.app, base_url="http://127.0.0.1:8765")   # the backend only answers local requests
+client = TestClient(m.app, base_url="http://127.0.0.1:8765")  # the backend only answers local requests
 
-TRACK = ('<item id="t1" parentID="a1"><dc:title>Song</dc:title><upnp:artist>Artist</upnp:artist><upnp:album>Album</upnp:album>'
-         '<upnp:class>object.item.audioItem.musicTrack</upnp:class>'
-         '<res protocolInfo="http-get:*:audio/flac:*" duration="0:03:00">http://x/t1.flac</res></item>')
+TRACK = (
+    '<item id="t1" parentID="a1"><dc:title>Song</dc:title><upnp:artist>Artist</upnp:artist><upnp:album>Album</upnp:album>'
+    "<upnp:class>object.item.audioItem.musicTrack</upnp:class>"
+    '<res protocolInfo="http-get:*:audio/flac:*" duration="0:03:00">http://x/t1.flac</res></item>'
+)
 FOLDER = '<container id="a1" parentID="0" childCount="1"><dc:title>Albums</dc:title><upnp:class>object.container</upnp:class></container>'
 
 
@@ -36,25 +40,28 @@ def control(device, action, value=None):
 
 # ---------- discovery ----------
 
+
 def test_discover_presents_a_linn_player_once_and_remembers_it(monkeypatch):
     oh, av, _ = linn_player()
     srv = media_server()
     monkeypatch.setattr(devices_api, "_find", lambda timeout: [oh, av, srv])
     r = client.get("/api/discover").json()["devices"]
     names = sorted(d["name"] for d in r)
-    assert names == ["Linn Majik DSM", "Music Server"]          # the sibling "UPnP AV" device is hidden
+    assert names == ["Linn Majik DSM", "Music Server"]  # the sibling "UPnP AV" device is hidden
     by_name = {d["name"]: d for d in r}
     assert by_name["Music Server"]["server"] and not by_name["Music Server"]["renderer"]
     assert by_name["Linn Majik DSM"]["renderer"]
     known = json.loads(app_state.KNOWN_DEVICES_FILE.read_text())
-    assert set(known) == {oh.udn, av.udn, srv.udn}               # incl. the sibling, needed later for the OpenHome services
+    assert set(known) == {oh.udn, av.udn, srv.udn}  # incl. the sibling, needed later for the OpenHome services
 
 
 def test_restore_reconnects_by_url_and_skips_dead_devices(monkeypatch):
     oh, av, _ = linn_player()
     srv = media_server()
     gone = "http://192.168.1.99:1/gone.xml"
-    app_state.KNOWN_DEVICES_FILE.write_text(json.dumps({oh.udn: oh.location, av.udn: av.location, srv.udn: srv.location, "uuid:gone": gone}))
+    app_state.KNOWN_DEVICES_FILE.write_text(
+        json.dumps({oh.udn: oh.location, av.udn: av.location, srv.udn: srv.location, "uuid:gone": gone})
+    )
     by_url = {d.location: d for d in (oh, av, srv)}
 
     def fake_device(location):
@@ -74,15 +81,23 @@ def test_discover_does_not_wait_for_a_device_that_answers_ssdp_but_not_http(monk
     import threading
     import time
     from types import SimpleNamespace
+
     oh, av, _ = linn_player()
     release = threading.Event()
     by_url = {oh.location: oh, av.location: av}
 
     def fake_device(location):
-        if location == "http://192.168.1.77/stuck.xml": release.wait(30)
+        if location == "http://192.168.1.77/stuck.xml":
+            release.wait(30)
         return by_url[location]
 
-    monkeypatch.setattr(upnpclient.ssdp, "scan", lambda timeout=5: [SimpleNamespace(location=l) for l in (oh.location, "http://192.168.1.77/stuck.xml", av.location)])
+    monkeypatch.setattr(
+        upnpclient.ssdp,
+        "scan",
+        lambda timeout=5: [
+            SimpleNamespace(location=loc) for loc in (oh.location, "http://192.168.1.77/stuck.xml", av.location)
+        ],
+    )
     monkeypatch.setattr(upnpclient, "Device", fake_device)
     monkeypatch.setattr(devices_api, "DISCOVER_LOAD_SECONDS", 0.5)
     t0 = time.time()
@@ -106,10 +121,11 @@ def test_unknown_device_is_404():
 
 # ---------- OpenHome extras ----------
 
+
 def test_sources_lists_visible_sources_and_the_current_one(player):
     oh, state = player
     r = get(f"/api/devices/{oh.udn}/sources").json()
-    assert [s["name"] for s in r["sources"]] == ["Playlist", "Radio"]     # the hidden one is left out
+    assert [s["name"] for s in r["sources"]] == ["Playlist", "Radio"]  # the hidden one is left out
     assert r["current"] == 0
     state["source"] = 1
     assert get(f"/api/devices/{oh.udn}/sources?light=true").json() == {"current": 1}
@@ -173,9 +189,16 @@ def test_source_and_pin_wake_a_sleeping_device(player):
 
 # ---------- transport ----------
 
+
 def test_transport_buttons_use_the_openhome_transport_service(player):
     oh, _ = player
-    for action, expected in (("play", "Play"), ("pause", "Pause"), ("stop", "Stop"), ("next", "SkipNext"), ("previous", "SkipPrevious")):
+    for action, expected in (
+        ("play", "Play"),
+        ("pause", "Pause"),
+        ("stop", "Stop"),
+        ("next", "SkipNext"),
+        ("previous", "SkipPrevious"),
+    ):
         assert control(oh, action).status_code == 200
         assert oh.service("Transport").calls[-1][0] == expected
 
@@ -190,8 +213,10 @@ def test_transport_falls_back_to_avtransport(player, monkeypatch):
 
 # ---------- plain UPnP AV renderers (Marantz/HEOS, Sonos) ----------
 
+
 def av_only_renderer(actions):
     from tests.fakes import FakeDevice, FakeService
+
     av = FakeService("urn:upnp-org:serviceId:AVTransport", "urn:schemas-upnp-org:service:AVTransport:1", actions)
     dev = FakeDevice("uuid:sonos", "http://192.168.1.60:1400/xml/device_description.xml", "Sonos Arc", [av])
     devices_api._publish_devices({dev.udn: dev})
@@ -199,13 +224,17 @@ def av_only_renderer(actions):
 
 
 def play(dev, uri="http://x/t.flac", metadata="<DIDL-Lite/>"):
-    return client.post("/api/control", json={"device_id": dev.udn, "action": "set_uri", "uri": uri, "metadata": metadata})
+    return client.post(
+        "/api/control", json={"device_id": dev.udn, "action": "set_uri", "uri": uri, "metadata": metadata}
+    )
 
 
 def test_set_uri_retries_without_metadata_when_the_renderer_refuses_it():
     def set_uri(InstanceID, CurrentURI, CurrentURIMetaData):
-        if CurrentURIMetaData: raise upnpclient.UPNPError(712, "Format of metadata invalid", None)
+        if CurrentURIMetaData:
+            raise upnpclient.UPNPError(712, "Format of metadata invalid", None)
         return {}
+
     dev, av = av_only_renderer({"Stop": {}, "SetAVTransportURI": set_uri, "Play": {}})
     assert play(dev).status_code == 200
     assert [c[0] for c in av.calls] == ["Stop", "SetAVTransportURI", "SetAVTransportURI", "Play"]
@@ -222,11 +251,16 @@ def test_av_calls_send_a_utf8_charset_content_type():
 def test_rendering_control_volume_sends_a_utf8_charset_content_type():
     """The volume of a HEOS/Sonos player goes through RenderingControl, which needs the same header."""
     from tests.fakes import FakeService
+
     level = {"v": 20}
-    rc = FakeService("urn:upnp-org:serviceId:RenderingControl", "urn:schemas-upnp-org:service:RenderingControl:1", {
-        "GetVolume": lambda InstanceID, Channel: {"CurrentVolume": level["v"]},
-        "SetVolume": lambda InstanceID, Channel, DesiredVolume: level.update(v=DesiredVolume) or {},
-    })
+    rc = FakeService(
+        "urn:upnp-org:serviceId:RenderingControl",
+        "urn:schemas-upnp-org:service:RenderingControl:1",
+        {
+            "GetVolume": lambda InstanceID, Channel: {"CurrentVolume": level["v"]},
+            "SetVolume": lambda InstanceID, Channel, DesiredVolume: level.update(v=DesiredVolume) or {},
+        },
+    )
     dev, _ = av_only_renderer({})
     dev.services.append(rc)
     assert client.get(f"/api/devices/{dev.udn}/volume").json()["percent"] == 20
@@ -238,14 +272,19 @@ def test_rendering_control_volume_sends_a_utf8_charset_content_type():
 
 def test_set_uri_falls_back_to_a_minimal_didl_before_no_metadata():
     seen = []
+
     def set_uri(InstanceID, CurrentURI, CurrentURIMetaData):
         seen.append(CurrentURIMetaData)
-        if len(seen) < 2: raise upnpclient.UPNPError(712, "Format of metadata invalid", None)
+        if len(seen) < 2:
+            raise upnpclient.UPNPError(712, "Format of metadata invalid", None)
         return {}
+
     dev, av = av_only_renderer({"SetAVTransportURI": set_uri, "Play": {}})
-    full = ('<DIDL-Lite xmlns="urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/" xmlns:dc="http://purl.org/dc/elements/1.1/" '
-            'xmlns:upnp="urn:schemas-upnp-org:metadata-1-0/upnp/"><item id="9" parentID="3"><dc:title>A &amp; B</dc:title>'
-            '<upnp:class>object.item.audioItem.musicTrack</upnp:class><res protocolInfo="http-get:*:audio/flac:*">http://x/t.flac</res></item></DIDL-Lite>')
+    full = (
+        '<DIDL-Lite xmlns="urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/" xmlns:dc="http://purl.org/dc/elements/1.1/" '
+        'xmlns:upnp="urn:schemas-upnp-org:metadata-1-0/upnp/"><item id="9" parentID="3"><dc:title>A &amp; B</dc:title>'
+        '<upnp:class>object.item.audioItem.musicTrack</upnp:class><res protocolInfo="http-get:*:audio/flac:*">http://x/t.flac</res></item></DIDL-Lite>'
+    )
     assert play(dev, metadata=full).status_code == 200
     assert len(seen) == 2 and seen[0] == full
     assert 'parentID="-1"' in seen[1] and "A &amp; B" in seen[1] and "http-get:*:audio/flac:*" in seen[1]
@@ -253,9 +292,17 @@ def test_set_uri_falls_back_to_a_minimal_didl_before_no_metadata():
 
 def test_set_uri_names_the_http_refusal(monkeypatch):
     import requests
+
     monkeypatch.setattr("app.control.time.sleep", lambda s: None)
-    resp = requests.Response(); resp.status_code = 400; resp.reason = "Bad Request"; resp.url = "http://192.168.2.111:8080/AVTransport/ctrl"; resp._content = b"<html>bad</html>"
-    def bad(**kw): raise requests.exceptions.HTTPError("400 Client Error", response=resp)
+    resp = requests.Response()
+    resp.status_code = 400
+    resp.reason = "Bad Request"
+    resp.url = "http://192.168.2.111:8080/AVTransport/ctrl"
+    resp._content = b"<html>bad</html>"
+
+    def bad(**kw):
+        raise requests.exceptions.HTTPError("400 Client Error", response=resp)
+
     dev, av = av_only_renderer({"SetAVTransportURI": bad, "Play": {}})
     detail = play(dev).json()["detail"]
     assert "HTTP 400 Bad Request from http://192.168.2.111:8080/AVTransport/ctrl" in detail and "bad" in detail
@@ -264,23 +311,30 @@ def test_set_uri_names_the_http_refusal(monkeypatch):
 def test_set_uri_retries_play_while_the_renderer_loads(monkeypatch):
     monkeypatch.setattr("app.control.time.sleep", lambda s: None)
     tries = []
+
     def pl(InstanceID, Speed):
         tries.append(1)
-        if len(tries) < 3: raise upnpclient.UPNPError(701, "Transition not available", None)
+        if len(tries) < 3:
+            raise upnpclient.UPNPError(701, "Transition not available", None)
         return {}
-    dev, av = av_only_renderer({"SetAVTransportURI": {}, "Play": pl})   # no Stop action: ignored
+
+    dev, av = av_only_renderer({"SetAVTransportURI": {}, "Play": pl})  # no Stop action: ignored
     assert play(dev).status_code == 200 and len(tries) == 3
 
 
 def test_set_uri_reports_the_upnp_error_code(monkeypatch):
     monkeypatch.setattr("app.control.time.sleep", lambda s: None)
-    def bad(**kw): raise upnpclient.UPNPError(714, "Illegal MIME-type", None)
+
+    def bad(**kw):
+        raise upnpclient.UPNPError(714, "Illegal MIME-type", None)
+
     dev, av = av_only_renderer({"SetAVTransportURI": bad, "Play": {}})
     r = play(dev)
     assert r.status_code == 502 and "SetAVTransportURI failed" in r.json()["detail"] and "714" in r.json()["detail"]
 
 
 # ---------- library ----------
+
 
 def test_browse_pages_through_a_folder():
     srv = media_server(tree={"0": [FOLDER], "a1": [TRACK]})
@@ -304,8 +358,10 @@ def test_scan_collects_all_tracks_and_caches_them():
 
 
 def audio(i, title="Song", album="Album", uri=None, cls="object.item.audioItem.musicTrack", duration="0:03:00"):
-    return (f'<item id="{i}" parentID="x"><dc:title>{title}</dc:title><upnp:artist>Artist</upnp:artist><upnp:album>{album}</upnp:album>'
-            f'<upnp:class>{cls}</upnp:class><res protocolInfo="http-get:*:audio/flac:*" duration="{duration}">{uri or "http://x/" + i}</res></item>')
+    return (
+        f'<item id="{i}" parentID="x"><dc:title>{title}</dc:title><upnp:artist>Artist</upnp:artist><upnp:album>{album}</upnp:album>'
+        f'<upnp:class>{cls}</upnp:class><res protocolInfo="http-get:*:audio/flac:*" duration="{duration}">{uri or "http://x/" + i}</res></item>'
+    )
 
 
 def folder(i, title):
@@ -319,64 +375,114 @@ def scan(srv):
 
 def test_scan_merges_the_same_track_listed_under_different_ids_and_urls():
     """Jellyfin-style: every view lists the track again with its own object id and stream URL."""
-    srv = media_server(tree={"0": [folder("a", "Genres"), folder("b", "Artists")],
-                             "a": [audio("t1", uri="http://x/a/1"), audio("t2", title="Other", uri="http://x/a/2")],
-                             "b": [audio("t1b", uri="http://x/b/1"), audio("t2b", title="Other", uri="http://x/b/2")]})
+    srv = media_server(
+        tree={
+            "0": [folder("a", "Genres"), folder("b", "Artists")],
+            "a": [audio("t1", uri="http://x/a/1"), audio("t2", title="Other", uri="http://x/a/2")],
+            "b": [audio("t1b", uri="http://x/b/1"), audio("t2b", title="Other", uri="http://x/b/2")],
+        }
+    )
     r = scan(srv).json()
     assert r["count"] == 2 and r["stats"]["merged_by_tags"] == 2 and r["stats"]["folders"] == 3
 
 
 def test_scan_merges_a_track_whose_views_differ_in_artist_number_and_duration_format():
     def t(i, artist, number, duration):
-        return (f'<item id="{i}" parentID="x"><dc:title>Song</dc:title><upnp:artist>{artist}</upnp:artist><upnp:album>Album</upnp:album>'
-                f'<upnp:originalTrackNumber>{number}</upnp:originalTrackNumber><upnp:class>object.item.audioItem.musicTrack</upnp:class>'
-                f'<res protocolInfo="http-get:*:audio/flac:*" duration="{duration}">http://x/{i}</res></item>')
-    srv = media_server(tree={"0": [folder("a", "Genres"), folder("b", "Composers")],
-                             "a": [t("1", "Band", "1", "0:03:00")], "b": [t("2", "Band feat. X", "", "0:03:00.000")]})
+        return (
+            f'<item id="{i}" parentID="x"><dc:title>Song</dc:title><upnp:artist>{artist}</upnp:artist><upnp:album>Album</upnp:album>'
+            f"<upnp:originalTrackNumber>{number}</upnp:originalTrackNumber><upnp:class>object.item.audioItem.musicTrack</upnp:class>"
+            f'<res protocolInfo="http-get:*:audio/flac:*" duration="{duration}">http://x/{i}</res></item>'
+        )
+
+    srv = media_server(
+        tree={
+            "0": [folder("a", "Genres"), folder("b", "Composers")],
+            "a": [t("1", "Band", "1", "0:03:00")],
+            "b": [t("2", "Band feat. X", "", "0:03:00.000")],
+        }
+    )
     assert scan(srv).json()["count"] == 1
 
 
 def test_scan_keeps_same_named_tracks_when_the_server_gives_no_length():
     """Title and album alone don't make two tracks the same one: without a length nothing is merged by tags."""
-    srv = media_server(tree={"0": [folder("a", "Folders")],
-                             "a": [audio("t1", title="Intro", album="Greatest Hits", duration="", uri="u1"),
-                                   audio("t2", title="Intro", album="Greatest Hits", duration="", uri="u2"),
-                                   audio("t3", title="Intro", album="Greatest Hits", duration="", uri="u1")]})   # the same file again
+    srv = media_server(
+        tree={
+            "0": [folder("a", "Folders")],
+            "a": [
+                audio("t1", title="Intro", album="Greatest Hits", duration="", uri="u1"),
+                audio("t2", title="Intro", album="Greatest Hits", duration="", uri="u2"),
+                audio("t3", title="Intro", album="Greatest Hits", duration="", uri="u1"),
+            ],
+        }
+    )  # the same file again
     r = scan(srv).json()
     assert r["count"] == 2 and r["stats"]["merged_by_tags"] == 0 and r["stats"]["duplicates"] == 1
 
 
 def test_scan_prefers_a_flat_songs_view_or_the_album_view_over_walking_every_view():
-    srv = media_server(tree={"0": [folder("g", "Genres"), folder("s", "Songs"), folder("r", "Artists")],
-                             "g": [audio("g1", title="Only in genre", uri="g")], "r": [audio("r1", title="Only in artist", uri="r")],
-                             "s": [audio("t1", uri="u1")]})
+    srv = media_server(
+        tree={
+            "0": [folder("g", "Genres"), folder("s", "Songs"), folder("r", "Artists")],
+            "g": [audio("g1", title="Only in genre", uri="g")],
+            "r": [audio("r1", title="Only in artist", uri="r")],
+            "s": [audio("t1", uri="u1")],
+        }
+    )
     r = scan(srv).json()
     assert r["count"] == 1 and r["scan_root"] == "Songs" and "Genres" in r["stats"]["root_folders"]
-    srv = media_server(tree={"0": [folder("g", "Genres"), folder("al", "Albums")], "g": [audio("g1", title="Genre only", uri="g")], "al": [audio("t1", uri="u1")]})
+    srv = media_server(
+        tree={
+            "0": [folder("g", "Genres"), folder("al", "Albums")],
+            "g": [audio("g1", title="Genre only", uri="g")],
+            "al": [audio("t1", uri="u1")],
+        }
+    )
     assert scan(srv).json()["scan_root"] == "Albums"
 
 
 def test_scan_keeps_tracks_that_only_differ_in_number_or_album():
-    srv = media_server(tree={"0": [folder("a", "Albums")],
-                             "a": [audio("t1", uri="u1"), audio("t2", album="Other", uri="u2"), audio("t3", duration="0:04:00", uri="u3")]})
+    srv = media_server(
+        tree={
+            "0": [folder("a", "Albums")],
+            "a": [
+                audio("t1", uri="u1"),
+                audio("t2", album="Other", uri="u2"),
+                audio("t3", duration="0:04:00", uri="u3"),
+            ],
+        }
+    )
     assert scan(srv).json()["count"] == 3
 
 
 def test_scan_recognises_a_bracketed_folder_view_name():
-    srv = media_server(tree={"0": [folder("a", "[Folders]"), folder("g", "Genres")], "a": [audio("t1")], "g": [audio("g1", title="Genre only", uri="g")]})
+    srv = media_server(
+        tree={
+            "0": [folder("a", "[Folders]"), folder("g", "Genres")],
+            "a": [audio("t1")],
+            "g": [audio("g1", title="Genre only", uri="g")],
+        }
+    )
     r = scan(srv).json()
     assert r["count"] == 1 and r["scan_root"] == "[Folders]"
 
 
 def test_scan_skips_videos():
-    srv = media_server(tree={"0": [folder("a", "Folders")], "a": [audio("v", cls="object.item.videoItem.movie"), audio("t1")]})
+    srv = media_server(
+        tree={"0": [folder("a", "Folders")], "a": [audio("v", cls="object.item.videoItem.movie"), audio("t1")]}
+    )
     assert scan(srv).json()["count"] == 1
 
 
 def test_scan_finds_a_folder_view_one_level_down():
-    srv = media_server(tree={"0": [folder("m", "Music"), folder("v", "Movies")],
-                             "m": [folder("ma", "Albums"), folder("mf", "Folders")],
-                             "mf": [audio("t1")], "ma": [audio("t1x", uri="other"), audio("t9", title="Never")]})
+    srv = media_server(
+        tree={
+            "0": [folder("m", "Music"), folder("v", "Movies")],
+            "m": [folder("ma", "Albums"), folder("mf", "Folders")],
+            "mf": [audio("t1")],
+            "ma": [audio("t1x", uri="other"), audio("t9", title="Never")],
+        }
+    )
     r = scan(srv).json()
     assert r["count"] == 1 and r["scan_root"] == "Music / Folders"
 
@@ -392,29 +498,39 @@ def test_scan_stops_in_a_tree_that_loops_with_new_ids():
 
 def test_a_running_scan_can_be_cancelled(monkeypatch):
     import threading
+
     srv = media_server(tree={"0": [folder("a", "Albums")], "a": [audio("t1")]})
     devices_api._publish_devices({srv.udn: srv})
     gate = threading.Event()
     client.delete("/api/library/cached")
     from app import library
+
     orig = library.browse_all
+
     def slow(s, oid):
-        if oid == "a": gate.wait(5)
+        if oid == "a":
+            gate.wait(5)
         return orig(s, oid)
+
     monkeypatch.setattr(library, "browse_all", slow)
     result = {}
-    th = threading.Thread(target=lambda: result.update(r=client.post("/api/scan", json={"device_id": srv.udn, "object_id": "0"})))
+    th = threading.Thread(
+        target=lambda: result.update(r=client.post("/api/scan", json={"device_id": srv.udn, "object_id": "0"}))
+    )
     th.start()
     for _ in range(100):
-        if app_state.scan_state["running"]: break
+        if app_state.scan_state["running"]:
+            break
         threading.Event().wait(0.02)
     assert client.post("/api/scan/cancel").json()["was_running"] is True
-    gate.set(); th.join(10)
+    gate.set()
+    th.join(10)
     assert result["r"].status_code == 409 and not app_state.scan_state["running"]
     assert client.get("/api/library/cached").status_code == 404
 
 
 # ---------- misc ----------
+
 
 def test_about_reports_the_package_version():
     r = client.get("/api/app/about").json()
@@ -424,6 +540,7 @@ def test_about_reports_the_package_version():
 
 
 # ---------- the device queue (OpenHome Playlist) ----------
+
 
 def queue(device, **kw):
     return client.post(f"/api/devices/{device.udn}/queue", json=kw)
@@ -461,12 +578,12 @@ def test_queue_replace_can_start_at_a_later_track(player):
     oh, state = player
     items = [{"uri": f"http://x/{n}.flac", "metadata": ""} for n in "abc"]
     assert queue(oh, action="replace", items=items, start=1).status_code == 200
-    assert len(state["queue"]) == 3 and state["seeked"] == [state["queue"][1]]   # all three in, plays the second
+    assert len(state["queue"]) == 3 and state["seeked"] == [state["queue"][1]]  # all three in, plays the second
 
 
 def test_queue_switches_the_device_to_its_playlist_source_first(player):
     oh, state = player
-    state["source"] = 1                                      # Radio is active
+    state["source"] = 1  # Radio is active
     assert queue(oh, action="insert", items=[{"uri": "http://x/a.flac", "metadata": ""}]).status_code == 200
     assert state["source"] == 0
 
@@ -478,7 +595,7 @@ def test_the_queue_poll_remembers_which_source_is_the_playlist_but_changes_read_
     for _ in range(3):
         assert get(f"/api/devices/{oh.udn}/queue").json()["active"] is True
     assert sum(name == "SourceCount" for name, _ in prod.calls) == 1
-    state["source"] = 1                                       # another controller switched to Radio
+    state["source"] = 1  # another controller switched to Radio
     assert get(f"/api/devices/{oh.udn}/queue").json()["active"] is False
     prod.calls.clear()
     assert queue(oh, action="insert", items=[{"uri": "http://x/a.flac", "metadata": ""}]).status_code == 200
@@ -488,12 +605,17 @@ def test_the_queue_poll_remembers_which_source_is_the_playlist_but_changes_read_
 def test_the_queue_poll_reads_repeat_and_shuffle_only_now_and_then(player):
     oh, state = player
     pl = oh.service("Playlist")
-    reads = lambda: sum(name == "Repeat" for name, _ in pl.calls)
-    first = get(f"/api/devices/{oh.udn}/queue").json()                      # no token: asks the device
+
+    def reads():
+        return sum(name == "Repeat" for name, _ in pl.calls)
+
+    first = get(f"/api/devices/{oh.udn}/queue").json()  # no token: asks the device
     assert (first["repeat"], first["shuffle"], reads()) == (False, False, 1)
-    state["repeat"] = True                                                  # somebody pressed Repeat elsewhere
+    state["repeat"] = True  # somebody pressed Repeat elsewhere
     assert get(f"/api/devices/{oh.udn}/queue?token={first['token']}").json()["repeat"] is False and reads() == 1
-    assert get(f"/api/devices/{oh.udn}/queue").json()["repeat"] is True and reads() == 2   # the app's own reads are fresh
+    assert (
+        get(f"/api/devices/{oh.udn}/queue").json()["repeat"] is True and reads() == 2
+    )  # the app's own reads are fresh
 
 
 def test_the_queue_answer_carries_the_current_source(player):
@@ -510,7 +632,7 @@ def test_the_volume_poll_reads_the_fixed_characteristics_only_once(player):
     state["volume"] = 70
     assert [get(f"/api/devices/{oh.udn}/volume").json()["db"] for _ in range(3)] == [-5.0] * 3
     assert sum(name == "Characteristics" for name, _ in vol.calls) == 1
-    assert sum(name == "Volume" for name, _ in vol.calls) == 3   # the volume itself is read every time
+    assert sum(name == "Volume" for name, _ in vol.calls) == 3  # the volume itself is read every time
 
 
 def test_queue_unknown_action_and_missing_service(player):
@@ -523,6 +645,7 @@ def test_queue_unknown_action_and_missing_service(player):
 
 # ---------- the app itself ----------
 
+
 def test_ping_identifies_the_app_and_the_page_is_not_cached():
     r = client.get("/api/app/ping").json()
     assert r["app"] == m.APP_ID and r["build"] == m.BUILD_ID
@@ -532,25 +655,31 @@ def test_ping_identifies_the_app_and_the_page_is_not_cached():
     assert client.get("/static/core.js").headers["cache-control"] == "no-cache"
 
 
-@pytest.mark.parametrize("headers", [
-    {"Host": "attacker.example:8765"},                                   # DNS rebinding: a foreign name on 127.0.0.1
-    {"Origin": "https://evil.example"},                                  # a form post / fetch from another site
-    {"Origin": "null"},                                                  # sandboxed frame, file:// page
-    {"Origin": "http://127.0.0.1:3000"},                                 # another local web app
-    {"Sec-Fetch-Site": "cross-site"},                                    # <img>/<audio> from another site (no Origin)
-    {"Sec-Fetch-Site": "same-site"},
-])
+@pytest.mark.parametrize(
+    "headers",
+    [
+        {"Host": "attacker.example:8765"},  # DNS rebinding: a foreign name on 127.0.0.1
+        {"Origin": "https://evil.example"},  # a form post / fetch from another site
+        {"Origin": "null"},  # sandboxed frame, file:// page
+        {"Origin": "http://127.0.0.1:3000"},  # another local web app
+        {"Sec-Fetch-Site": "cross-site"},  # <img>/<audio> from another site (no Origin)
+        {"Sec-Fetch-Site": "same-site"},
+    ],
+)
 def test_requests_from_other_sites_are_refused(headers):
     for r in (client.post("/api/media/command/next", headers=headers), client.get("/api/app/ping", headers=headers)):
         assert r.status_code == 403 and "detail" in r.json()
 
 
-@pytest.mark.parametrize("headers", [
-    {},                                                                  # scripts, a second launch (desktop.py)
-    {"Origin": "http://127.0.0.1:8765", "Sec-Fetch-Site": "same-origin"},  # the app's own page
-    {"Sec-Fetch-Site": "none"},                                          # the address typed into a browser
-    {"Host": "localhost:8765", "Origin": "http://localhost:8765"},
-])
+@pytest.mark.parametrize(
+    "headers",
+    [
+        {},  # scripts, a second launch (desktop.py)
+        {"Origin": "http://127.0.0.1:8765", "Sec-Fetch-Site": "same-origin"},  # the app's own page
+        {"Sec-Fetch-Site": "none"},  # the address typed into a browser
+        {"Host": "localhost:8765", "Origin": "http://localhost:8765"},
+    ],
+)
 def test_the_apps_own_requests_are_answered(headers):
     assert client.post("/api/media/command/bogus", headers=headers).json() == {"ok": False}
 
@@ -567,7 +696,7 @@ from app import media  # noqa: E402
 def test_media_commands_wait_in_line_for_the_page():
     assert client.get("/api/media/command?wait=0").json() == {"command": None}
     assert client.post("/api/media/command/next").json() == {"ok": True}
-    assert client.post("/api/media/command/rm -rf").json() == {"ok": False}     # unknown commands are dropped
+    assert client.post("/api/media/command/rm -rf").json() == {"ok": False}  # unknown commands are dropped
     assert client.get("/api/media/command?wait=0").json() == {"command": "next"}
     assert client.get("/api/media/command?wait=0").json() == {"command": None}
 
@@ -578,26 +707,52 @@ def test_mpris_player_forwards_keys_and_shows_the_current_track():
     _, player = media.build_interfaces(b)
     emitted = []
     player.emit_properties_changed = lambda props: emitted.append(props)
-    player.PlayPause(); player.Next()
+    player.PlayPause()
+    player.Next()
     assert list(b.commands) == ["play_pause", "next"]
 
-    b.update(media.MediaState(status="Playing", title="Song", artist="Artist", album="Album", length=180, track_id="t/1", can_next=False))
+    b.update(
+        media.MediaState(
+            status="Playing", title="Song", artist="Artist", album="Album", length=180, track_id="t/1", can_next=False
+        )
+    )
     assert player.PlaybackStatus == "Playing" and player.CanGoNext is False
     meta = {k: v.value for k, v in player.Metadata.items()}
-    assert meta == {"mpris:trackid": "/org/flouplayer/track/t_1", "xesam:title": "Song", "xesam:artist": ["Artist"],
-                    "xesam:album": "Album", "mpris:length": 180_000_000}
-    assert set(emitted[-1]) == {"PlaybackStatus", "Metadata", "CanGoNext"}         # the panel is told what changed
+    assert meta == {
+        "mpris:trackid": "/org/flouplayer/track/t_1",
+        "xesam:title": "Song",
+        "xesam:artist": ["Artist"],
+        "xesam:album": "Album",
+        "mpris:length": 180_000_000,
+    }
+    assert set(emitted[-1]) == {"PlaybackStatus", "Metadata", "CanGoNext"}  # the panel is told what changed
 
     emitted.clear()
-    b.update(media.MediaState(status="Playing", title="Song", artist="Artist", album="Album", length=180, track_id="t/1", can_next=False, position=42))
-    assert emitted == []                                                             # the position alone is polled, not signalled
+    b.update(
+        media.MediaState(
+            status="Playing",
+            title="Song",
+            artist="Artist",
+            album="Album",
+            length=180,
+            track_id="t/1",
+            can_next=False,
+            position=42,
+        )
+    )
+    assert emitted == []  # the position alone is polled, not signalled
 
 
 @pytest.fixture
 def media_settings(monkeypatch, tmp_path):
     calls = []
-    async def start(): calls.append("start")
-    async def stop(): calls.append("stop")
+
+    async def start():
+        calls.append("start")
+
+    async def stop():
+        calls.append("stop")
+
     monkeypatch.setattr(media, "SETTINGS_FILE", tmp_path / "media.json")
     monkeypatch.setattr(media, "start_mpris", start)
     monkeypatch.setattr(media, "stop_mpris", stop)
@@ -607,21 +762,21 @@ def media_settings(monkeypatch, tmp_path):
 def test_mpris_is_off_by_default_and_not_started_with_the_app(media_settings):
     assert media.mpris_enabled() is False
     assert client.get("/api/media/settings").json()["mpris"] is False
-    with TestClient(m.app, base_url="http://127.0.0.1:8765"):   # runs the app's startup and shutdown
+    with TestClient(m.app, base_url="http://127.0.0.1:8765"):  # runs the app's startup and shutdown
         pass
-    assert "start" not in media_settings                                             # (stopping at the end is a no-op)
+    assert "start" not in media_settings  # (stopping at the end is a no-op)
 
 
 def test_mpris_can_be_switched_on_and_off_and_the_choice_is_kept(media_settings, tmp_path):
     assert client.post("/api/media/settings", json={"mpris": True}).json()["mpris"] is True
     assert media_settings == ["start"] and media.mpris_enabled() is True
     media_settings.clear()
-    with TestClient(m.app, base_url="http://127.0.0.1:8765"):   # next start: published right away
+    with TestClient(m.app, base_url="http://127.0.0.1:8765"):  # next start: published right away
         assert media_settings == ["start"]
     assert client.post("/api/media/settings", json={"mpris": False}).json()["mpris"] is False
     assert media_settings[-1] == "stop" and media.mpris_enabled() is False
     (tmp_path / "media.json").write_text("{broken")
-    assert media.mpris_enabled() is False                                            # a broken file means off
+    assert media.mpris_enabled() is False  # a broken file means off
 
 
 def test_the_mpris_position_runs_on_between_the_pages_reports(monkeypatch):
@@ -633,21 +788,24 @@ def test_the_mpris_position_runs_on_between_the_pages_reports(monkeypatch):
     now[0] += 3.5
     assert b.position() == 45.5
     now[0] += 500
-    assert b.position() == 180                                                       # never past the end
+    assert b.position() == 180  # never past the end
     b.update(media.MediaState(status="Paused", length=180, position=60))
     now[0] += 10
-    assert b.position() == 60                                                        # paused: stands still
+    assert b.position() == 60  # paused: stands still
 
 
 # ---------- server-wide search (Live mode) ----------
 
-ALBUM = ('<container id="alb1" parentID="x" childCount="2"><dc:title>Blue Album</dc:title><upnp:artist>Artist</upnp:artist>'
-         '<upnp:class>object.container.album.musicAlbum</upnp:class></container>')
+ALBUM = (
+    '<container id="alb1" parentID="x" childCount="2"><dc:title>Blue Album</dc:title><upnp:artist>Artist</upnp:artist>'
+    "<upnp:class>object.container.album.musicAlbum</upnp:class></container>"
+)
 
 
 def search_server(caps="dc:title,upnp:artist,upnp:album,upnp:class"):
     def answer(criteria):
         return [ALBUM] if "object.container.album" in criteria else [TRACK]
+
     srv = media_server(search=answer, search_caps=caps)
     devices_api._publish_devices({srv.udn: srv})
     return srv
@@ -659,10 +817,12 @@ def test_search_returns_matching_albums_then_tracks_and_escapes_the_query():
     assert r.status_code == 200
     body = r.json()
     assert [i["type"] for i in body["items"]] == ["container", "item"] and body["items"][0]["title"] == "Blue Album"
-    assert body["number_returned"] == 1 and body["total_matches"] == 1          # the counts are the tracks'
+    assert body["number_returned"] == 1 and body["total_matches"] == 1  # the counts are the tracks'
     tracks_query = srv.searches[-1]
     assert 'upnp:class derivedfrom "object.item.audioItem"' in tracks_query
-    assert 'dc:title contains "Blue \\"Moon\\""' in tracks_query and "dc:creator" not in tracks_query   # only what the server can search
+    assert (
+        'dc:title contains "Blue \\"Moon\\""' in tracks_query and "dc:creator" not in tracks_query
+    )  # only what the server can search
     app_state.devices.clear()
 
 
@@ -683,27 +843,38 @@ def test_search_on_a_server_without_search_says_so():
 
 # ---------- has the library on the server changed since the scan? ----------
 
+
 def test_the_app_notices_when_the_server_content_changed_since_the_scan():
     update_id = [7]
     srv = media_server(tree={"0": [TRACK]}, update_id=update_id)
     devices_api._publish_devices({srv.udn: srv})
     assert client.post("/api/scan", json={"device_id": srv.udn, "object_id": "0"}).json()["system_update_id"] == 7
-    changed = lambda: client.get(f"/api/library/changed?device_id={srv.udn}").json()
+
+    def changed():
+        return client.get(f"/api/library/changed?device_id={srv.udn}").json()
+
     assert changed() == {"known": True, "changed": False, "update_id": 7}
-    update_id[0] = 8                                                    # e.g. MinimServer rescanned new music
+    update_id[0] = 8  # e.g. MinimServer rescanned new music
     assert changed() == {"known": True, "changed": True, "update_id": 8}
-    assert client.get("/api/library/changed?device_id=uuid:other").json() == {"known": False}   # another server: can't tell
+    assert client.get("/api/library/changed?device_id=uuid:other").json() == {
+        "known": False
+    }  # another server: can't tell
     app_state.devices.clear()
 
 
 def test_the_changed_check_reads_the_small_meta_file_not_the_whole_library(monkeypatch):
     from app import library
+
     srv = media_server(tree={"0": [TRACK]}, update_id=[7])
     devices_api._publish_devices({srv.udn: srv})
     client.post("/api/scan", json={"device_id": srv.udn, "object_id": "0"})
     assert json.loads(library._meta_file().read_text())["system_update_id"] == 7
     monkeypatch.setattr(library, "load_cached_library", lambda: pytest.fail("the whole library was parsed"))
-    assert client.get(f"/api/library/changed?device_id={srv.udn}").json() == {"known": True, "changed": False, "update_id": 7}
+    assert client.get(f"/api/library/changed?device_id={srv.udn}").json() == {
+        "known": True,
+        "changed": False,
+        "update_id": 7,
+    }
     client.delete("/api/library/cached")
     assert not library._meta_file().exists()
     app_state.devices.clear()
@@ -711,20 +882,23 @@ def test_the_changed_check_reads_the_small_meta_file_not_the_whole_library(monke
 
 def test_a_missing_or_outdated_meta_file_is_rebuilt_from_the_library():
     from app import library
+
     srv = media_server(tree={"0": [TRACK]}, update_id=[7])
     devices_api._publish_devices({srv.udn: srv})
     client.post("/api/scan", json={"device_id": srv.udn, "object_id": "0"})
     url = f"/api/library/changed?device_id={srv.udn}"
-    library._meta_file().unlink()                                       # a cache written before the meta file existed
+    library._meta_file().unlink()  # a cache written before the meta file existed
     assert client.get(url).json()["known"] is True and library._meta_file().exists()
-    library._meta_file().write_text(json.dumps({"device_id": srv.udn, "system_update_id": 1, "mtime_ns": 0}))   # doesn't match the library file
+    library._meta_file().write_text(
+        json.dumps({"device_id": srv.udn, "system_update_id": 1, "mtime_ns": 0})
+    )  # doesn't match the library file
     assert client.get(url).json() == {"known": True, "changed": False, "update_id": 7}
     client.delete("/api/library/cached")
     app_state.devices.clear()
 
 
 def test_without_an_update_id_nothing_is_claimed():
-    srv = media_server(tree={"0": [TRACK]})                                 # server doesn't offer GetSystemUpdateID
+    srv = media_server(tree={"0": [TRACK]})  # server doesn't offer GetSystemUpdateID
     devices_api._publish_devices({srv.udn: srv})
     client.post("/api/scan", json={"device_id": srv.udn, "object_id": "0"})
     assert client.get(f"/api/library/changed?device_id={srv.udn}").json() == {"known": False}
