@@ -1,6 +1,7 @@
-# Lint rules for `ruff check .` (see docs/development.md). Only rules that point at mistakes are on:
-# the code's compact layout (several statements on a line, long lines) is left alone, and the formatter
-# (`ruff format`) is not used.
+# Ruff formats and lints the Python code (see docs/development.md):
+#   ruff format .     lays the code out
+#   ruff check .      looks for mistakes
+line-length = 120
 
 [lint]
 select = [
