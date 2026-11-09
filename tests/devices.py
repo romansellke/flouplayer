@@ -2,7 +2,16 @@
 
 
 def device(id, name, model="", server=False, renderer=False):
-    return {"id": id, "name": name, "model": model, "manufacturer": "Fake", "server": server, "renderer": renderer, "icon": "", "services": []}
+    return {
+        "id": id,
+        "name": name,
+        "model": model,
+        "manufacturer": "Fake",
+        "server": server,
+        "renderer": renderer,
+        "icon": "",
+        "services": [],
+    }
 
 
 SERVER = device("srv1", "Music Server", "MinimServer", server=True)

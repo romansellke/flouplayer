@@ -13,6 +13,7 @@ unchanged. Flou Player targets Linux only.
 
 Also the entry point of the packaged app (see packaging/build.sh).
 """
+
 import faulthandler
 import os
 import sys

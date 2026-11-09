@@ -97,10 +97,10 @@ service definitions, as the features themselves do.
 
 ```python
 def test_something(page, api):
-    api.routes["/standby"] = {"supported": True, "standby": False}   # URL substring -> JSON
+    api.routes["/standby"] = {"supported": True, "standby": False}  # URL substring -> JSON
     open_app(page)
     page.click("#powerBtn")
-    assert api.actions() == ["standby:1"]     # control requests the page sent
+    assert api.actions() == ["standby:1"]  # control requests the page sent
 ```
 
 Route keys are substrings of the request path after `/api/` (for example
