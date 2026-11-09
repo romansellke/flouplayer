@@ -1,0 +1,3 @@
+# index.html is laid out by hand: Prettier would change the whitespace between inline elements.
+app/static/index.html
+app/static/fonts/
