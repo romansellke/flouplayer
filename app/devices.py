@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import concurrent.futures as cf
+import hashlib
 import json
 import os
 import time
@@ -46,6 +47,15 @@ def _find(timeout: int):
     return found
 
 
+def _device_key(d):
+    """The id the page uses for a device: its UDN. A device without one gets an id made from its description
+    URL -- not the URL itself, whose slashes can't be part of the /api/devices/{id}/... addresses."""
+    udn = getattr(d, "udn", None)
+    if udn:
+        return udn
+    return "location-" + hashlib.sha1((getattr(d, "location", None) or str(id(d))).encode()).hexdigest()[:16]
+
+
 @router.get("/api/discover")
 def discover(timeout: int = 4):
     try:
@@ -54,8 +64,7 @@ def discover(timeout: int = 4):
         raise HTTPException(502, f"SSDP discovery failed: {e}")
     fresh = {}
     for d in found:
-        key = getattr(d, "udn", None) or getattr(d, "location", None) or str(id(d))
-        fresh[key] = d
+        fresh[_device_key(d)] = d
     result = _publish_devices(fresh)
     _save_known_devices(fresh)
     return result

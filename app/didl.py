@@ -192,6 +192,7 @@ def browse_all(s, object_id):
     network call -- parallelised across a thread pool during a scan."""
     items = []
     start = 0
+    last_ids = None
     while True:
         try:
             r = s.Browse(
@@ -204,7 +205,12 @@ def browse_all(s, object_id):
             )
         except Exception as e:
             raise RuntimeError(f"Browse failed (ObjectID={object_id}): {e}")
-        items.extend(parse_didl(r.get("Result", "")))
+        page = parse_didl(r.get("Result", ""))
+        ids = [i["id"] for i in page]
+        if ids and ids == last_ids:
+            break  # the same page again: the server ignores StartingIndex, and without TotalMatches this would never end
+        last_ids = ids
+        items.extend(page)
         number_returned = int(r.get("NumberReturned", 0) or 0)
         total_matches = int(r.get("TotalMatches", 0) or 0)
         start += number_returned

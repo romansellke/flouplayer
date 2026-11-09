@@ -61,12 +61,14 @@ class Bridge:
     def send(self, cmd: str):
         if cmd not in COMMANDS:
             return
-        while self.waiters:  # hand it straight to a page that is waiting ...
-            w = self.waiters.pop(0)
+        # Hand it straight to a page that is waiting -- the one that asked last: after a reload the old page's
+        # request is still open here for a while, and a command given to that one would be lost.
+        while self.waiters:
+            w = self.waiters.pop()
             if not w.done():
                 w.set_result(cmd)
                 return
-        self.commands.append(cmd)  # ... or keep it for the next poll
+        self.commands.append(cmd)  # nobody is waiting: keep it for the next poll
 
     async def next_command(self, timeout: float) -> Optional[str]:
         if self.commands:
