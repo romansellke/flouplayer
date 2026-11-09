@@ -1528,24 +1528,32 @@ def test_one_missed_queue_poll_does_not_switch_the_queue_off(page, api):
     page.click("#tabQueue")
     page.wait_for_selector("#queueList tr")
 
+    # Only the polls of this test may count: the background polls stop, and one still under way is waited for
+    # (pollQueue does nothing while another poll runs).
+    page.evaluate("pollers.forEach(p => p.stop())")
+
+    def poll_now():
+        page.evaluate("""async () => { while (queueBusy) await new Promise(r => setTimeout(r, 10));
+                                       await pollQueue(true) }""")
+
     answer["status"] = 502
-    page.evaluate("pollQueue(true)")
-    page.evaluate("pollQueue(true)")
+    poll_now()
+    poll_now()
     assert page.evaluate("[queue.supported, queue.entries.length, currentTab()]") == [True, 1, "queue"]
     answer["status"] = 200
-    page.evaluate("pollQueue(true)")  # an answer in between: the count starts again
+    poll_now()  # an answer in between: the count starts again
     answer["status"] = 502
-    page.evaluate("pollQueue(true)")
-    page.evaluate("pollQueue(true)")
+    poll_now()
+    poll_now()
     assert page.evaluate("queue.supported") is True
-    page.evaluate("pollQueue(true)")  # the third miss in a row
+    poll_now()  # the third miss in a row
     assert page.evaluate("[queue.supported, queue.entries.length, currentTab()]") == [False, 0, "library"]
 
     answer["status"] = 200
-    page.evaluate("pollQueue(true)")
+    poll_now()
     assert page.evaluate("queue.supported") is True
     answer["status"] = 400  # "No OpenHome Playlist service on this device": no need to ask three times
-    page.evaluate("pollQueue(true)")
+    poll_now()
     assert page.evaluate("queue.supported") is False
 
 
