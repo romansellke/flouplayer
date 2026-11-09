@@ -113,8 +113,8 @@ iTunes-style column browser and instant searching across everything.
 - **Search** (Ctrl/⌘+F) filters on title, artist, album artist, album, genre
   and year of the loaded library.
 - Albums are grouped by album name **and** album artist, so same-named albums
-  by different artists stay separate. Duplicates (same playback URL) are
-  removed.
+  by different artists stay separate. Duplicates (same playback URL, or same
+  title, album and length in another of the server's views) are removed.
 
 ## The album list
 

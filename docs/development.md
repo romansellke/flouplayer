@@ -108,6 +108,12 @@ Route keys are substrings of the request path after `/api/` (for example
 else answers 404. If Chromium is installed elsewhere, point
 `FLOU_TEST_CHROMIUM` at the executable.
 
+The page polls the device in the background (queue, volume, position ...). A
+test that counts requests, or calls a poll function itself, must not depend on
+when those happen: stop them first with
+`page.evaluate("pollers.forEach(p => p.stop())")`, and wait for one that is
+still under way (see `test_one_missed_queue_poll_does_not_switch_the_queue_off`).
+
 ### Continuous integration
 
 `.github/workflows/tests.yml` checks the layout, runs the linters and then the

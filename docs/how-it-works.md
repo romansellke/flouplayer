@@ -47,7 +47,10 @@ on other hardware.
 The scan prefers a plain by-folder view if the server offers one (each file
 only once), instead of walking all the artist/album/genre views, and runs
 the network requests across several threads in parallel. Tracks are
-deduplicated by their actual playback URL. Albums are grouped by album name
+deduplicated by their actual playback URL, and -- for servers that list a
+file again in other views under another URL -- by title, album and length.
+Without a length from the server nothing is merged by tags: title and album
+alone would take different tracks for the same one. Albums are grouped by album name
 **and** album artist, so same-named albums by different artists stay
 separate; this depends on the server's DIDL-Lite metadata.
 
