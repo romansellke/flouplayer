@@ -71,7 +71,8 @@ def test_restore_reconnects_by_url_and_skips_dead_devices(monkeypatch):
 def test_discover_does_not_wait_for_a_device_that_answers_ssdp_but_not_http(monkeypatch):
     """After a network outage a device can still answer the SSDP search while its description never
     arrives; the search must return the others in time instead of hanging for minutes."""
-    import threading, time
+    import threading
+    import time
     from types import SimpleNamespace
     oh, av, _ = linn_player()
     release = threading.Event()
