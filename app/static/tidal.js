@@ -89,7 +89,7 @@ async function tidalDeviceCheck() {
     return;
   }
   try {
-    tidal.device = await api(`/api/devices/${d}/tidal`);
+    tidal.device = await api(`/api/devices/${encodeURIComponent(d)}/tidal`);
   } catch (e) {
     tidal.device = null;
   }
@@ -201,7 +201,7 @@ async function tidalCanPlay() {
     notify('TIDAL plays on the Linn/OpenHome output device itself -- select one as output device.');
     return false;
   }
-  if (!queue.supported) await pollQueue(true); // one failed poll marks the queue unsupported: ask again before giving up
+  if (!queue.supported) await pollQueue(true); // not read yet, or given up on after failed polls: ask again before saying no
   if (queue.supported) return true;
   notify(
     "The output device has no usable playlist right now (OpenHome Playlist), so TIDAL can't play on it. See Diagnostics for details.",

@@ -1508,3 +1508,75 @@ def test_a_cover_address_cannot_add_css_of_its_own(page, api):
     page.evaluate(f"setNowCover({evil!r})")
     assert page.evaluate("getComputedStyle(document.querySelector('#npCover')).position") != "fixed"
     assert "a.png%27%29" in page.evaluate("document.querySelector('#npCover').style.backgroundImage")
+
+
+def test_one_missed_queue_poll_does_not_switch_the_queue_off(page, api):
+    """A device that doesn't answer once still has its queue; only several misses in a row, or its "no", end it."""
+    answer = {"status": 200}
+    entries = [
+        {"id": 1, "uri": "u1", "title": "One", "artist": "", "album": "", "album_art": "", "duration": "0:03:00"}
+    ]
+
+    def queue_route(req):
+        if answer["status"] != 200:
+            return answer["status"], {"detail": "Could not read playlist"}
+        return {"active": True, "token": 1, "entries": entries, "current_id": 1, "state": "Playing"}
+
+    api.routes["/queue"] = queue_route
+    start_cached_with_player(page, api, [dict(track(1, album_artist="Band"), id="c1")])
+    page.wait_for_function("queue.supported")
+    page.click("#tabQueue")
+    page.wait_for_selector("#queueList tr")
+
+    answer["status"] = 502
+    page.evaluate("pollQueue(true)")
+    page.evaluate("pollQueue(true)")
+    assert page.evaluate("[queue.supported, queue.entries.length, currentTab()]") == [True, 1, "queue"]
+    answer["status"] = 200
+    page.evaluate("pollQueue(true)")  # an answer in between: the count starts again
+    answer["status"] = 502
+    page.evaluate("pollQueue(true)")
+    page.evaluate("pollQueue(true)")
+    assert page.evaluate("queue.supported") is True
+    page.evaluate("pollQueue(true)")  # the third miss in a row
+    assert page.evaluate("[queue.supported, queue.entries.length, currentTab()]") == [False, 0, "library"]
+
+    answer["status"] = 200
+    page.evaluate("pollQueue(true)")
+    assert page.evaluate("queue.supported") is True
+    answer["status"] = 400  # "No OpenHome Playlist service on this device": no need to ask three times
+    page.evaluate("pollQueue(true)")
+    assert page.evaluate("queue.supported") is False
+
+
+def test_a_new_device_search_keeps_the_open_folder_and_the_chosen_devices(page, api):
+    start_live(page, api, TREE)
+    page.click("[data-cid=a]")
+    page.wait_for_selector("[data-cid=alb1]")
+    api.routes["discover"] = {"devices": [SERVER, SERVER2, PLAYER]}
+    before = len([r for r in api.requests if "browse" in r])
+    page.click("#discover")
+    page.wait_for_function("document.querySelector('#server').options.length === 3")
+    page.wait_for_timeout(200)
+    assert page.inner_text(".crumbs").replace("\n", "") == "Home›Albums"
+    assert len([r for r in api.requests if "browse" in r]) == before  # nothing was loaded again
+    assert page.evaluate("[document.querySelector('#server').value, document.querySelector('#renderer').value]") == [
+        "srv1",
+        "ren1",
+    ]
+    assert picker_labels(page) == ["Music Server · MinimServer", "Linn · Majik"]
+
+
+def test_device_ids_are_encoded_in_the_api_addresses(page, api):
+    api.routes["/queue"] = queue_api()
+    open_app(page)
+    page.evaluate("""() => { const s = document.querySelector('#renderer');
+                             s.innerHTML += '<option value="uuid:a b/c?d">Odd</option>';
+                             s.value = 'uuid:a b/c?d'; s.dispatchEvent(new Event('change')) }""")
+    page.wait_for_function("queue.supported")
+    page.evaluate("Promise.all([refreshVolume(), pollTransport(), tidalDeviceCheck(), queueApi({action: 'play'})])")
+    odd = "devices/uuid%3Aa%20b%2Fc%3Fd/"
+    for part in ("queue", "volume", "tidal"):
+        assert any(r.endswith(odd + part) or (odd + part + "?") in r for r in api.requests), part
+    assert f"POST {odd}queue" in api.requests
+    assert not [r for r in api.requests if "devices/uuid:a" in r]
