@@ -7,6 +7,8 @@ All notable changes to Flou Player are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- Theme **Rams Dark**: the dark counterpart of Rams -- a black case, light print and the same orange signal
+  colour, corners and type.
 - Theme **Rams**, after Dieter Rams' Braun devices: a warm light grey case, black print, one orange signal
   colour, tight corners and a sans-serif type (the bundled Inter) instead of the monospace one.
 

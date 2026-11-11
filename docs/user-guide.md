@@ -354,12 +354,12 @@ offers them (not for the local speakers or plain UPnP renderers).
 
 ![The theme picker](screenshot-themes.png)
 
-The palette button in the status line (bottom right) switches between 18 colour themes (Dracula,
+The palette button in the status line (bottom right) switches between 19 colour themes (Dracula,
 Nord, Catppuccin Mocha, Tokyo Night, ...). The choice is remembered.
 
-**Rams** is the one theme that changes more than the colours: after Dieter Rams' Braun devices it has a
-warm light grey case, black print, a single orange signal colour, tight corners and a sans-serif type
-(Inter) instead of the monospace one.
+**Rams** and **Rams Dark** are the two themes that change more than the colours: after Dieter Rams' Braun
+devices they have a warm light grey case with black print (Rams Dark: a black case with light print), a
+single orange signal colour, tight corners and a sans-serif type (Inter) instead of the monospace one.
 
 ## Diagnostics and About
 
