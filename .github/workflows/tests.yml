@@ -18,9 +18,11 @@ jobs:
             requirements.txt
             requirements-dev.txt
       - name: Install dependencies
+        # Without --with-deps: the runner image already has Chromium's system libraries. The option would only
+        # add font packages from the Ubuntu mirrors, and the whole job failed whenever those could not be reached.
         run: |
           pip install -r requirements.txt -r requirements-dev.txt
-          playwright install --with-deps chromium
+          playwright install chromium
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
