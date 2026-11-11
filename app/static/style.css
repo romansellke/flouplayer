@@ -23,7 +23,9 @@
   --search: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="%238b93a7" stroke-width="1.6" stroke-linecap="round"><circle cx="6" cy="6" r="4.5"/><path d="M9.5 9.5L13 13"/></svg>');
 }
 
-/* Presets: palettes taken from the 43PR dotfiles themes. Default = :root above. */
+/* Presets: palettes taken from the 43PR dotfiles themes. Default = :root above.
+   'rams' is the exception: after Dieter Rams' Braun devices -- a warm light grey case, black print, one orange
+   signal colour, tight corners, and a grotesque (the bundled Inter) instead of the monospace type (see below the body rule). */
 :root[data-theme='beige'] {
   --bg: #d1cdb7;
   --panel: #dad6c1;
@@ -244,6 +246,27 @@
   --chevron: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="10" height="6" fill="none" stroke="%236b7385" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 1l4 4 4-4"/></svg>');
   --search: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="%236b7385" stroke-width="1.6" stroke-linecap="round"><circle cx="6" cy="6" r="4.5"/><path d="M9.5 9.5L13 13"/></svg>');
 }
+:root[data-theme='rams'] {
+  --bg: #e6e4dc;
+  --panel: #eeede6;
+  --card: #f5f4ef;
+  --track: #d7d5cc;
+  --hover: #cbc9bf;
+  --text: #1a1a18;
+  --dim: #4b4a45;
+  --muted: #66655f;
+  --faint: #a5a39a;
+  --line: #d4d2c9;
+  --line-strong: #bdbbb1;
+  --accent: #1a1a18;
+  --highlight: #c03d08;
+  --on-accent: #f5f4ef;
+  --radius: 3px;
+  --shadow: 0 2px 10px rgba(0, 0, 0, 0.14);
+  color-scheme: light;
+  --chevron: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="10" height="6" fill="none" stroke="%2366655f" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 1l4 4 4-4"/></svg>');
+  --search: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="%2366655f" stroke-width="1.6" stroke-linecap="round"><circle cx="6" cy="6" r="4.5"/><path d="M9.5 9.5L13 13"/></svg>');
+}
 :root[data-theme='red'] {
   --bg: #0a0506;
   --panel: #100809;
@@ -366,6 +389,21 @@ body {
   color: var(--text);
   background: var(--bg);
   -webkit-font-smoothing: antialiased;
+}
+/* Rams: sans-serif type; figures keep one width so that track numbers and times still line up. */
+:root[data-theme='rams'] body {
+  font-family: 'Inter Variable', Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+/* ... and the rows inside the panels follow the tight corners of the panels. */
+:root[data-theme='rams'] :is(.picker-menu li, .facets li, .crumb, #themeMenu li, #themeMenu .sw, kbd, .libchanged-x) {
+  border-radius: 2px;
+}
+:root[data-theme='rams'] .tracks td:first-child {
+  border-radius: 2px 0 0 2px;
+}
+:root[data-theme='rams'] .tracks td:last-child {
+  border-radius: 0 2px 2px 0;
 }
 button,
 input,

@@ -116,9 +116,9 @@ explains each point in detail.
 - **Keyboard shortcuts** for playback, volume, seeking, navigation, with a
   built-in overview (Ctrl/⌘+/ or F1)
 - **Interface zoom** (Ctrl/⌘+Plus / Minus / 0) and `FLOU_SCALE` for HiDPI screens
-- **17 colour themes** (Dracula, Nord, Catppuccin, Tokyo Night, ...)
+- **18 colour themes** (Dracula, Nord, Catppuccin, Tokyo Night, Rams, ...)
 
-![The theme picker with the 17 colour themes](screenshot-themes.png)
+![The theme picker with the colour themes](screenshot-themes.png)
 
 ## Library health
 
