@@ -1588,3 +1588,24 @@ def test_device_ids_are_encoded_in_the_api_addresses(page, api):
         assert any(r.endswith(odd + part) or (odd + part + "?") in r for r in api.requests), part
     assert f"POST {odd}queue" in api.requests
     assert not [r for r in api.requests if "devices/uuid:a" in r]
+
+
+# ---------- themes ----------
+
+
+def test_the_rams_theme_is_picked_remembered_and_set_in_sans_serif(page, api):
+    open_app(page)
+    assert "mono" in page.evaluate("getComputedStyle(document.body).fontFamily")
+    page.click("#themeToggle")
+    page.click("#themeMenu li[data-t=rams]")
+    assert not page.is_visible("#themeMenu")
+    assert page.evaluate("[document.documentElement.dataset.theme, localStorage.getItem('theme')]") == ["rams", "rams"]
+    look = "(() => { const s = getComputedStyle(document.body); return [s.fontFamily, s.backgroundColor] })()"
+    font, background = page.evaluate(look)
+    assert font.startswith('"Inter Variable"') and "mono" not in font
+    assert background == "rgb(230, 228, 220)"
+
+    page.reload()  # the choice is kept
+    page.wait_for_load_state("domcontentloaded")
+    assert page.evaluate(look) == [font, background]
+    assert page.evaluate("document.querySelector('#themeMenu li.sel').dataset.t") == "rams"
