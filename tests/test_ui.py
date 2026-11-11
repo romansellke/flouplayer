@@ -1609,3 +1609,8 @@ def test_the_rams_theme_is_picked_remembered_and_set_in_sans_serif(page, api):
     page.wait_for_load_state("domcontentloaded")
     assert page.evaluate(look) == [font, background]
     assert page.evaluate("document.querySelector('#themeMenu li.sel').dataset.t") == "rams"
+
+    page.click("#themeToggle")  # the dark counterpart: same type, black case
+    page.click("#themeMenu li[data-t=rams-dark]")
+    assert page.evaluate(look) == [font, "rgb(27, 27, 25)"]
+    assert page.evaluate("getComputedStyle(document.documentElement).colorScheme") == "dark"
