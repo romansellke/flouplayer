@@ -340,8 +340,18 @@ $('#volume').addEventListener(
 // it calls setProgress(seconds, duration, playing). Between polls the
 // position is extrapolated so the bar moves smoothly.
 const prog = { base: 0, at: 0, dur: 0, playing: false, seeking: false, seekable: false };
+// Devices report their position in whole seconds, rounded down, and a reading arrives a varying while after it
+// was taken. Taken as they are, the readings set the running clock back by up to a second each time, so one
+// second stayed longer on the display and the next one shorter. A reading this close to the running clock (same
+// track, still playing) only confirms it; a seek, a new track, pause or play set it at once.
+const PROG_RESYNC_S = 1;
 function setProgress(sec, dur, playing = true, seekable = true) {
-  Object.assign(prog, { base: sec || 0, at: performance.now(), dur: dur || 0, playing, seekable });
+  sec = sec || 0;
+  dur = dur || 0;
+  const now = performance.now(),
+    running = playing && prog.playing && dur === prog.dur && now - prog.at < PROG_MAX_EXTRAPOLATE_S * 1000,
+    base = running && Math.abs(sec - curPos()) < PROG_RESYNC_S ? curPos() : sec;
+  Object.assign(prog, { base, at: now, dur, playing, seekable });
   drawProgress();
   scheduleProgress();
   if (typeof pushMediaSoon === 'function') pushMediaSoon(); // media.js is loaded later

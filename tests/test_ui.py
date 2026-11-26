@@ -1637,6 +1637,8 @@ def test_the_page_listens_to_the_events_of_the_chosen_output_device(page, api):
     select_renderer(page)
     page.wait_for_function("devEventsStatus === 'live'")
     assert opened[0] == "devices/ren1/events"
+    page.click("#diagBtn")  # the log names all services once their first events are in
+    page.wait_for_function("$('#diagList').textContent.includes('Device events: on (Playlist, Volume)')")
 
 
 def test_a_device_event_makes_the_page_read_what_changed_at_once(page, api):
@@ -1797,3 +1799,33 @@ def test_the_queue_table_is_built_again_only_when_it_changed(page, api):
     current["id"] = 2
     page.evaluate("async () => { await pollQueue(true) }")
     page.wait_for_selector("#queueList tr.playing[data-id='2']")  # the next track: built again
+
+
+def test_the_clock_ticks_evenly_although_the_device_reports_whole_seconds(page, api):
+    """The device reports its position in whole seconds, rounded down, and the page asks every 2 seconds. Taking
+    each reading as it is set the clock back by up to a second every time: some seconds stayed for 1.7 s, others
+    for 0.3 s. Readings that close to the running clock only confirm it."""
+    open_app(page)
+    page.evaluate("pollers.forEach(p => p.stop())")
+    shown = page.evaluate("""async () => {
+        const t0 = performance.now(), truePos = () => 100.3 + (performance.now() - t0) / 1000;
+        // like poll(): the next reading 2 s after the answer, which takes a varying while
+        const lat = [130, 420, 60, 310, 250, 20, 380];
+        let n = 0, timer = null, on = true;
+        const poll = () => { if (!on) return; setProgress(Math.floor(truePos()), 240, true);
+                             timer = setTimeout(poll, 2000 + lat[n++ % lat.length]) };
+        poll();
+        const seen = [];
+        while (performance.now() - t0 < 11000) {
+          seen.push([performance.now(), $('#elapsedL .sr').textContent, $('#elapsedR .sr').textContent]);
+          await new Promise(r => setTimeout(r, 20));
+        }
+        on = false; clearTimeout(timer);
+        return seen;
+    }""")
+    changes = [(t, left, right) for i, (t, left, right) in enumerate(shown) if i == 0 or left != shown[i - 1][1]]
+    secs = [int(left.split(":")[1]) for _, left, _ in changes]
+    assert secs == sorted(secs), f"the clock went back: {secs}"
+    lasted = [b[0] - a[0] for a, b in zip(changes[1:], changes[2:])]  # the first one began before we looked
+    assert lasted and all(800 < ms < 1200 for ms in lasted), [round(ms) for ms in lasted]
+    assert all(int(left.split(":")[1]) + int(right.split(":")[1]) in (0, 60) for _, left, right in changes[1:])

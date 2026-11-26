@@ -475,14 +475,18 @@ def live_values(device_id, service, *keys):
 
 
 def live_time(device_id, playing):
-    """(seconds, duration) from the Time service's events, or None. Between two events the clock runs on."""
+    """(seconds, duration) from the Time service's events, or None. Between two events the clock runs on.
+
+    The device sends a Time event the moment its second changes, so the position is known to a fraction of a
+    second: the second it reported plus the time since that event (not cut to whole seconds, which would make
+    the page's clock jump back by up to a second)."""
     hit = hub.values(device_id, "Time")
     if hit is None or "Seconds" not in hit[0]:
         return None
     vals, at = hit
     duration = as_int(vals.get("Duration"))
-    seconds = as_int(vals["Seconds"]) + (int(time.monotonic() - at) if playing else 0)
-    return (min(seconds, duration) if duration else seconds), duration
+    seconds = as_int(vals["Seconds"]) + ((time.monotonic() - at) if playing else 0)
+    return round(min(seconds, duration) if duration else seconds, 2), duration
 
 
 def _sse(msg):

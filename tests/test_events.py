@@ -244,8 +244,9 @@ def test_the_clock_runs_on_between_time_events(evented):
     start(oh, gena)
     notify(gena, "Time", TrackCount=3, Duration=240, Seconds=100)
     w = events.hub.watches[oh.udn]
-    w.subs["Time"].at -= 5
-    assert events.live_time(oh.udn, playing=True) == (105, 240)
+    w.subs["Time"].at -= 5.5
+    seconds, duration = events.live_time(oh.udn, playing=True)
+    assert 105.5 <= seconds < 105.7 and duration == 240  # to a fraction of a second, not cut to whole ones
     assert events.live_time(oh.udn, playing=False) == (100, 240)
 
 
