@@ -11,6 +11,7 @@ import time
 import upnpclient
 from fastapi import APIRouter, HTTPException
 
+from app import events
 from app.state import CACHE_DIR, KNOWN_DEVICES_FILE, _merged_primary, devices, lock
 from app.upnp import _has_openhome_product, _host, av_transport, device_json, find_volume_service, peer_devices
 
@@ -201,13 +202,14 @@ def get_volume(device_id: str):
     try:
         if kind == "openhome":
             ch = _characteristics(vol)
-            raw = int(vol.Volume().get("Value", 0))
+            live = events.live_values(device_id, "Volume", "Volume")  # the device's events, see app/events.py
+            raw = events.as_int(live["Volume"]) if live else int(vol.Volume().get("Value", 0))
             vmax = int(ch.get("VolumeMax", 100)) or 100
             unity = int(ch.get("VolumeUnity", 0))
             milli_db_per_step = int(ch.get("VolumeMilliDbPerStep", 100))
             db = (raw - unity) * milli_db_per_step / 1000.0
             try:
-                muted = bool(vol.Mute().get("Value"))
+                muted = events.as_bool(live["Mute"]) if live and "Mute" in live else bool(vol.Mute().get("Value"))
             except Exception:
                 muted = None  # not every device exposes Mute
             return {

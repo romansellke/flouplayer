@@ -7,10 +7,21 @@ All notable changes to Flou Player are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- **Device events:** the display follows a Linn/OpenHome output device the moment something changes on it
+  (next track, play/pause, seek, volume, mute, source, standby, stream quality), the way the Linn app does:
+  Flou Player subscribes to the device's events instead of only asking it every few seconds. While the events
+  arrive, the device is no longer asked for these readings at all, which also takes load off slower devices.
+  The device sends them to TCP port 8766 on this computer; where a firewall blocks that, everything works as
+  before by asking the device (Diagnostics says which way it works, see
+  [Troubleshooting](docs/troubleshooting.md#the-display-follows-the-device-only-every-few-seconds)).
 - Theme **Rams Dark**: the dark counterpart of Rams -- a black case, light print and the same orange signal
   colour, corners and type.
 - Theme **Rams**, after Dieter Rams' Braun devices: a warm light grey case, black print, one orange signal
   colour, tight corners and a sans-serif type (the bundled Inter) instead of the monospace one.
+
+### Fixed
+- After pressing a button (next, pause, ...) the queue display no longer waits for the next poll when a poll
+  was already under way: the read the button asked for now follows right after it.
 
 ## [0.21.1] - 2026-11-09
 

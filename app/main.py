@@ -5,7 +5,8 @@ devices (search, reconnect, readings), openhome (sources, pins, standby, ...),
 control (transport/volume/... commands), library (browse, scan, cache),
 transcode (local playback), playlist (the device queue), tidal (TIDAL search,
 played by the device), radio (internet radio stations, played by the
-device) and media (media keys / MPRIS).
+device), media (media keys / MPRIS) and events (the output device's
+events, so the display follows it at once).
 """
 
 from __future__ import annotations
@@ -22,6 +23,7 @@ from fastapi.staticfiles import StaticFiles
 from app import (
     __version__,
     control,
+    events,
     library,
     media,
     openhome,
@@ -45,6 +47,7 @@ async def lifespan(_app):
         await media.start_mpris()  # media keys / panel player controls: off unless switched on
     yield
     await media.stop_mpris()
+    events.hub.stop_all()  # cancel the device subscriptions (see app/events.py)
 
 
 app = FastAPI(title="Flou Player", version=__version__, lifespan=lifespan)
@@ -174,5 +177,5 @@ def ping():
     return {"app": APP_ID, "build": BUILD_ID}
 
 
-for _module in (devices_api, openhome, control, library, transcode, playlist, tidal, radio, media):
+for _module in (devices_api, openhome, control, library, transcode, playlist, tidal, radio, media, events):
     app.include_router(_module.router)

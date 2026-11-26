@@ -86,6 +86,31 @@ window comes up too small:
 If the window is too small *and* blurry, the desktop is probably scaling an
 unscaled X11 window; `FLOU_SCALE` with the factor of your screen fixes that.
 
+## The display follows the device only every few seconds
+
+Flou Player shows a change on the output device (next track, pause, volume)
+the moment the device reports it -- if the device's reports reach your
+computer. Open Diagnostics (the pulse icon at the bottom right): "Device
+events: on" means they do. "Device events: not available" says why not; the
+app then asks the device every few seconds, which works but follows it
+later.
+
+The usual reason is a firewall that blocks incoming connections. The device
+sends its events to **TCP port 8766** on your computer, so allow that port
+from your home network, for example:
+
+```bash
+sudo ufw allow from 192.168.0.0/16 to any port 8766 proto tcp
+```
+
+```bash
+sudo firewall-cmd --permanent --add-port=8766/tcp && sudo firewall-cmd --reload
+```
+
+Then choose the output device again, or restart Flou Player. If something
+else already uses port 8766, Flou Player takes another free port; start it
+with `FLOU_EVENT_PORT=<port>` to fix the port you opened.
+
 ## The window is blank or renders oddly
 
 Try the other backend: `PYWEBVIEW_GUI=gtk ./run.command` (default: `qt`).

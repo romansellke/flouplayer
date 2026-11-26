@@ -244,6 +244,9 @@ function syncNowPlayingFromQueue(cur) {
 }
 const QUEUE_MAX_MISSES = 3;
 let queueMisses = 0; // polls in a row that failed without the device saying it has no queue
+// A read asked for while one is under way (after a button, or a device event) must not get lost: it runs right
+// after, so the display shows the state after the change instead of waiting for the next poll.
+let queueAgain = null;
 async function pollQueue(force = false) {
   if (!dev() || isLocal()) {
     queue.supported = false;
@@ -251,7 +254,10 @@ async function pollQueue(force = false) {
     renderQueue();
     return;
   }
-  if (queueBusy) return;
+  if (queueBusy) {
+    queueAgain = { force: force || !!queueAgain?.force };
+    return;
+  }
   queueBusy = true;
   const asked = dev();
   try {
@@ -299,6 +305,11 @@ async function pollQueue(force = false) {
     if (!isLocal()) prog.playing = false;
   } finally {
     queueBusy = false;
+    if (queueAgain) {
+      const again = queueAgain;
+      queueAgain = null;
+      pollQueue(again.force);
+    }
   }
 }
 $('#renderer').addEventListener('change', () => {
