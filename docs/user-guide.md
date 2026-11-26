@@ -26,6 +26,33 @@
   using the full window width. On very narrow windows the header wraps and
   the columns stack.
 
+### Without the title bar
+
+For more room, the window can open without its title bar: **Keyboard
+shortcuts** (status line) → **Window** → **Hide the title bar**. It takes
+effect the next time Flou Player starts. The header then stands in for the
+title bar:
+
+- **Move** the window by dragging an empty part of the header or the track
+  title in the middle of it; **double-click** there to maximize it or bring it
+  back.
+- Three small buttons at the right end of the header **minimize**,
+  **maximize** and **close** the window.
+- **Ctrl/⌘+W** closes the window, **F11** switches full screen (these work
+  with the title bar too).
+- A window without a title bar has no edges to resize it by: maximize it, or
+  use the desktop's own way (GNOME: Super+middle mouse button drag, or Alt+F8).
+  The desktop's window shortcuts keep working as well (GNOME: Super+H
+  minimizes, Super+↑ maximizes).
+
+Flou Player moves the window itself while you drag. That works under X11 and
+under GNOME on Wayland, where the window runs through XWayland. If you force
+Qt onto Wayland directly (`QT_QPA_PLATFORM=wayland`), Wayland doesn't let an
+app place its window; move it with Super+drag instead.
+
+In a normal browser tab (when the app window couldn't open) these options are
+not shown.
+
 ## Live or cached library
 
 The **Live** and **Library** icons in the header choose how the library is shown (Library = the cached scan).
@@ -427,4 +454,6 @@ for the column type-ahead.
 | Ctrl/⌘+Plus / Ctrl/⌘+Minus | Zoom the interface in / out (for tiny or huge screens) |
 | Ctrl/⌘+0 | Reset the zoom |
 | Ctrl/⌘+/ / F1 | Show the shortcut overview |
+| Ctrl/⌘+W | Close the window (quits Flou Player; app window only) |
+| F11 | Full screen on / off (app window only) |
 | Mouse wheel on the volume slider | One volume step (Shift = 5) |

@@ -973,6 +973,43 @@ button.btn:active {
   gap: 4px;
   flex: 0 0 auto;
 }
+/* Window buttons, shown only when the window has no title bar (window.js). */
+.winctl {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 0 0 auto;
+  margin-left: -10px;
+}
+.winctl.hidden,
+#windowOpts.hidden {
+  display: none;
+}
+.winctl button {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+.winctl button:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+.winctl svg {
+  width: 13px;
+  height: 13px;
+}
+/* Without a title bar the top bar takes its place: dragging it moves the window, so no text gets selected. */
+.frameless header,
+.frameless .lcd {
+  user-select: none;
+}
 
 /* ---------- Workspace ---------- */
 /* Height chain for ONE scrollable area (#content): every level needs
