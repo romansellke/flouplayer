@@ -31,6 +31,10 @@ All notable changes to Flou Player are documented here. The format follows
   concert mode needs a fraction of the CPU (measured at 1920×1080 without GPU: from about 80 % of one core to
   about 6 % while playing, and from 30 % to 4 % while paused). The position bar moves instead of being resized.
 - The Queue view no longer builds its whole table again every 2 seconds while nothing in it changed.
+- The elapsed and remaining time tick evenly. The device reports its position in whole seconds, rounded down,
+  and each reading set the running clock back by up to a second, so some seconds stayed longer on the display
+  than others. A reading close to the running clock now only confirms it, and with device events the position
+  is known to a fraction of a second.
 
 ## [0.21.1] - 2026-11-09
 
