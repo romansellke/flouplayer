@@ -54,6 +54,58 @@ function concertHeader() {
     ? null
     : { title, artist: $('#playingSub').textContent, album: '', art_url: art };
 }
+// The blurred backdrop: the cover blurred once per cover into a canvas of half the window's size and shown
+// stretched over the window (see .c-ambient). The same look as a CSS blur, but computed once per cover instead
+// of for every frame. The picture is first drawn small (cheap to blur), then smoothly enlarged and blurred once
+// more, so no blocks show. A cover from another server makes the canvas unreadable to scripts, which doesn't
+// matter: it is only shown.
+const AMBIENT_SMALL = 64;
+let ambientArt = null,
+  ambientImg = null;
+function setAmbient(art) {
+  if (art === ambientArt) return;
+  ambientArt = art;
+  ambientImg = null;
+  paintAmbient();
+  if (!art) return;
+  const img = new Image();
+  img.onload = () => {
+    if (ambientArt !== art) return; // another track meanwhile
+    ambientImg = img;
+    paintAmbient();
+  };
+  img.src = art;
+}
+function paintAmbient() {
+  const cv = $('#concertAmbient'),
+    W = Math.max(1, Math.round(innerWidth / 2)),
+    H = Math.max(1, Math.round(innerHeight / 2));
+  if (cv.width !== W || cv.height !== H) Object.assign(cv, { width: W, height: H }); // also clears it
+  const ctx = cv.getContext('2d');
+  ctx.clearRect(0, 0, W, H);
+  const img = ambientImg;
+  if (!img || !img.naturalWidth) return;
+  const small = document.createElement('canvas');
+  small.width = AMBIENT_SMALL;
+  small.height = Math.max(1, Math.round((AMBIENT_SMALL * H) / W));
+  // Cover the small canvas with a little to spare, so the blur has picture to work with at the edges too.
+  const pad = 4,
+    s = Math.max((small.width + 2 * pad) / img.naturalWidth, (small.height + 2 * pad) / img.naturalHeight),
+    w = img.naturalWidth * s,
+    h = img.naturalHeight * s,
+    sctx = small.getContext('2d');
+  sctx.filter = 'blur(2px) saturate(1.2)';
+  sctx.drawImage(img, (small.width - w) / 2, (small.height - h) / 2, w, h);
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.filter = `blur(${Math.round(W / AMBIENT_SMALL)}px)`;
+  const m = W / 8; // spare at the edges again, for the second blur
+  ctx.drawImage(small, -m, -m * (H / W), W + 2 * m, H + 2 * m * (H / W));
+  ctx.filter = 'none';
+}
+addEventListener('resize', () => {
+  if (isConcert()) paintAmbient();
+});
 let concertKey = '';
 function drawConcert() {
   if (!isConcert()) return;
@@ -69,8 +121,8 @@ function drawConcert() {
     $('#concertTitle').textContent = m ? m.title : 'Flou Player';
     $('#concertArtist').textContent = m ? m.artist : 'Nothing is playing';
     $('#concertAlbum').textContent = m ? [m.album, (full?.date || '').slice(0, 4)].filter(Boolean).join(' · ') : '';
-    for (const id of ['concertCover', 'concertAmbient'])
-      $('#' + id).style.backgroundImage = art ? `url("${cssUrl(art)}")` : '';
+    $('#concertCover').style.backgroundImage = art ? `url("${cssUrl(art)}")` : '';
+    setAmbient(art);
     $('#concertCover').classList.toggle('nocover', !art);
     const grade = concertGrade(q);
     $('#concertQuality').classList.toggle('hidden', !q);
@@ -99,7 +151,8 @@ function drawConcert() {
   const pos = curPos();
   $('#concertPos').textContent = prog.dur || pos ? fmtClock(pos) : '';
   $('#concertRem').textContent = prog.dur ? '-' + fmtClock(prog.dur - pos) : '';
-  $('#concertBar').style.width = prog.dur ? Math.min(100, (pos / prog.dur) * 100) + '%' : '0';
+  const pct = prog.dur ? Math.min(100, (pos / prog.dur) * 100) : 0;
+  $('#concertBar').style.transform = `translateX(${(pct - 100).toFixed(2)}%)`;
   concertEl.classList.toggle('paused', !isPlayingNow());
 }
 // Ticks once a second, only while concert mode is open and the window is shown.
