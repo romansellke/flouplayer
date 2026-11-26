@@ -14,6 +14,10 @@ All notable changes to Flou Player are documented here. The format follows
   The device sends them to TCP port 8766 on this computer; where a firewall blocks that, everything works as
   before by asking the device (Diagnostics says which way it works, see
   [Troubleshooting](docs/troubleshooting.md#the-display-follows-the-device-only-every-few-seconds)).
+- **Hide the title bar** (Keyboard shortcuts → Window, from the next start): more room for the music (#106).
+  The header takes over: drag its empty parts or the track title to move the window, double-click to maximize,
+  and three small buttons minimize, maximize and close it.
+- Window shortcuts in the app window: **Ctrl/⌘+W** closes it, **F11** switches full screen.
 - Theme **Rams Dark**: the dark counterpart of Rams -- a black case, light print and the same orange signal
   colour, corners and type.
 - Theme **Rams**, after Dieter Rams' Braun devices: a warm light grey case, black print, one orange signal
@@ -22,6 +26,11 @@ All notable changes to Flou Player are documented here. The format follows
 ### Fixed
 - After pressing a button (next, pause, ...) the queue display no longer waits for the next poll when a poll
   was already under way: the read the button asked for now follows right after it.
+- Concert mode kept about one CPU core busy, also while paused (#105): the blurred cover behind it was blurred
+  again for every frame, because the app draws without the graphics card. It is now blurred once per cover;
+  concert mode needs a fraction of the CPU (measured at 1920×1080 without GPU: from about 80 % of one core to
+  about 6 % while playing, and from 30 % to 4 % while paused). The position bar moves instead of being resized.
+- The Queue view no longer builds its whole table again every 2 seconds while nothing in it changed.
 
 ## [0.21.1] - 2026-11-09
 

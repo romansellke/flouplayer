@@ -64,6 +64,7 @@ if os.environ.get("FLOU_SCALE"):
 import uvicorn  # noqa: E402
 import webview  # noqa: E402
 
+from app import window as window_settings  # noqa: E402
 from app.main import APP_ID, BUILD_ID, STATIC_DIR, app  # noqa: E402
 
 HOST = "127.0.0.1"
@@ -181,6 +182,40 @@ def _close_or_exit():
             pass
 
 
+class WindowController:
+    """The window actions the page asks for (app/window.py) -- what a hidden title bar no longer offers."""
+
+    def __init__(self, w, frameless):
+        self.w = w
+        self.frameless = frameless
+        self.maximized = False
+        try:
+            w.events.maximized += lambda *a: setattr(self, "maximized", True)
+            w.events.restored += lambda *a: setattr(self, "maximized", False)
+        except Exception:
+            pass
+
+    def close(self):
+        _close_or_exit()  # like the X of the title bar: main() then shuts down
+
+    def minimize(self):
+        self.w.minimize()
+
+    def toggle_maximize(self):
+        if self.maximized:
+            self.w.restore()
+            self.maximized = False  # some window managers send no "restored" for this
+        else:
+            self.w.maximize()
+            self.maximized = True
+
+    def toggle_fullscreen(self):
+        self.w.toggle_fullscreen()
+
+    def move(self, x, y):
+        self.w.move(x, y)
+
+
 @app.post("/api/app/focus")
 def focus_window():
     """Called by a second launch: bring the existing window to the front
@@ -277,7 +312,12 @@ def main() -> None:
         sys.exit(1)
 
     try:
-        webview.create_window("Flou Player", url, width=1280, height=820, min_size=(900, 600))
+        # Without a title bar if so chosen (app/window.py); the page then drags the window by its top bar itself.
+        frameless = window_settings.hide_title_bar()
+        w = webview.create_window(
+            "Flou Player", url, width=1280, height=820, min_size=(900, 600), frameless=frameless, easy_drag=False
+        )
+        window_settings.controller = WindowController(w, frameless)
         WEBVIEW_STORAGE.mkdir(parents=True, exist_ok=True)
         webview.start(gui=GUI_BACKEND, icon=str(APP_ICON), private_mode=False, storage_path=str(WEBVIEW_STORAGE))
     except Exception as exc:

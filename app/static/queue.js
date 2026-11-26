@@ -84,6 +84,7 @@ const QUEUE_HELP =
   'so it only exists on Linn/OpenHome devices. The device plays it by itself: tracks keep playing in order ' +
   'even if Flou Player is closed, and other control apps (e.g. Linn app) see and change the same queue. ' +
   'Add tracks with + or + Queue, reorder, remove, shuffle and repeat here.';
+let queueDrawn = '';
 function renderQueue() {
   const usable = queue.supported && !isLocal();
   $('#tabQueue').disabled = !usable;
@@ -100,6 +101,11 @@ function renderQueue() {
   const total = queue.entries.reduce((a, en) => a + parseClock(en.duration || ''), 0);
   $('#queueInfo').textContent = n ? `${n} track${n > 1 ? 's' : ''}${total ? ' · ' + fmtLong(total) : ''}` : '';
   if (currentTab() !== 'queue') return;
+  // The queue poll calls this every 2 seconds, nearly always with the same list: build the table (all rows,
+  // with their covers) only when the list or the playing entry changed.
+  const drawn = JSON.stringify([queue.active, queue.currentId, queue.entries]);
+  if (drawn === queueDrawn) return;
+  queueDrawn = drawn;
   $('#queueList').innerHTML = queue.entries
     .map((en, i) => {
       const cur = queue.active && en.id === queue.currentId;

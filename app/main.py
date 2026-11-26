@@ -5,8 +5,9 @@ devices (search, reconnect, readings), openhome (sources, pins, standby, ...),
 control (transport/volume/... commands), library (browse, scan, cache),
 transcode (local playback), playlist (the device queue), tidal (TIDAL search,
 played by the device), radio (internet radio stations, played by the
-device), media (media keys / MPRIS) and events (the output device's
-events, so the display follows it at once).
+device), media (media keys / MPRIS), events (the output device's events,
+so the display follows it at once) and window (the desktop window's title
+bar setting and window actions).
 """
 
 from __future__ import annotations
@@ -31,6 +32,7 @@ from app import (
     radio,
     tidal,
     transcode,
+    window,
 )
 from app import (
     devices as devices_api,
@@ -177,5 +179,5 @@ def ping():
     return {"app": APP_ID, "build": BUILD_ID}
 
 
-for _module in (devices_api, openhome, control, library, transcode, playlist, tidal, radio, media, events):
+for _module in (devices_api, openhome, control, library, transcode, playlist, tidal, radio, media, events, window):
     app.include_router(_module.router)

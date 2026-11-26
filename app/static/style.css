@@ -973,6 +973,43 @@ button.btn:active {
   gap: 4px;
   flex: 0 0 auto;
 }
+/* Window buttons, shown only when the window has no title bar (window.js). */
+.winctl {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 0 0 auto;
+  margin-left: -10px;
+}
+.winctl.hidden,
+#windowOpts.hidden {
+  display: none;
+}
+.winctl button {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+.winctl button:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+.winctl svg {
+  width: 13px;
+  height: 13px;
+}
+/* Without a title bar the top bar takes its place: dragging it moves the window, so no text gets selected. */
+.frameless header,
+.frameless .lcd {
+  user-select: none;
+}
 
 /* ---------- Workspace ---------- */
 /* Height chain for ONE scrollable area (#content): every level needs
@@ -2616,15 +2653,19 @@ kbd {
 .concert.calm {
   cursor: none;
 }
+/* The blurred cover behind everything: a small canvas, blurred once per cover in concert.js and shown stretched.
+   No CSS filter here -- without a GPU (the app's default) a filter over the whole window is computed again for
+   every frame, which kept a CPU core busy all the time concert mode was open. */
 .c-ambient {
   position: absolute;
-  inset: -8%;
-  background: center/cover no-repeat;
-  filter: blur(70px) saturate(1.2);
+  left: -8%;
+  top: -8%;
+  width: 116%;
+  height: 116%;
   opacity: 0.35;
   transform: scale(1.1);
   will-change: transform;
-} /* own layer: the blur (software-rendered without GPU) isn't redrawn when the clock beside it changes */
+}
 .c-stage {
   position: relative;
   flex: 1;
@@ -2722,8 +2763,10 @@ kbd {
   height: 100%;
   background: var(--text);
   border-radius: 99px;
-  transition: width 0.25s linear;
-}
+  transform: translateX(-100%);
+  transition: transform 0.25s linear;
+  will-change: transform;
+} /* moved, not resized: changing the width laid out and repainted the bar on every frame of the transition */
 .c-ctl {
   display: flex;
   gap: 3vmin;
