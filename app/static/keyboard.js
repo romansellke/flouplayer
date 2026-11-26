@@ -142,10 +142,13 @@ const keysHtml = (combo) =>
     )
     .join('<span class="alt">or</span>');
 function drawShortcuts() {
-  $('#keysBody').innerHTML = SHORTCUTS.map(
-    ([title, rows]) =>
-      `<h4>${esc(title)}</h4><table>${rows.map(([keys, what]) => `<tr><td>${keysHtml(keys)}</td><td>${esc(what)}</td></tr>`).join('')}</table>`,
-  ).join('');
+  const groups = appWindow.available ? [...SHORTCUTS, ['Window', WINDOW_SHORTCUTS]] : SHORTCUTS; // window.js
+  $('#keysBody').innerHTML = groups
+    .map(
+      ([title, rows]) =>
+        `<h4>${esc(title)}</h4><table>${rows.map(([keys, what]) => `<tr><td>${keysHtml(keys)}</td><td>${esc(what)}</td></tr>`).join('')}</table>`,
+    )
+    .join('');
 }
 function toggleShortcuts(open = $('#keysModal').classList.contains('hidden')) {
   if (open) drawShortcuts();

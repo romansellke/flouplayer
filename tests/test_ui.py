@@ -1614,3 +1614,72 @@ def test_the_rams_theme_is_picked_remembered_and_set_in_sans_serif(page, api):
     page.click("#themeMenu li[data-t=rams-dark]")
     assert page.evaluate(look) == [font, "rgb(27, 27, 25)"]
     assert page.evaluate("getComputedStyle(document.documentElement).colorScheme") == "dark"
+
+
+# ---------- the app window without a title bar ----------
+
+
+def frameless_window(page, api, frameless=True):
+    api.routes["app/window/"] = {"ok": True}  # actions and moves
+    api.routes["app/window"] = {"available": True, "hide_title_bar": frameless, "frameless": frameless}
+    open_app(page)
+    page.wait_for_function("appWindow.available")
+
+
+def test_without_a_title_bar_the_window_buttons_and_shortcuts_stand_in_for_it(page, api):
+    frameless_window(page, api)
+    page.click("[data-win=minimize]")
+    page.click("[data-win=maximize]")
+    page.click("[data-win=close]")
+    page.keyboard.press("Control+w")
+    page.keyboard.press("F11")
+    page.dblclick("header", position={"x": 3, "y": 3})  # the empty edge of the top bar
+    page.wait_for_timeout(200)
+    assert api.actions() == ["minimize", "maximize", "close", "close", "fullscreen", "maximize"]
+
+
+def test_the_window_is_dragged_by_the_top_bar_but_not_by_its_controls(page, api):
+    frameless_window(page, api)
+
+    def moves():
+        return [(p["x"], p["y"]) for p in api.posts if "x" in p]
+
+    wx, wy = page.evaluate("[window.screenX, window.screenY]")
+    box = page.locator("header").bounding_box()
+    page.mouse.move(box["x"] + 3, box["y"] + 3)
+    page.mouse.down()
+    page.mouse.move(box["x"] + 43, box["y"] + 23)
+    page.mouse.up()
+    page.wait_for_timeout(200)
+    assert moves()[-1] == (wx + 40, wy + 20)  # the window follows the pointer
+
+    api.posts.clear()
+    vol = page.locator("#volume").bounding_box()
+    page.mouse.move(vol["x"] + 5, vol["y"] + vol["height"] / 2)
+    page.mouse.down()
+    page.mouse.move(vol["x"] + 60, vol["y"] + vol["height"] / 2)
+    page.mouse.up()
+    page.wait_for_timeout(200)
+    assert moves() == []  # the slider is a slider
+
+
+def test_the_title_bar_setting_is_offered_only_in_the_app_window(page, api):
+    frameless_window(page, api, frameless=False)
+    assert page.is_hidden("#winCtl")
+    page.keyboard.press("F1")
+    assert page.is_visible("#windowOpts") and "Close the window" in page.inner_text("#keysBody")
+    api.routes["app/window"] = {"available": True, "hide_title_bar": True, "frameless": False}
+    page.check("#titleBarToggle")
+    page.wait_for_function("$('#titleBarNote').textContent.includes('next time')")
+    assert {"hide_title_bar": True} in api.posts
+
+
+def test_in_a_normal_browser_tab_the_window_controls_stay_away(page, api):
+    api.routes["control"] = {"ok": True}
+    open_app(page)  # /api/app/window is not mocked: 404, like the browser fallback without the app window
+    page.wait_for_timeout(300)
+    page.keyboard.press("Control+w")
+    page.keyboard.press("F1")
+    assert page.is_hidden("#windowOpts") and page.is_hidden("#winCtl")
+    assert "Close the window" not in page.inner_text("#keysBody")
+    assert api.actions() == []

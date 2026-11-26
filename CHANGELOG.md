@@ -7,6 +7,10 @@ All notable changes to Flou Player are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- **Hide the title bar** (Keyboard shortcuts → Window, from the next start): more room for the music (#106).
+  The header takes over: drag its empty parts or the track title to move the window, double-click to maximize,
+  and three small buttons minimize, maximize and close it.
+- Window shortcuts in the app window: **Ctrl/⌘+W** closes it, **F11** switches full screen.
 - Theme **Rams Dark**: the dark counterpart of Rams -- a black case, light print and the same orange signal
   colour, corners and type.
 - Theme **Rams**, after Dieter Rams' Braun devices: a warm light grey case, black print, one orange signal
