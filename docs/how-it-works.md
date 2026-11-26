@@ -15,7 +15,8 @@ on other hardware.
   discovers UPnP devices over SSDP, talks to the media server's
   ContentDirectory service (browsing and scanning) and controls the output
   device (AVTransport, and the OpenHome Volume, Playlist, Time, Product, Pins
-  and Info services via `upnpclient`). It also converts tracks the built-in player
+  and Info services via `upnpclient`). It follows the output device through its
+  events (see [Device events](#device-events)). It also converts tracks the built-in player
   can't decode to FLAC on the fly (PyAV/ffmpeg).
 - **TIDAL** (`app/tidal.py`): logs in to TIDAL and searches it with
   `tidalapi`. Nothing is streamed through Flou Player: see
@@ -42,6 +43,38 @@ on other hardware.
 | Crash log | `~/.cache/flou_player/crash.log` |
 | Installed app | `~/.local/share/flou-player` |
 | Window settings (theme, visible columns, cover size, Live/Library choice, collapsed browser, folded Radio search bar, chosen media server and output device) | the app window's web profile under `~/.local/share/flou-player/webview` |
+
+## Device events
+
+Flou Player learns what the output device does the way the Linn app does: the
+device tells it. When the window shows a Linn/OpenHome output device, the
+backend (`app/events.py`) subscribes to the device's Playlist, Time, Info,
+Product and Volume services (UPnP eventing, "GENA"):
+
+1. The subscription gives the device a callback address on this computer:
+   a small HTTP server on **TCP port 8766** (another free port if 8766 is
+   taken; `FLOU_EVENT_PORT` sets it). The app's own server only listens on
+   127.0.0.1, which the device can't reach.
+2. The device sends all its values right away, and then every change the
+   moment it happens (`NOTIFY`). Only requests from the device's own address,
+   to the secret path and with the SID of a current subscription, are taken.
+3. While a service's events arrive, the readings the window makes (queue,
+   current track, position, volume, mute, standby, source, stream details)
+   are answered from them without asking the device. The window is told at
+   once which service changed (Server-Sent Events,
+   `/api/devices/{id}/events`) and reads it again right away, instead of at
+   its next poll. Position events (every second while playing) are only
+   passed on for a new track or a seek; the clock runs on by itself.
+4. The subscriptions are renewed every minute and cancelled half a minute
+   after the window stopped showing the device, and when the app quits.
+
+If the device's first event doesn't arrive within a few seconds (a firewall
+on this computer blocks incoming connections, see
+[Troubleshooting](troubleshooting.md#the-display-follows-the-device-only-every-few-seconds)),
+or the device refuses the subscription, nothing changes from before: the
+window asks the device every few seconds. Diagnostics shows which way it
+works ("Device events: on" or "not available"). Subscribing is tried again
+later.
 
 ## Library scan (Library mode)
 
@@ -106,6 +139,8 @@ them.
 - A full library scan makes many network requests and can still take a while
   on very large or deeply nested libraries, even though it is parallelised.
   The app shows the number of tracks found so far during the scan.
+- Device events follow the UPnP and OpenHome eventing specifications and are
+  tested against simulated devices only so far.
 - The OpenHome queue (Queue button and double-click playback) and Pause are
   tested on a Linn Majik DSM. The dB volume readout, mute, source, pins and
   stream quality are **not verified against real hardware** yet and may need adjusting. For non-OpenHome UPnP

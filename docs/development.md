@@ -26,6 +26,7 @@ file. Keep that order in mind when you move code between files.
 | `radio.js` | Radio: station search, favourites, own stream URLs, playing through the device queue |
 | `live.js` | Live browsing and the Live/Library mode switch |
 | `openhome.js` | OpenHome device controls: mute, standby, source, pins, stream quality, capabilities, firmware |
+| `events.js` | Device events: listens to the output device's events (see `events.py`) and reads what changed at once |
 | `remember.js` | Remembering the chosen devices and reconnecting at startup |
 | `keyboard.js` | Keyboard shortcuts |
 | `window.js` | The app window: hiding the title bar, dragging the window by the header, window buttons and shortcuts |
@@ -48,6 +49,7 @@ app and includes one router per topic; the rest is split like this:
 | `library.py` | Browsing a folder, scanning the whole library, the on-disk cache |
 | `transcode.py` | Converting formats the built-in player can't decode, for local playback |
 | `playlist.py` | The device queue (OpenHome Playlist) |
+| `events.py` | Device events (UPnP GENA): subscribes to the output device's OpenHome services, takes its NOTIFYs on a small LAN server, keeps the values for the readings and tells the page what changed (Server-Sent Events) |
 | `tidal.py` | TIDAL: login (tidalapi), search, albums, artists, the device's TIDAL login (OpenHome Credentials) |
 | `radio.py` | Radio: station search (radio-browser.info), favourites and own URLs (`radio.json`), DIDL for live items |
 | `window.py` | The desktop window's "Hide the title bar" setting (`window.json`) and the window actions the page asks for (close, minimize, maximize, full screen, move); `desktop.py` hands it the window |
@@ -84,6 +86,11 @@ pytest -k keyboard               # by name
   capabilities, standby, mute, firmware and the transport fallback. No network
   and no hardware are involved, and `HOME` is redirected to a temporary
   directory so your real library cache and known devices are never touched.
+- **Device events** (`tests/test_events.py`): subscribing to a fake player
+  (its SUBSCRIBE answers are faked, its NOTIFYs are sent over real HTTP on
+  127.0.0.1), the readings answering from the events, the fallback when no
+  event arrives, renewing and cancelling, and the page's event stream against
+  the real app on a local port.
 - **Browser** (`tests/test_ui.py`): the real page and script in headless
   Chromium with the API mocked (`MockApi` in `tests/conftest.py`). Covers the
   device dropdowns and remembering them, live browsing, Now Playing, the

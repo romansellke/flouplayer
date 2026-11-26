@@ -1618,6 +1618,65 @@ def test_the_rams_theme_is_picked_remembered_and_set_in_sans_serif(page, api):
     assert page.evaluate("getComputedStyle(document.documentElement).colorScheme") == "dark"
 
 
+# ---------- device events ----------
+
+
+def test_the_page_listens_to_the_events_of_the_chosen_output_device(page, api):
+    opened = []
+
+    def events_route(route):
+        opened.append(route.request.url.split("/api/", 1)[1])
+        route.fulfill(
+            status=200,
+            headers={"Content-Type": "text/event-stream"},
+            body='data: {"status": "live", "live": ["Playlist", "Volume"], "reason": "", "changed": []}\n\n',
+        )
+
+    open_app(page)
+    page.route("**/api/devices/*/events", events_route)
+    select_renderer(page)
+    page.wait_for_function("devEventsStatus === 'live'")
+    assert opened[0] == "devices/ren1/events"
+
+
+def test_a_device_event_makes_the_page_read_what_changed_at_once(page, api):
+    api.routes["/volume"] = {"kind": "openhome", "raw": 57, "max": 100, "db": -11.5, "unity": 80, "db_per_step": 0.5}
+    api.routes["/queue"] = {"active": True, "token": 1, "entries": [], "current_id": 0, "state": "Stopped"}
+    open_app(page)
+    select_renderer(page)
+    page.evaluate("pollers.forEach(p => p.stop())")
+    page.wait_for_timeout(300)  # the reads the device change started
+    api.requests.clear()
+
+    page.evaluate("onDeviceEvent({status: 'live', live: ['Volume'], changed: []})")
+    page.wait_for_timeout(200)
+    assert api.requests == []  # nothing changed: nothing to read
+    page.evaluate("onDeviceEvent({status: 'live', live: ['Volume'], changed: ['Volume']})")
+    page.wait_for_function("document.querySelector('#volume').value === '57'")
+    assert api.requests == ["GET devices/ren1/volume"]
+    api.requests.clear()
+    page.evaluate("onDeviceEvent({status: 'live', live: ['Playlist'], changed: ['Playlist']})")
+    page.wait_for_timeout(300)
+    assert [r for r in api.requests if "/queue" in r] == ["GET devices/ren1/queue?token=1"]  # the entries only if new
+
+
+def test_a_queue_read_asked_for_while_one_runs_follows_it(page, api):
+    """After a button press the page reads the queue again; a poll under way must not swallow that read."""
+    api.routes["/queue"] = {"active": True, "token": 5, "entries": [], "current_id": 0, "state": "Stopped"}
+    open_app(page)
+    select_renderer(page)
+    page.wait_for_function("queue.supported")
+    page.evaluate("pollers.forEach(p => p.stop())")
+    page.evaluate("async () => { while (queueBusy) await new Promise(r => setTimeout(r, 10)) }")
+    api.requests.clear()
+    page.evaluate(
+        "async () => { pollQueue(); pollQueue(true); while (queueBusy) await new Promise(r => setTimeout(r, 10)) }"
+    )
+    page.wait_for_function("!queueBusy && !queueAgain")
+    queue_reads = [r for r in api.requests if "/queue" in r]
+    assert queue_reads == ["GET devices/ren1/queue?token=5", "GET devices/ren1/queue"]  # the second one in full
+
+
 # ---------- the app window without a title bar ----------
 
 

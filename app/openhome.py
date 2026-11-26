@@ -6,6 +6,7 @@ import json
 
 from fastapi import APIRouter, HTTPException
 
+from app import events
 from app.didl import parse_didl
 from app.state import devices
 from app.upnp import _openhome_service, peer_service
@@ -30,7 +31,8 @@ def list_sources(device_id: str, light: bool = False):
     if not prod:
         raise HTTPException(400, "No OpenHome Product service on this device -- source switching not possible")
     try:
-        current = int(prod.SourceIndex().get("Value", -1))
+        live = events.live_values(device_id, "Product", "SourceIndex")  # the device's events, see app/events.py
+        current = events.as_int(live["SourceIndex"], -1) if live else int(prod.SourceIndex().get("Value", -1))
         if light:
             return {"current": current}
         count = int(prod.SourceCount().get("Value", 0))
@@ -70,17 +72,19 @@ def list_pins(device_id: str):
     return {"supported": True, "pins": out}
 
 
-def _now_playing(info):
+def _now_playing(info, live=None):
     """Title/artist/cover of what the device plays right now (Info.Track), e.g. a radio
     station started from a pin. Live radio's current song (Info.Metatext) wins when present.
-    None when the device reports nothing."""
+    None when the device reports nothing. `live`: the Info service's evented values, if any."""
     try:
-        item = (parse_didl(info.Track().get("Metadata")) or [{}])[0]
+        metadata = live["Metadata"] if live and "Metadata" in live else info.Track().get("Metadata")
+        item = (parse_didl(metadata) or [{}])[0]
     except Exception:
         return None
     title, artist = item.get("title") or "", item.get("artist") or ""
     try:
-        meta = (parse_didl(info.Metatext().get("Value")) or [{}])[0]
+        metatext = live["Metatext"] if live and "Metatext" in live else info.Metatext().get("Value")
+        meta = (parse_didl(metatext) or [{}])[0]
         if meta.get("title"):
             artist, title = (meta.get("artist") or item.get("title") or ""), meta["title"]
     except Exception:
@@ -101,15 +105,16 @@ def stream_details(device_id: str):
     info = _openhome_service(d, "Info")
     if not info:
         return {"supported": False}
+    live = events.live_values(device_id, "Info", "CodecName", "SampleRate", "BitDepth", "BitRate", "Lossless")
     try:
-        r = info.Details()
+        r = live or info.Details()  # the device's events, see app/events.py
     except Exception as e:
         raise HTTPException(502, f"Could not read stream details: {e}")
 
     def num(k):
-        return int(r.get(k) or 0)
+        return events.as_int(r.get(k) or 0)
 
-    now = _now_playing(info)
+    now = _now_playing(info, live)
     return {
         "supported": True,
         "now": now,
@@ -117,7 +122,7 @@ def stream_details(device_id: str):
         "sample_rate": num("SampleRate"),
         "bit_depth": num("BitDepth"),
         "bit_rate": num("BitRate"),
-        "lossless": bool(r.get("Lossless")),
+        "lossless": events.as_bool(r.get("Lossless")) if live else bool(r.get("Lossless")),
     }
 
 
@@ -155,8 +160,12 @@ def get_standby(device_id: str):
     prod = _openhome_service(d, "Product")
     if not prod:
         return {"supported": False}
+    live = events.live_values(device_id, "Product", "Standby")  # the device's events, see app/events.py
     try:
-        return {"supported": True, "standby": bool(prod.Standby().get("Value"))}
+        return {
+            "supported": True,
+            "standby": events.as_bool(live["Standby"]) if live else bool(prod.Standby().get("Value")),
+        }
     except Exception as e:
         raise HTTPException(502, f"Could not read standby state: {e}")
 

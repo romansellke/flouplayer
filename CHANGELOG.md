@@ -7,6 +7,13 @@ All notable changes to Flou Player are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- **Device events:** the display follows a Linn/OpenHome output device the moment something changes on it
+  (next track, play/pause, seek, volume, mute, source, standby, stream quality), the way the Linn app does:
+  Flou Player subscribes to the device's events instead of only asking it every few seconds. While the events
+  arrive, the device is no longer asked for these readings at all, which also takes load off slower devices.
+  The device sends them to TCP port 8766 on this computer; where a firewall blocks that, everything works as
+  before by asking the device (Diagnostics says which way it works, see
+  [Troubleshooting](docs/troubleshooting.md#the-display-follows-the-device-only-every-few-seconds)).
 - **Hide the title bar** (Keyboard shortcuts → Window, from the next start): more room for the music (#106).
   The header takes over: drag its empty parts or the track title to move the window, double-click to maximize,
   and three small buttons minimize, maximize and close it.
@@ -17,6 +24,8 @@ All notable changes to Flou Player are documented here. The format follows
   colour, tight corners and a sans-serif type (the bundled Inter) instead of the monospace one.
 
 ### Fixed
+- After pressing a button (next, pause, ...) the queue display no longer waits for the next poll when a poll
+  was already under way: the read the button asked for now follows right after it.
 - Concert mode kept about one CPU core busy, also while paused (#105): the blurred cover behind it was blurred
   again for every frame, because the app draws without the graphics card. It is now blurred once per cover;
   concert mode needs a fraction of the CPU (measured at 1920×1080 without GPU: from about 80 % of one core to

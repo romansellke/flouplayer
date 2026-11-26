@@ -9,6 +9,7 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
+from app import events
 from app.didl import child_text, parse_didl
 from app.state import devices
 from app.upnp import peer_devices, peer_service
@@ -48,14 +49,19 @@ def _val(r, key="Value"):
     return r.get(key) if isinstance(r, dict) else r
 
 
-def _id_array(pl):
-    r = pl.IdArray()
-    raw = r.get("Array") or b""  # an empty playlist comes back as None/""
+def _decode_ids(raw):
+    """The playlist's ids: 4 bytes each, big-endian, base64 in SOAP answers and events."""
+    raw = raw or b""  # an empty playlist comes back as None/""
     if isinstance(raw, str):
         import base64
 
         raw = base64.b64decode(raw)
-    return [int.from_bytes(raw[i : i + 4], "big") for i in range(0, len(raw) - 3, 4)], r.get("Token")
+    return [int.from_bytes(raw[i : i + 4], "big") for i in range(0, len(raw) - 3, 4)]
+
+
+def _id_array(pl):
+    r = pl.IdArray()
+    return _decode_ids(r.get("Array")), r.get("Token")
 
 
 def _read_entries(pl, ids):
@@ -115,13 +121,15 @@ def _read_playlist_source_index(prod):
     return None
 
 
-def _playlist_active(d):
-    """(is the Playlist the active source, index of the active source or None). One SourceIndex read serves both."""
+def _playlist_active(d, device_id=None):
+    """(is the Playlist the active source, index of the active source or None). One SourceIndex read serves both;
+    while the device sends its Product events, none at all."""
     prod = peer_service(d, ["product"])
     if not prod:
         return True, None  # no Product service: assume the Playlist is usable directly
     try:
-        now = int(prod.SourceIndex().get("Value", -1))
+        live = events.live_values(device_id, "Product", "SourceIndex") if device_id else None
+        now = events.as_int(live["SourceIndex"], -1) if live else int(prod.SourceIndex().get("Value", -1))
         return now == _playlist_source_index(prod, cached=True), now
     except Exception:
         return False, None
@@ -166,22 +174,33 @@ def get_queue(device_id: str, token: Optional[int] = None):
     if not pl:
         raise _no_playlist(d)
     try:
-        ids, tok = _id_array(pl)
-        active, source = _playlist_active(d)
+        # While the device sends its Playlist events, everything but new entries comes from them (app/events.py).
+        live = events.live_values(device_id, "Playlist", "IdArray", "TransportState", "Id", "Repeat", "Shuffle")
+        if live:
+            ids, tok = _decode_ids(live["IdArray"]), events.token_of(live["IdArray"])
+        else:
+            ids, tok = _id_array(pl)
+        active, source = _playlist_active(d, device_id)
         out = {
             "supported": True,
             "token": tok,
             "active": active,
             "source": source,
-            "state": _val(pl.TransportState()),
-            "current_id": int(_val(pl.Id()) or 0),
+            "state": live["TransportState"] if live else _val(pl.TransportState()),
+            "current_id": events.as_int(live["Id"]) if live else int(_val(pl.Id()) or 0),
         }
-        try:
-            out["repeat"], out["shuffle"] = _modes(pl, fresh=token is None)
-        except Exception:
-            pass
-        tm = peer_service(d, ["time"])
-        if tm:
+        if live:
+            out["repeat"], out["shuffle"] = events.as_bool(live["Repeat"]), events.as_bool(live["Shuffle"])
+        else:
+            try:
+                out["repeat"], out["shuffle"] = _modes(pl, fresh=token is None)
+            except Exception:
+                pass
+        clock = events.live_time(device_id, out["state"] == "Playing")
+        tm = None if clock else peer_service(d, ["time"])
+        if clock:
+            out["seconds"], out["duration"] = clock
+        elif tm:
             try:
                 t = tm.Time()
                 out["seconds"] = int(t.get("Seconds", 0))

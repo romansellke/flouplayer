@@ -257,6 +257,13 @@ def shutdown_and_exit() -> None:
     localStorage), and then exit without running interpreter shutdown.
     """
     try:
+        # The device subscriptions (app/events.py): cancel them, so the device stops sending to a closed port.
+        from app.events import hub as events_hub
+
+        events_hub.stop_all()
+    except Exception:
+        pass
+    try:
         from qtpy.QtCore import QCoreApplication, QEvent
 
         qt_app = QCoreApplication.instance()
