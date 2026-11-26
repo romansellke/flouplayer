@@ -1,5 +1,7 @@
 """Browser tests: the real page and script, with the API mocked (see conftest.MockApi)."""
 
+from urllib.parse import quote
+
 import pytest
 
 from tests.conftest import open_app
@@ -1683,3 +1685,56 @@ def test_in_a_normal_browser_tab_the_window_controls_stay_away(page, api):
     assert page.is_hidden("#windowOpts") and page.is_hidden("#winCtl")
     assert "Close the window" not in page.inner_text("#keysBody")
     assert api.actions() == []
+
+
+def test_concert_mode_blurs_the_cover_once_instead_of_on_every_frame(page, api):
+    """A CSS blur over the whole window is computed again for every frame without a GPU (#105): the backdrop is
+    a canvas painted once per cover, with no filter left on the page."""
+    art = "data:image/svg+xml," + quote(
+        '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"><rect width="40" height="40" fill="#c03"/></svg>'
+    )
+    open_app(page)
+    page.evaluate(f"""() => {{ const t = {{id: 'c1', title: 'Song', artist: 'A', album: 'B', album_art: '{art}', resources: []}};
+                              state.tracks.push(t); state.nowPlayingId = 'c1'; setProgress(30, 120, true, true) }}""")
+    page.keyboard.press("Control+k")
+    page.wait_for_selector("#concert:not(.hidden)")
+    page.wait_for_function("ambientImg !== null")
+    assert page.evaluate("getComputedStyle($('#concertAmbient')).filter") == "none"
+    red = page.evaluate("""() => { const c = $('#concertAmbient');
+                                   return [...c.getContext('2d').getImageData(c.width >> 1, c.height >> 1, 1, 1).data] }""")
+    assert red[0] > 150 and red[1] < 60 and red[3] == 255  # the cover's colour, painted
+    painted = page.evaluate(
+        "(() => { let n = 0; const p = paintAmbient; paintAmbient = () => { n++; p() }; window.__n = () => n })()"
+    )
+    assert painted is None
+    page.wait_for_timeout(2300)  # two concert ticks, same track
+    assert page.evaluate("__n()") == 0
+    moved = page.evaluate("$('#concertBar').style.transform")  # about 33 of 120 s: moved, not resized
+    assert moved.startswith("translateX(-7") and not page.evaluate("$('#concertBar').style.width")
+
+
+def test_the_queue_table_is_built_again_only_when_it_changed(page, api):
+    entries = [
+        {"id": i, "uri": f"u{i}", "title": f"T{i}", "artist": "", "album": "", "album_art": "", "duration": "0:03:00"}
+        for i in (1, 2)
+    ]
+    current = {"id": 1}
+    api.routes["/queue"] = lambda r: {
+        "active": True,
+        "token": 1,
+        "entries": entries,
+        "current_id": current["id"],
+        "state": "Playing",
+    }
+    open_app(page)
+    select_renderer(page)
+    page.wait_for_function("queue.supported")
+    page.click("#tabQueue")
+    page.wait_for_selector("#queueList tr.playing[data-id='1']")
+    page.evaluate("pollers.forEach(p => p.stop())")
+    page.evaluate("$('#queueList tr').dataset.mark = 'x'")  # a rebuilt table would lose this
+    page.evaluate("async () => { while (queueBusy) await new Promise(r => setTimeout(r, 10)); await pollQueue(true) }")
+    assert page.evaluate("$('#queueList tr').dataset.mark") == "x"
+    current["id"] = 2
+    page.evaluate("async () => { await pollQueue(true) }")
+    page.wait_for_selector("#queueList tr.playing[data-id='2']")  # the next track: built again

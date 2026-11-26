@@ -2653,15 +2653,19 @@ kbd {
 .concert.calm {
   cursor: none;
 }
+/* The blurred cover behind everything: a small canvas, blurred once per cover in concert.js and shown stretched.
+   No CSS filter here -- without a GPU (the app's default) a filter over the whole window is computed again for
+   every frame, which kept a CPU core busy all the time concert mode was open. */
 .c-ambient {
   position: absolute;
-  inset: -8%;
-  background: center/cover no-repeat;
-  filter: blur(70px) saturate(1.2);
+  left: -8%;
+  top: -8%;
+  width: 116%;
+  height: 116%;
   opacity: 0.35;
   transform: scale(1.1);
   will-change: transform;
-} /* own layer: the blur (software-rendered without GPU) isn't redrawn when the clock beside it changes */
+}
 .c-stage {
   position: relative;
   flex: 1;
@@ -2759,8 +2763,10 @@ kbd {
   height: 100%;
   background: var(--text);
   border-radius: 99px;
-  transition: width 0.25s linear;
-}
+  transform: translateX(-100%);
+  transition: transform 0.25s linear;
+  will-change: transform;
+} /* moved, not resized: changing the width laid out and repainted the bar on every frame of the transition */
 .c-ctl {
   display: flex;
   gap: 3vmin;

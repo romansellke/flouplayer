@@ -16,6 +16,13 @@ All notable changes to Flou Player are documented here. The format follows
 - Theme **Rams**, after Dieter Rams' Braun devices: a warm light grey case, black print, one orange signal
   colour, tight corners and a sans-serif type (the bundled Inter) instead of the monospace one.
 
+### Fixed
+- Concert mode kept about one CPU core busy, also while paused (#105): the blurred cover behind it was blurred
+  again for every frame, because the app draws without the graphics card. It is now blurred once per cover;
+  concert mode needs a fraction of the CPU (measured at 1920×1080 without GPU: from about 80 % of one core to
+  about 6 % while playing, and from 30 % to 4 % while paused). The position bar moves instead of being resized.
+- The Queue view no longer builds its whole table again every 2 seconds while nothing in it changed.
+
 ## [0.21.1] - 2026-11-09
 
 ### Changed
