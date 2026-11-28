@@ -85,7 +85,9 @@ def _read_entries(pl, ids):
             "uri": child_text(e, "Uri"),
             "title": m.get("title") or child_text(e, "Uri"),
             "artist": m.get("artist", ""),
+            "album_artist": m.get("album_artist", ""),
             "album": m.get("album", ""),
+            "track_number": m.get("track_number", ""),
             "album_art": m.get("album_art", ""),
             "duration": (m.get("resources") or [{}])[0].get("duration", ""),
         }

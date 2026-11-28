@@ -7,6 +7,10 @@ All notable changes to Flou Player are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- **Queue by album** (#112): consecutive tracks of the same album are shown under one album row -- cover,
+  album, album artist (or *Various Artists*), number of tracks and length -- as in the Linn app, with the
+  track numbers below. Double-click the album row to play it, its × removes the whole album. The **Albums**
+  button switches back to the plain list; the choice is remembered.
 - **Device events:** the display follows a Linn/OpenHome output device the moment something changes on it
   (next track, play/pause, seek, volume, mute, source, standby, stream quality), the way the Linn app does:
   Flou Player subscribes to the device's events instead of only asking it every few seconds. While the events
@@ -31,6 +35,7 @@ All notable changes to Flou Player are documented here. The format follows
   colour, tight corners and a sans-serif type (the bundled Inter) instead of the monospace one.
 
 ### Fixed
+- In the Queue view, Shuffle and Repeat now look pressed while they are on.
 - After pressing a button (next, pause, ...) the queue display no longer waits for the next poll when a poll
   was already under way: the read the button asked for now follows right after it.
 - Concert mode kept about one CPU core busy, also while paused (#105): the blurred cover behind it was blurred

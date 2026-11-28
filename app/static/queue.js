@@ -84,6 +84,47 @@ const QUEUE_HELP =
   'so it only exists on Linn/OpenHome devices. The device plays it by itself: tracks keep playing in order ' +
   'even if Flou Player is closed, and other control apps (e.g. Linn app) see and change the same queue. ' +
   'Add tracks with + or + Queue, reorder, remove, shuffle and repeat here.';
+// Albums (#112): consecutive entries of the same album are shown under one album row (cover, album, artist,
+// length), as in the Linn app; a single track of an album stays a plain row. Switched with the "Albums" button;
+// remembered (on by default).
+let queueGrouped = true;
+try {
+  queueGrouped = localStorage.getItem('queue_grouped') !== '0';
+} catch (e) {}
+// Same album: the same name and the same album artist -- or, where the tags name none, the same cover
+// (two "Greatest Hits" are different albums).
+const sameAlbum = (a, b) =>
+  !!a.album &&
+  a.album === b.album &&
+  (a.album_artist || b.album_artist ? a.album_artist === b.album_artist : (a.album_art || '') === (b.album_art || ''));
+function queueGroups(entries) {
+  const groups = [];
+  entries.forEach((en, i) => {
+    const g = groups[groups.length - 1];
+    if (g && sameAlbum(g.entries[0], en)) g.entries.push(en);
+    else groups.push({ start: i, entries: [en] });
+  });
+  return groups;
+}
+// The artist the album row names: the album artist, else the one artist of all its tracks.
+function groupArtist(list) {
+  if (list[0].album_artist) return list[0].album_artist;
+  const artists = new Set(list.map((en) => en.artist).filter(Boolean));
+  return artists.size === 1 ? [...artists][0] : artists.size ? 'Various Artists' : '';
+}
+function queueRow(en, pos, inGroup = null) {
+  const cur = queue.active && en.id === queue.currentId;
+  const n = cur ? '▶' : inGroup ? en.track_number || pos + 1 : pos + 1;
+  const artist = inGroup ? (en.artist && en.artist !== inGroup.artist ? en.artist : '') : en.artist;
+  return `<tr class="clickable${cur ? ' playing' : ''}${inGroup ? ' qin' : ''}" data-id="${en.id}"><td class="n">${esc(String(n))}</td><td class="qcover">${inGroup ? '' : `<div ${cover(en.album_art)}></div>`}</td><td class="title">${esc(en.title)}</td><td class="artist sub">${esc(artist)}</td><td class="sub">${inGroup ? '' : esc(en.album)}</td><td class="time">${esc(fmtDurClock(en.duration))}</td><td class="qx"><button type="button" data-qdel="${en.id}" title="Remove from queue" aria-label="Remove">×</button></td></tr>`;
+}
+function queueAlbumRow(list, artist) {
+  const playing = queue.active && list.some((en) => en.id === queue.currentId),
+    total = list.reduce((a, en) => a + parseClock(en.duration || ''), 0),
+    ids = list.map((en) => en.id).join(','),
+    info = [artist, `${list.length} tracks`].filter(Boolean).join(' · ');
+  return `<tr class="qgroup${playing ? ' current' : ''}" data-first="${list[0].id}"><td class="n"></td><td class="qcover"><div ${cover(list[0].album_art)}></div></td><td class="qalbum" colspan="3"><b>${esc(list[0].album)}</b><span class="sub">${esc(info)}</span></td><td class="time">${total ? esc(fmtClock(total)) : ''}</td><td class="qx"><button type="button" data-qdel-group="${ids}" title="Remove this album from the queue" aria-label="Remove album">×</button></td></tr>`;
+}
 let queueDrawn = '';
 function renderQueue() {
   const usable = queue.supported && !isLocal();
@@ -103,16 +144,28 @@ function renderQueue() {
   if (currentTab() !== 'queue') return;
   // The queue poll calls this every 2 seconds, nearly always with the same list: build the table (all rows,
   // with their covers) only when the list or the playing entry changed.
-  const drawn = JSON.stringify([queue.active, queue.currentId, queue.entries]);
+  const drawn = JSON.stringify([queue.active, queue.currentId, queue.entries, queueGrouped]);
   if (drawn === queueDrawn) return;
   queueDrawn = drawn;
-  $('#queueList').innerHTML = queue.entries
-    .map((en, i) => {
-      const cur = queue.active && en.id === queue.currentId;
-      return `<tr class="clickable${cur ? ' playing' : ''}" data-id="${en.id}"><td class="n">${cur ? '▶' : i + 1}</td><td class="qcover"><div ${cover(en.album_art)}></div></td><td class="title">${esc(en.title)}</td><td class="artist sub">${esc(en.artist)}</td><td class="sub">${esc(en.album)}</td><td class="time">${esc(fmtDurClock(en.duration))}</td><td class="qx"><button type="button" data-qdel="${en.id}" title="Remove from queue" aria-label="Remove">×</button></td></tr>`;
+  $('#qGroup').classList.toggle('on', queueGrouped);
+  $('#qGroup').setAttribute('aria-pressed', String(queueGrouped));
+  $('#queueList').innerHTML = (
+    queueGrouped ? queueGroups(queue.entries) : queue.entries.map((en, i) => ({ start: i, entries: [en] }))
+  )
+    .map(({ start, entries: list }) => {
+      if (list.length < 2) return queueRow(list[0], start);
+      const artist = groupArtist(list);
+      return queueAlbumRow(list, artist) + list.map((en, i) => queueRow(en, start + i, { artist })).join('');
     })
     .join('');
 }
+$('#qGroup').onclick = () => {
+  queueGrouped = !queueGrouped;
+  try {
+    localStorage.setItem('queue_grouped', queueGrouped ? '' : '0');
+  } catch (e) {}
+  renderQueue();
+};
 const fmtLong = (sec) => {
   const h = Math.floor(sec / 3600),
     m = Math.floor((sec % 3600) / 60);
@@ -178,21 +231,25 @@ document.addEventListener('keydown', (e) => {
   }
 });
 $('#queueList').addEventListener('click', async (e) => {
-  const del = e.target.closest('[data-qdel]');
-  if (!del) return;
+  const del = e.target.closest('[data-qdel]'),
+    delGroup = e.target.closest('[data-qdel-group]');
+  if (!del && !delGroup) return;
+  // The device removes one entry at a time: an album is removed entry by entry.
+  const ids = del ? [del.dataset.qdel] : delGroup.dataset.qdelGroup.split(',');
   try {
-    await queueApi({ action: 'delete', id: +del.dataset.qdel });
-    pollQueue(true);
+    for (const id of ids) await queueApi({ action: 'delete', id: +id });
   } catch (x) {
     notify(x.message);
   }
+  pollQueue(true);
 });
+// Double-click: play this entry; on an album row, the album from its first track.
 $('#queueList').addEventListener('dblclick', async (e) => {
   if (e.target.closest('button')) return;
-  const tr = e.target.closest('tr[data-id]');
+  const tr = e.target.closest('tr[data-id], tr[data-first]');
   if (!tr) return;
   try {
-    await queueApi({ action: 'seek', id: +tr.dataset.id });
+    await queueApi({ action: 'seek', id: +(tr.dataset.id || tr.dataset.first) });
     pollQueue(true);
   } catch (x) {
     notify(x.message);

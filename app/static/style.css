@@ -1955,6 +1955,29 @@ main:not([data-tab='radio']) > #radioView {
 .qtable tr {
   cursor: default;
 }
+/* Switched on: Albums, Shuffle, Repeat (as the pressed buttons of the radio browser) */
+#queueView .sectionhead .btn-link.on {
+  background: var(--hover);
+  border-color: var(--muted);
+}
+/* Albums (#112): the album row above its tracks, the tracks without a cover of their own */
+.qtable tr.qgroup td {
+  padding-top: 10px;
+  border-top: 1px solid var(--line-strong);
+}
+.qtable tr.qgroup:first-child td {
+  border-top: 0;
+}
+.qtable .qalbum b {
+  font-weight: 600;
+  margin-right: 10px;
+}
+.qtable tr.qgroup .time {
+  color: var(--muted);
+}
+.qtable tr.qgroup.current .qalbum b {
+  color: var(--accent);
+}
 #queueEmpty.hidden {
   display: none;
 }
