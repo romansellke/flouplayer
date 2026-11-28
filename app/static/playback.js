@@ -403,7 +403,10 @@ function setPixelText(el, text) {
   el._pix = text;
   el.innerHTML = `<span class="sr">${esc(text)}</span>` + (text ? pixelSvg(text) : '');
 }
+// Concert mode (concert.js, loaded later) covers the header: its clock then rests, also when a reading comes in.
+const behindConcert = () => typeof isConcert === 'function' && isConcert();
 function drawProgress() {
+  if (behindConcert()) return;
   const seek = $('#seek');
   const pos = prog.seeking ? (+seek.value / 1000) * prog.dur : curPos();
   setPixelText($('#elapsedL'), prog.dur || pos ? fmtClock(pos) : '');
@@ -425,7 +428,7 @@ let progTimer = null;
 function scheduleProgress() {
   clearTimeout(progTimer);
   progTimer = null;
-  if (!prog.playing || document.hidden) return;
+  if (!prog.playing || document.hidden || behindConcert()) return;
   const age = (performance.now() - prog.at) / 1000;
   if (age > PROG_MAX_EXTRAPOLATE_S) return;
   const pos = prog.base + age;

@@ -1431,10 +1431,11 @@ def test_concert_mode_and_the_clock_only_tick_when_someone_can_see_them(page, ap
     page.evaluate("__ticks = {concert: 0, clock: 0}")
     page.wait_for_timeout(2100)
     t = page.evaluate("__ticks")
-    assert 1 <= t["concert"] <= 3 and 1 <= t["clock"] <= 3  # once a second, not four times
+    assert 1 <= t["concert"] <= 3 and t["clock"] == 0  # once a second; the covered header clock rests
     assert page.text_content("#concertPos") in ("0:32", "0:33")
     page.keyboard.press("Escape")
     page.wait_for_selector("#concert", state="hidden")
+    assert page.text_content("#elapsedL .sr") in ("0:32", "0:33")  # brought up to date at once
     page.evaluate("setProgress(30, 120, false, true); __ticks = {concert: 0, clock: 0}")  # paused
     page.wait_for_timeout(1200)
     assert page.evaluate("__ticks") == {"concert": 0, "clock": 0}
@@ -1737,6 +1738,36 @@ def test_the_title_bar_setting_is_offered_only_in_the_app_window(page, api):
     assert {"hide_title_bar": True} in api.posts
 
 
+def test_the_graphics_card_setting_says_when_it_takes_effect(page, api):
+    gpu = {"use_gpu": False, "gpu": False, "gpu_fell_back": True, "gpu_forced": False}
+    api.routes["app/window"] = lambda r: {"available": True, "hide_title_bar": False, "frameless": False, **gpu}
+    open_app(page)
+    page.wait_for_function("appWindow.available")
+    page.keyboard.press("F1")
+    assert "ended unexpectedly" in page.text_content("#gpuNote")  # switched off again after a crash
+    assert not page.is_checked("#gpuToggle")
+    gpu.update(use_gpu=True, gpu_fell_back=False)
+    page.check("#gpuToggle")
+    page.wait_for_function("$('#gpuNote').textContent.includes('next time')")
+    assert {"use_gpu": True} in api.posts
+
+
+def test_the_graphics_card_setting_gives_way_to_flou_gpu(page, api):
+    api.routes["app/window"] = {
+        "available": True,
+        "hide_title_bar": False,
+        "frameless": False,
+        "use_gpu": False,
+        "gpu": True,
+        "gpu_fell_back": False,
+        "gpu_forced": True,
+    }
+    open_app(page)
+    page.wait_for_function("appWindow.available")
+    page.keyboard.press("F1")
+    assert page.is_disabled("#gpuToggle") and "FLOU_GPU" in page.text_content("#gpuNote")
+
+
 def test_in_a_normal_browser_tab_the_window_controls_stay_away(page, api):
     api.routes["control"] = {"ok": True}
     open_app(page)  # /api/app/window is not mocked: 404, like the browser fallback without the app window
@@ -1763,7 +1794,7 @@ def test_concert_mode_blurs_the_cover_once_instead_of_on_every_frame(page, api):
     assert page.evaluate("getComputedStyle($('#concertAmbient')).filter") == "none"
     red = page.evaluate("""() => { const c = $('#concertAmbient');
                                    return [...c.getContext('2d').getImageData(c.width >> 1, c.height >> 1, 1, 1).data] }""")
-    assert red[0] > 150 and red[1] < 60 and red[3] == 255  # the cover's colour, painted
+    assert red[0] > 150 and red[1] < 60 and 80 <= red[3] <= 100  # the cover's colour, painted faintly (35 %)
     painted = page.evaluate(
         "(() => { let n = 0; const p = paintAmbient; paintAmbient = () => { n++; p() }; window.__n = () => n })()"
     )
@@ -1772,6 +1803,54 @@ def test_concert_mode_blurs_the_cover_once_instead_of_on_every_frame(page, api):
     assert page.evaluate("__n()") == 0
     moved = page.evaluate("$('#concertBar').style.transform")  # about 33 of 120 s: moved, not resized
     assert moved.startswith("translateX(-7") and not page.evaluate("$('#concertBar').style.width")
+    # Nothing that would be put together again for every frame without a GPU: no transition, no blended layer.
+    assert page.evaluate("getComputedStyle($('#concertBar')).transitionDuration") == "0s"
+    ambient = page.evaluate("""(() => { const c = getComputedStyle($('#concertAmbient'));
+                                        return [c.opacity, c.transform, c.willChange] })()""")
+    assert ambient == ["1", "none", "auto"]
+
+
+def test_concert_mode_writes_only_what_changed(page, api):
+    open_app(page)
+    page.evaluate("setProgress(30, 120, false, true)")  # paused: nothing changes from one tick to the next
+    page.keyboard.press("Control+k")
+    page.wait_for_selector("#concert:not(.hidden)")
+    page.evaluate("""() => { window.__writes = 0;
+                            new MutationObserver(ms => { __writes += ms.length })
+                              .observe($('#concert'), {subtree: true, childList: true, characterData: true, attributes: true,
+                                                       attributeFilter: ['style'] }) }""")
+    page.wait_for_timeout(2300)  # two ticks
+    assert page.evaluate("__writes") == 0
+
+
+def test_low_power_concert_mode_moves_the_time_in_10_second_steps(page, api):
+    art = "data:image/svg+xml," + quote(
+        '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"><rect width="40" height="40" fill="#c03"/></svg>'
+    )
+    open_app(page)
+    page.evaluate(f"""() => {{ const t = {{id: 'c1', title: 'Song', artist: 'A', album: 'B', album_art: '{art}', resources: []}};
+                              state.tracks.push(t); state.nowPlayingId = 'c1'; setProgress(37, 120, true, true) }}""")
+    page.keyboard.press("Control+k")
+    page.wait_for_selector("#concert:not(.hidden)")
+    page.wait_for_function("ambientImg !== null")
+    assert page.text_content("#concertPos") == "0:37"
+    page.click("#concertLowPower")
+    assert page.get_attribute("#concertLowPower", "aria-pressed") == "true"
+    assert page.is_hidden("#concertAmbient")  # no blurred backdrop
+    assert page.text_content("#concertPos") == "0:30" and page.text_content("#concertRem") == "-1:30"
+    assert page.evaluate("$('#concertBar').style.transform") == "translateX(-75%)"
+    assert page.evaluate("getComputedStyle($('.c-ctl')).transitionDuration") == "0s"  # no fading
+    page.evaluate("setProgress(44, 120, false, true)")  # paused: where it stopped
+    page.wait_for_function("$('#concertPos').textContent === '0:44'")
+    page.evaluate("setProgress(44, 120, true, true)")  # playing again: the step
+    page.wait_for_function("$('#concertPos').textContent === '0:40'")
+    page.reload()  # remembered
+    page.wait_for_load_state("domcontentloaded")
+    page.keyboard.press("Control+k")
+    page.wait_for_selector("#concert:not(.hidden)")
+    assert page.get_attribute("#concertLowPower", "aria-pressed") == "true"
+    page.click("#concertLowPower")
+    assert page.is_visible("#concertAmbient")
 
 
 def test_the_queue_table_is_built_again_only_when_it_changed(page, api):

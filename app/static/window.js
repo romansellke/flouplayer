@@ -1,9 +1,10 @@
-// The app window and its title bar (app/window.py, desktop.py): the "Hide the title bar" setting, and what stands
+// The app window and its title bar (app/window.py, desktop.py): the "Hide the title bar" and "Draw with the
+// graphics card" settings, and what stands
 // in for a hidden title bar -- dragging the window by the top bar, double-clicking it to maximize, the window
 // buttons -- plus window shortcuts. All of it only in Flou Player's own window, not in a normal browser tab.
 // (Classic script: shares one global scope with the other files, loaded in the order given in index.html.)
 
-let appWindow = { available: false, hide_title_bar: false, frameless: false };
+let appWindow = { available: false, hide_title_bar: false, frameless: false, use_gpu: false, gpu: false };
 const WINDOW_SHORTCUTS = [
   ['Ctrl/⌘+W', 'Close the window (quits Flou Player)'],
   ['F11', 'Full screen on / off'],
@@ -25,6 +26,15 @@ function applyWindow(s) {
   $('#titleBarToggle').checked = !!s.hide_title_bar;
   $('#titleBarNote').textContent =
     s.available && s.hide_title_bar !== s.frameless ? 'Takes effect the next time Flou Player starts.' : '';
+  $('#gpuToggle').checked = !!s.use_gpu;
+  $('#gpuToggle').disabled = !!s.gpu_forced;
+  $('#gpuNote').textContent = s.gpu_forced
+    ? `FLOU_GPU is set when Flou Player starts: it decides (graphics card ${s.gpu ? 'on' : 'off'}).`
+    : s.gpu_fell_back
+      ? 'The last start with the graphics card ended unexpectedly, so Flou Player draws without it again.'
+      : s.available && !!s.use_gpu !== !!s.gpu
+        ? 'Takes effect the next time Flou Player starts.'
+        : '';
   const frameless = !!(s.available && s.frameless);
   document.documentElement.classList.toggle('frameless', frameless);
   $('#winCtl').classList.toggle('hidden', !frameless);
@@ -40,6 +50,22 @@ $('#titleBarToggle').addEventListener('change', async (e) => {
       }),
     );
     log(`Title bar: ${want ? 'hidden' : 'shown'} from the next start`);
+  } catch (x) {
+    e.target.checked = !want;
+    notify(x.message);
+  }
+});
+$('#gpuToggle').addEventListener('change', async (e) => {
+  const want = e.target.checked;
+  try {
+    applyWindow(
+      await api('/api/app/window', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ use_gpu: want }),
+      }),
+    );
+    log(`Graphics card: ${want ? 'on' : 'off'} from the next start`);
   } catch (x) {
     e.target.checked = !want;
     notify(x.message);
