@@ -597,6 +597,13 @@ def test_queue_lists_the_entries_and_the_state(player):
     assert [e["id"] for e in r["entries"]] == [5, 6]
     assert r["state"] == "Playing" and r["current_id"] == 5 and r["active"] is True
     assert (r["seconds"], r["duration"]) == (42, 180)
+    six = r["entries"][1]  # what the Queue view groups by album
+    assert (six["title"], six["album"], six["album_artist"], six["track_number"]) == (
+        "So What",
+        "Kind of Blue",
+        "Miles Davis",
+        "1",
+    )
     # with the current token the slow entry list is left out
     assert "entries" not in get(f"/api/devices/{oh.udn}/queue?token={r['token']}").json()
 

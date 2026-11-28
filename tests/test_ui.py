@@ -1829,3 +1829,101 @@ def test_the_clock_ticks_evenly_although_the_device_reports_whole_seconds(page, 
     lasted = [b[0] - a[0] for a, b in zip(changes[1:], changes[2:])]  # the first one began before we looked
     assert lasted and all(800 < ms < 1200 for ms in lasted), [round(ms) for ms in lasted]
     assert all(int(left.split(":")[1]) + int(right.split(":")[1]) in (0, 60) for _, left, right in changes[1:])
+
+
+# ---------- Queue: albums (#112) ----------
+
+
+def queue_entry(i, title, album="", album_artist="", artist="", track_number="", art="", duration="0:03:00"):
+    return {
+        "id": i,
+        "uri": f"u{i}",
+        "title": title,
+        "artist": artist or album_artist,
+        "album_artist": album_artist,
+        "album": album,
+        "track_number": track_number,
+        "album_art": art,
+        "duration": duration,
+    }
+
+
+ALBUM_QUEUE = [
+    queue_entry(1, "So What", "Kind of Blue", "Miles Davis", track_number="1", duration="0:09:22"),
+    queue_entry(2, "Freddie Freeloader", "Kind of Blue", "Miles Davis", track_number="2", duration="0:09:46"),
+    queue_entry(3, "Single", "Other Album", "Someone", track_number="5"),
+    queue_entry(4, "One", "Jazz Hits", artist="A", art="http://x/hits.jpg"),
+    queue_entry(5, "Two", "Jazz Hits", artist="B", art="http://x/hits.jpg"),
+    queue_entry(6, "Intro", "Greatest Hits", "Band X"),
+    queue_entry(7, "Intro", "Greatest Hits", "Band Y"),
+]
+
+
+def open_queue(page, api, entries, current=2):
+    api.routes["/queue"] = lambda r: {
+        "active": True,
+        "token": 1,
+        "entries": entries,
+        "current_id": current,
+        "state": "Playing",
+    }
+    open_app(page)
+    select_renderer(page)
+    page.wait_for_function("queue.supported")
+    page.click("#tabQueue")
+    page.wait_for_selector("#queueList tr")
+
+
+def queue_rows(page):  # the remove button only shows on hover, so its cell reads empty
+    return page.evaluate("""[...document.querySelectorAll('#queueList tr')].map(tr =>
+        [tr.classList.contains('qgroup') ? 'album' : 'track', ...[...tr.cells].map(td => td.innerText.trim())])""")
+
+
+def test_the_queue_shows_consecutive_tracks_of_an_album_under_one_album_row(page, api):
+    open_queue(page, api, ALBUM_QUEUE)
+    rows = queue_rows(page)
+    assert rows[0][:2] == ["album", ""] and "Kind of Blue" in rows[0][3] and "Miles Davis · 2 tracks" in rows[0][3]
+    assert rows[0][4] == "19:08"  # the album's length in the queue
+    assert rows[1] == ["track", "1", "", "So What", "", "", "9:22", ""]  # track number, no cover, no repeated artist
+    assert rows[2][1] == "▶" and rows[2][3] == "Freddie Freeloader"
+    assert rows[3] == ["track", "3", "", "Single", "Someone", "Other Album", "3:00", ""]  # one track: a plain row
+    assert page.evaluate("!!document.querySelectorAll('#queueList tr')[3].querySelector('.qcover div')")
+    # a compilation: one cover, no album artist -- "Various Artists", and each track names its artist
+    assert "Jazz Hits" in rows[4][3] and "Various Artists · 2 tracks" in rows[4][3]
+    assert rows[5][3:5] == ["One", "A"] and rows[6][3:5] == ["Two", "B"]
+    # the same name by two album artists: two albums, each a single track
+    assert [r[0] for r in rows[7:]] == ["track", "track"]
+    assert page.evaluate("$('#queueList tr.qgroup').classList.contains('current')")  # the album playing now
+
+
+def test_the_albums_can_be_switched_off_and_that_is_remembered(page, api):
+    open_queue(page, api, ALBUM_QUEUE)
+    assert page.get_attribute("#qGroup", "aria-pressed") == "true"
+    page.click("#qGroup")
+    assert page.evaluate("document.querySelectorAll('#queueList tr.qgroup').length") == 0
+    rows = queue_rows(page)
+    assert len(rows) == 7 and rows[0] == ["track", "1", "", "So What", "Miles Davis", "Kind of Blue", "9:22", ""]
+    page.reload()
+    page.wait_for_load_state("domcontentloaded")
+    select_renderer(page)
+    page.wait_for_function("queue.supported")
+    page.click("#tabQueue")
+    page.wait_for_selector("#queueList tr")
+    assert page.get_attribute("#qGroup", "aria-pressed") == "false"
+    assert page.evaluate("document.querySelectorAll('#queueList tr.qgroup').length") == 0
+
+
+def test_an_album_row_plays_and_removes_the_whole_album(page, api):
+    open_queue(page, api, ALBUM_QUEUE)
+    api.routes["/queue"] = {"ok": True}  # the actions; the poll answer doesn't matter any more
+    page.dblclick("#queueList tr.qgroup >> nth=1", position={"x": 300, "y": 10})
+    page.wait_for_timeout(200)
+    assert {"action": "seek", "id": 4} in api.posts  # from the album's first track
+    api.posts.clear()
+    page.hover("#queueList tr.qgroup >> nth=0")
+    page.click("#queueList tr.qgroup >> nth=0 >> [data-qdel-group]")
+    page.wait_for_timeout(300)
+    assert [p for p in api.posts if p.get("action") == "delete"] == [
+        {"action": "delete", "id": 1},
+        {"action": "delete", "id": 2},
+    ]

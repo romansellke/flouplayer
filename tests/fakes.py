@@ -1,6 +1,7 @@
 """Stand-ins for upnpclient devices, so the backend can be tested without a network."""
 
 import base64
+from xml.sax.saxutils import escape
 
 
 class FakeService:
@@ -139,7 +140,16 @@ def linn_player(host="192.168.1.21", **overrides):
     )
 
     def entry(i):
-        return f"<Entry><Id>{i}</Id><Uri>http://x/{i}.flac</Uri><Metadata></Metadata></Entry>"
+        meta = ""
+        if i == 6:  # one entry with tags, as the device keeps them from the DIDL-Lite it was given
+            meta = escape(
+                '<DIDL-Lite xmlns="urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/" xmlns:dc="http://purl.org/dc/elements/1.1/"'
+                ' xmlns:upnp="urn:schemas-upnp-org:metadata-1-0/upnp/"><item id="t6"><dc:title>So What</dc:title>'
+                '<upnp:artist>Miles Davis</upnp:artist><upnp:artist role="AlbumArtist">Miles Davis</upnp:artist>'
+                "<upnp:album>Kind of Blue</upnp:album><upnp:originalTrackNumber>1</upnp:originalTrackNumber>"
+                "</item></DIDL-Lite>"
+            )
+        return f"<Entry><Id>{i}</Id><Uri>http://x/{i}.flac</Uri><Metadata>{meta}</Metadata></Entry>"
 
     def insert(AfterId, Uri, Metadata):
         new = max(state["queue"] + [0]) + 1

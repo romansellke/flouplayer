@@ -278,6 +278,13 @@ On Linn/OpenHome devices the device's own playlist has its own **Queue** button
 - Lists the tracks with cover, artist, album, length and total time, with
   Shuffle, Repeat and Clear. Double-click a track to jump to it; `×` removes
   it.
+- **Albums** (on by default, remembered): consecutive tracks of the same album
+  are shown under one album row with the cover, album, album artist (or
+  *Various Artists*), number of tracks and length, as in the Linn app. The
+  tracks below it show their track number, and their artist only where it
+  differs. Double-click the album row to play the album from its first track
+  in the queue; its `×` removes the whole album. A single track of an album
+  stays a plain row. Switch **Albums** off for the plain list.
 - Add from the library with **+** on a track, **+ Queue** on an album, **▶**
   on an album (replaces the queue and plays), or **▶ Play all** /
   **+ Queue all** for everything currently shown.
