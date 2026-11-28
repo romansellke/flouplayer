@@ -52,7 +52,7 @@ app and includes one router per topic; the rest is split like this:
 | `events.py` | Device events (UPnP GENA): subscribes to the output device's OpenHome services, takes its NOTIFYs on a small LAN server, keeps the values for the readings and tells the page what changed (Server-Sent Events) |
 | `tidal.py` | TIDAL: login (tidalapi), search, albums, artists, the device's TIDAL login (OpenHome Credentials) |
 | `radio.py` | Radio: station search (radio-browser.info), favourites and own URLs (`radio.json`), DIDL for live items |
-| `window.py` | The desktop window's "Hide the title bar" setting (`window.json`) and the window actions the page asks for (close, minimize, maximize, full screen, move); `desktop.py` hands it the window |
+| `window.py` | The desktop window's settings "Hide the title bar" and "Draw with the graphics card" (`window.json`, with the fallback after a crashed start with the graphics card) and the window actions the page asks for (close, minimize, maximize, full screen, move); `desktop.py` hands it the window |
 | `media.py` | Media keys: the MPRIS player on the session D-Bus (Linux, off unless switched on), its on/off setting, and the state/command bridge to the page |
 
 Modules share the device list through `app.state.devices`; change it in place

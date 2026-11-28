@@ -35,6 +35,17 @@ let concertDetails = false;
 try {
   concertDetails = localStorage.getItem('concert_details') === '1';
 } catch (e) {}
+// Low power: no blurred backdrop, the time and the progress line in 10-second steps while playing, no fading of
+// the controls. The page then hardly draws anything between two tracks. Switched with the leaf button; remembered.
+let concertLowPower = false;
+try {
+  concertLowPower = localStorage.getItem('concert_lowpower') === '1';
+} catch (e) {}
+const LOW_POWER_STEP_S = 10;
+// Writes only what changed: setting the same text again still lays out and paints it.
+function setText(el, text) {
+  if (el.textContent !== text) el.textContent = text;
+}
 // Compact: what a hi-fi display shows (rate and depth, or codec and bit rate for lossy). Details: everything the device reports.
 function concertFormat(q) {
   if (concertDetails) return q;
@@ -59,7 +70,8 @@ function concertHeader() {
 // of for every frame. The picture is first drawn small (cheap to blur), then smoothly enlarged and blurred once
 // more, so no blocks show. A cover from another server makes the canvas unreadable to scripts, which doesn't
 // matter: it is only shown.
-const AMBIENT_SMALL = 64;
+const AMBIENT_SMALL = 64,
+  AMBIENT_ALPHA = 0.35;
 let ambientArt = null,
   ambientImg = null;
 function setAmbient(art) {
@@ -84,7 +96,7 @@ function paintAmbient() {
   const ctx = cv.getContext('2d');
   ctx.clearRect(0, 0, W, H);
   const img = ambientImg;
-  if (!img || !img.naturalWidth) return;
+  if (!img || !img.naturalWidth || concertLowPower) return; // low power: not shown, so not painted either
   const small = document.createElement('canvas');
   small.width = AMBIENT_SMALL;
   small.height = Math.max(1, Math.round((AMBIENT_SMALL * H) / W));
@@ -99,14 +111,17 @@ function paintAmbient() {
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = 'high';
   ctx.filter = `blur(${Math.round(W / AMBIENT_SMALL)}px)`;
+  ctx.globalAlpha = AMBIENT_ALPHA; // painted in, not a CSS opacity: that would be blended again for every frame
   const m = W / 8; // spare at the edges again, for the second blur
   ctx.drawImage(small, -m, -m * (H / W), W + 2 * m, H + 2 * m * (H / W));
   ctx.filter = 'none';
+  ctx.globalAlpha = 1;
 }
 addEventListener('resize', () => {
   if (isConcert()) paintAmbient();
 });
-let concertKey = '';
+let concertKey = '',
+  concertBarAt = '';
 function drawConcert() {
   if (!isConcert()) return;
   const hd = concertHeader(),
@@ -146,14 +161,30 @@ function drawConcert() {
     db = $('#volumeLabel .voldb')?.textContent || '';
   const mutedNow = $('#muteBtn').getAttribute('aria-pressed') === 'true' && !$('#muteBtn').classList.contains('hidden');
   $('#concertVol').classList.toggle('hidden', !step);
-  $('#concertVolStep').textContent = mutedNow ? 'Muted' : step;
-  $('#concertVolDb').textContent = mutedNow ? '' : db;
-  const pos = curPos();
-  $('#concertPos').textContent = prog.dur || pos ? fmtClock(pos) : '';
-  $('#concertRem').textContent = prog.dur ? '-' + fmtClock(prog.dur - pos) : '';
-  const pct = prog.dur ? Math.min(100, (pos / prog.dur) * 100) : 0;
-  $('#concertBar').style.transform = `translateX(${(pct - 100).toFixed(2)}%)`;
-  concertEl.classList.toggle('paused', !isPlayingNow());
+  setText($('#concertVolStep'), mutedNow ? 'Muted' : step);
+  setText($('#concertVolDb'), mutedNow ? '' : db);
+  // Low power: while playing, the time moves on in whole 10-second steps; paused, it shows where it stopped.
+  const playing = isPlayingNow(),
+    exact = curPos(),
+    pos = concertLowPower && playing ? Math.floor(exact / LOW_POWER_STEP_S) * LOW_POWER_STEP_S : exact;
+  setText($('#concertPos'), prog.dur || pos ? fmtClock(pos) : '');
+  setText($('#concertRem'), prog.dur ? '-' + fmtClock(prog.dur - pos) : '');
+  const pct = prog.dur ? Math.min(100, (pos / prog.dur) * 100) : 0,
+    bar = `translateX(${(pct - 100).toFixed(2)}%)`;
+  if (concertBarAt !== bar) $('#concertBar').style.transform = concertBarAt = bar; // the browser rewrites the text
+  concertEl.classList.toggle('paused', !playing);
+}
+function setConcertLowPower(on = !concertLowPower) {
+  concertLowPower = on;
+  try {
+    localStorage.setItem('concert_lowpower', on ? '1' : '');
+  } catch (e) {}
+  concertEl.classList.toggle('lowpower', on);
+  $('#concertLowPower').setAttribute('aria-pressed', String(on));
+  if (isConcert()) {
+    paintAmbient(); // painted again when switched off, cleared when switched on
+    drawConcert();
+  }
 }
 // Ticks once a second, only while concert mode is open and the window is shown.
 let concertTimer = null;
@@ -177,6 +208,10 @@ function concertWake() {
 function setConcert(on = !isConcert()) {
   if (on === isConcert()) return;
   concertEl.classList.toggle('hidden', !on);
+  // The header's clock and position line are hidden behind concert mode: they rest meanwhile (playback.js) and
+  // are brought up to date when it closes.
+  if (!on) drawProgress();
+  scheduleProgress(); // stops while concert mode is open
   document.activeElement?.blur?.(); // Space must play/pause, not press a button that still has the focus
   if (on) {
     concertKey = '';
@@ -205,6 +240,9 @@ $('#concertDetails').onclick = () => {
   } catch (e) {}
   drawConcert();
 };
+$('#concertLowPower').onclick = () => setConcertLowPower();
+concertEl.classList.toggle('lowpower', concertLowPower);
+$('#concertLowPower').setAttribute('aria-pressed', String(concertLowPower));
 $('#concertClose').onclick = () => setConcert(false);
 $('#concertBtn').onclick = () => setConcert(true);
 $('#concertPrev').onclick = () => btnFor('previous').click();

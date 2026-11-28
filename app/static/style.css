@@ -2677,17 +2677,18 @@ kbd {
   cursor: none;
 }
 /* The blurred cover behind everything: a small canvas, blurred once per cover in concert.js and shown stretched.
-   No CSS filter here -- without a GPU (the app's default) a filter over the whole window is computed again for
-   every frame, which kept a CPU core busy all the time concert mode was open. */
+   No CSS filter, opacity or transform here -- without a GPU (the app's default) a filter over the whole window is
+   computed again for every frame, and a layer of its own is blended over the whole window again for every frame;
+   both kept the processor busy all the time concert mode was open. Its faintness is painted into the canvas. */
 .c-ambient {
   position: absolute;
-  left: -8%;
-  top: -8%;
-  width: 116%;
-  height: 116%;
-  opacity: 0.35;
-  transform: scale(1.1);
-  will-change: transform;
+  left: -13.8%;
+  top: -13.8%;
+  width: 127.6%;
+  height: 127.6%;
+}
+.concert.lowpower .c-ambient {
+  display: none;
 }
 .c-stage {
   position: relative;
@@ -2787,9 +2788,8 @@ kbd {
   background: var(--text);
   border-radius: 99px;
   transform: translateX(-100%);
-  transition: transform 0.25s linear;
-  will-change: transform;
-} /* moved, not resized: changing the width laid out and repainted the bar on every frame of the transition */
+} /* moved, not resized, and once a second without a transition: without a GPU, every frame of a transition put
+     the whole window together again */
 .c-ctl {
   display: flex;
   gap: 3vmin;
@@ -2939,6 +2939,21 @@ kbd {
 .concert.calm .c-det {
   opacity: 0;
   pointer-events: none;
+}
+.c-low {
+  right: calc(2.5vw + 112px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.c-low svg {
+  width: 18px;
+  height: 18px;
+}
+/* Low power: also no fading of the controls -- they come and go at once */
+.concert.lowpower .c-ctl,
+.concert.lowpower .c-close {
+  transition: none;
 }
 @media (max-aspect-ratio: 1/1) {
   .c-extra {
