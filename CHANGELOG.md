@@ -6,6 +6,8 @@ All notable changes to Flou Player are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.22.0] - 2026-11-28
+
 ### Added
 - **Queue by album** (#112): consecutive tracks of the same album are shown under one album row -- cover,
   album, album artist (or *Various Artists*), number of tracks and length -- as in the Linn app, with the
@@ -38,16 +40,13 @@ All notable changes to Flou Player are documented here. The format follows
 - In the Queue view, Shuffle and Repeat now look pressed while they are on.
 - After pressing a button (next, pause, ...) the queue display no longer waits for the next poll when a poll
   was already under way: the read the button asked for now follows right after it.
-- Concert mode kept about one CPU core busy, also while paused (#105): the blurred cover behind it was blurred
-  again for every frame, because the app draws without the graphics card. It is now blurred once per cover;
-  concert mode needs a fraction of the CPU (measured at 1920×1080 without GPU: from about 80 % of one core to
-  about 6 % while playing, and from 30 % to 4 % while paused). The position bar moves instead of being resized.
-- Concert mode while playing needed about four times the CPU of a pause (#105): every second the progress line
-  slid on in a short animation, and without the graphics card each frame of it put the whole window together
-  again, blending the blurred backdrop over it once more. The line now steps once a second, the backdrop's
-  faintness is painted in once per cover, only what changed is written, and the header's clock behind concert
-  mode rests. Measured at 1920×1080 without GPU: while playing about a quarter of the CPU of before, while
-  paused about a sixth. It looks the same.
+- Concert mode kept the processor busy (#105), also while paused: the app draws without the graphics card, and
+  the blurred cover behind it was blurred again for every frame, while every second the progress line slid on in
+  an animation that put the whole window together again. The cover is now blurred once and its faintness painted
+  in, the line steps once a second, only what changed is written, and the header's clock behind concert mode
+  rests. It looks the same (measured at 1920×1080 without GPU: from about 80 % of one core to about 6 % while
+  playing and from 30 % to 4 % while paused, and the second step brought playing down to about a quarter of
+  that again).
 - The Queue view no longer builds its whole table again every 2 seconds while nothing in it changed.
 - The elapsed and remaining time tick evenly. The device reports its position in whole seconds, rounded down,
   and each reading set the running clock back by up to a second, so some seconds stayed longer on the display
@@ -562,7 +561,8 @@ the OpenHome queue tab; a position/seek bar and a live dB volume readout; a
 Diagnostics log and About dialog; 17 colour themes; installable Linux app
 packaging; and the GPL-3.0-or-later license.
 
-[Unreleased]: https://github.com/romansellke/flouplayer/compare/v0.21.1...HEAD
+[Unreleased]: https://github.com/romansellke/flouplayer/compare/v0.22.0...HEAD
+[0.22.0]: https://github.com/romansellke/flouplayer/compare/v0.21.1...v0.22.0
 [0.21.1]: https://github.com/romansellke/flouplayer/compare/v0.21.0...v0.21.1
 [0.21.0]: https://github.com/romansellke/flouplayer/compare/v0.20.0...v0.21.0
 [0.20.0]: https://github.com/romansellke/flouplayer/compare/v0.19.0...v0.20.0
