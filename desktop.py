@@ -44,16 +44,6 @@ def enable_crash_log():
 
 _crash_log_file = enable_crash_log()
 
-# Qt WebEngine runs Chromium's GPU code as a thread *inside* this Python
-# process on Linux, so a GPU driver problem crashes the whole app with a
-# segfault. This UI gains nothing from GPU acceleration, so render in
-# software by default. Must be set before Qt WebEngine is loaded.
-# Set FLOU_GPU=1 to keep GPU acceleration on.
-if os.environ.get("FLOU_GPU") != "1":
-    _flags = os.environ.get("QTWEBENGINE_CHROMIUM_FLAGS", "")
-    if "--disable-gpu" not in _flags.split():
-        os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = (_flags + " --disable-gpu").strip()
-
 # High-DPI screens: let Qt pick up the desktop's scaling (GNOME sets it via Xft.dpi / GDK_SCALE), otherwise
 # everything looks tiny. FLOU_SCALE=1.5 forces a factor if the automatic one is wrong. Must be set before
 # the Qt application is created.
@@ -170,11 +160,16 @@ def quit_app():
 QUIT_GRACE_SECONDS = 3.0  # less than a new launch waits for the port (stop_old_instance)
 
 
+def _exit_now():
+    window_settings.clean_exit()  # asked to quit: not a crash
+    os._exit(0)
+
+
 def _close_or_exit():
     windows = list(webview.windows)
     if not windows:
-        os._exit(0)
-    threading.Timer(QUIT_GRACE_SECONDS, os._exit, args=(0,)).start()
+        _exit_now()
+    threading.Timer(QUIT_GRACE_SECONDS, _exit_now).start()
     for w in windows:
         try:
             w.destroy()
@@ -185,9 +180,10 @@ def _close_or_exit():
 class WindowController:
     """The window actions the page asks for (app/window.py) -- what a hidden title bar no longer offers."""
 
-    def __init__(self, w, frameless):
+    def __init__(self, w, frameless, gpu=False):
         self.w = w
         self.frameless = frameless
+        self.gpu = gpu
         self.maximized = False
         try:
             w.events.maximized += lambda *a: setattr(self, "maximized", True)
@@ -275,11 +271,30 @@ def shutdown_and_exit() -> None:
                 time.sleep(0.02)
     except Exception:
         pass
+    window_settings.clean_exit()  # the start with the graphics card (if any) went well
     sys.stdout.flush()
     sys.stderr.flush()
     if _crash_log_file:
         _crash_log_file.flush()
     os._exit(0)
+
+
+def configure_gpu() -> bool:
+    """Qt WebEngine runs Chromium's GPU code as a thread *inside* this Python
+    process on Linux, so a GPU driver problem crashes the whole app with a
+    segfault. So render in software unless the person chose the graphics
+    card (Keyboard shortcuts -> Window, or FLOU_GPU=1; FLOU_GPU=0 forces
+    software). app/window.py switches the choice off again if a start with
+    the graphics card crashed. Must run before Qt WebEngine is loaded (it is
+    loaded by webview.start()), and only once this launch opens the window."""
+    gpu = window_settings.start_gpu(os.environ.get("FLOU_GPU"))
+    if not gpu:
+        flags = os.environ.get("QTWEBENGINE_CHROMIUM_FLAGS", "")
+        if "--disable-gpu" not in flags.split():
+            os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = (flags + " --disable-gpu").strip()
+    if window_settings.gpu_fell_back:
+        print("[Flou Player] The last start with the graphics card ended unexpectedly: drawing without it again.")
+    return gpu
 
 
 def main() -> None:
@@ -314,10 +329,11 @@ def main() -> None:
     try:
         # Without a title bar if so chosen (app/window.py); the page then drags the window by its top bar itself.
         frameless = window_settings.hide_title_bar()
+        gpu = configure_gpu()
         w = webview.create_window(
             "Flou Player", url, width=1280, height=820, min_size=(900, 600), frameless=frameless, easy_drag=False
         )
-        window_settings.controller = WindowController(w, frameless)
+        window_settings.controller = WindowController(w, frameless, gpu)
         WEBVIEW_STORAGE.mkdir(parents=True, exist_ok=True)
         webview.start(gui=GUI_BACKEND, icon=str(APP_ICON), private_mode=False, storage_path=str(WEBVIEW_STORAGE))
     except Exception as exc:
@@ -325,6 +341,7 @@ def main() -> None:
         # libraries, no display backend available, etc.), don't leave the
         # person with nothing -- fall back to opening it in their normal
         # browser, same as before this file existed.
+        window_settings.clean_exit()  # no window, so no graphics card in use either
         print(f"[Flou Player] Could not open the native window ({exc}).")
         print(f"[Flou Player] Falling back to your default browser at {url}")
         import webbrowser

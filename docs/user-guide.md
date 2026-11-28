@@ -53,6 +53,14 @@ app place its window; move it with Super+drag instead.
 In a normal browser tab (when the app window couldn't open) these options are
 not shown.
 
+### Drawing with the graphics card
+
+**Keyboard shortcuts** → **Window** → **Draw with the graphics card** lets the
+window draw with the graphics card from the next start, which takes load off
+the processor (above all in concert mode). It is off by default because some
+graphics drivers crash the app; should a start with it end unexpectedly, Flou
+Player switches it off again by itself and says so there.
+
 ## Live or cached library
 
 The **Live** and **Library** icons in the header choose how the library is shown (Library = the cached scan).
@@ -227,6 +235,13 @@ track, large and calm:
   step and the dB it works out to, or *Muted*) and the output device;
 - previous / play-pause / next buttons. Like the pointer, they fade away after
   a few seconds without movement and come back when you move the mouse.
+- **Low power** (the leaf button at the top right; remembered) for a computer
+  that should stay cool and quiet: no blurred backdrop, the time and the
+  progress line move on in 10-second steps while playing (paused, they show
+  exactly where it stopped), and the controls come and go without fading.
+  For even less load, let the app draw with the graphics card (Keyboard
+  shortcuts → Window → **Draw with the graphics card**, see
+  [Troubleshooting](troubleshooting.md#the-app-crashes-segmentation-fault)).
 
 Space, Ctrl/⌘+arrows and the other playback keys work as usual. **Esc** (or ×)
 leaves the mode; it also fills the whole screen where the window allows it.

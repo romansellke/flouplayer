@@ -124,8 +124,12 @@ right order itself, so this should no longer happen.
 On Linux the window's web engine (Qt WebEngine) runs its GPU code inside the
 app process, so a graphics driver problem can take the whole app down. Flou
 Player therefore renders in software by default. To get GPU acceleration
-back, start it with `FLOU_GPU=1 ./run.command` (or `FLOU_GPU=1 flou-player`
-for the installed app).
+back, tick **Keyboard shortcuts → Window → Draw with the graphics card** (from
+the next start). Should a start with it end unexpectedly, Flou Player draws
+without the graphics card again at the following start and says so there. The
+environment variable decides over the setting: `FLOU_GPU=1 ./run.command` (or
+`FLOU_GPU=1 flou-player` for the installed app) always uses the graphics card,
+`FLOU_GPU=0` never.
 
 If it still crashes, the details (which part of the app was running at that
 moment) are written to `~/.cache/flou_player/crash.log` -- please include

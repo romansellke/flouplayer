@@ -18,6 +18,13 @@ All notable changes to Flou Player are documented here. The format follows
   The header takes over: drag its empty parts or the track title to move the window, double-click to maximize,
   and three small buttons minimize, maximize and close it.
 - Window shortcuts in the app window: **Ctrl/⌘+W** closes it, **F11** switches full screen.
+- Concert mode **Low power** (the leaf button at the top right, remembered): no blurred backdrop, the time and
+  the progress line move on in 10-second steps while playing, and the controls appear and fade without a
+  transition. Between two tracks the window then hardly draws anything (#105).
+- **Draw with the graphics card** (Keyboard shortcuts → Window, from the next start): takes load off the
+  processor, above all in concert mode. Off by default, because some graphics drivers crash the app; if a start
+  with it ends unexpectedly, Flou Player switches it off again by itself and says so. `FLOU_GPU=1` or
+  `FLOU_GPU=0` still decide over the setting.
 - Theme **Rams Dark**: the dark counterpart of Rams -- a black case, light print and the same orange signal
   colour, corners and type.
 - Theme **Rams**, after Dieter Rams' Braun devices: a warm light grey case, black print, one orange signal
@@ -30,6 +37,12 @@ All notable changes to Flou Player are documented here. The format follows
   again for every frame, because the app draws without the graphics card. It is now blurred once per cover;
   concert mode needs a fraction of the CPU (measured at 1920×1080 without GPU: from about 80 % of one core to
   about 6 % while playing, and from 30 % to 4 % while paused). The position bar moves instead of being resized.
+- Concert mode while playing needed about four times the CPU of a pause (#105): every second the progress line
+  slid on in a short animation, and without the graphics card each frame of it put the whole window together
+  again, blending the blurred backdrop over it once more. The line now steps once a second, the backdrop's
+  faintness is painted in once per cover, only what changed is written, and the header's clock behind concert
+  mode rests. Measured at 1920×1080 without GPU: while playing about a quarter of the CPU of before, while
+  paused about a sixth. It looks the same.
 - The Queue view no longer builds its whole table again every 2 seconds while nothing in it changed.
 - The elapsed and remaining time tick evenly. The device reports its position in whole seconds, rounded down,
   and each reading set the running clock back by up to a second, so some seconds stayed longer on the display
